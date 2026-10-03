@@ -1,0 +1,109 @@
+/* Boy profile modal — details, season grid, follow-up timeline. */
+
+.profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.profile__h {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--text-md);
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+  margin-bottom: var(--sp-3);
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--gold);
+  display: inline-block;
+  width: auto;
+}
+
+.profile__score {
+  margin-inline-start: auto;
+}
+
+.friday-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  gap: 6px;
+}
+
+.friday-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-sunken);
+  font-size: var(--text-xs);
+}
+
+.friday-cell.is-present {
+  background: var(--success-soft);
+  border-color: var(--success-border);
+  color: var(--success-ink);
+}
+
+.friday-cell.is-absent {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.friday-cell__date {
+  font-weight: var(--weight-bold);
+  font-size: 11px;
+}
+
+.friday-cell__mark {
+  font-size: 15px;
+  font-weight: var(--weight-extrabold);
+  line-height: 1;
+}
+
+.profile__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile__notes li {
+  padding: 9px var(--sp-3);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.profile__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-inline-start: 2px solid var(--gold-border);
+  padding-inline-start: var(--sp-4);
+}
+
+.profile__timeline li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 8px 0;
+  font-size: var(--text-sm);
+}
+
+.profile__dot {
+  position: absolute;
+  inset-inline-start: calc(-1 * var(--sp-4) - 5px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--navy);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--gold);
+}

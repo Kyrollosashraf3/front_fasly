@@ -1,0 +1,424 @@
+import { useMemo, useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { useModal } from '../../context/ModalContext'
+import { useToast } from '../../context/ToastContext'
+import { usePageTitle } from '../../context/TitleContext'
+import { useDebounced, useQuery } from '../../hooks'
+import { GroupAPI } from '../../lib/endpoints'
+import { Icon } from '../../components/ui/Icon'
+import { Button, IconButton } from '../../components/ui/Button'
+import { SearchInput, Select } from '../../components/ui/Field'
+import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+
+import { Badge } from '../../components/ui/Badge'
+import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
+import { FileMenu } from '../../components/ui/FileMenu'
+import { ImportResult } from '../../components/ui/ImportResult'
+import { BoyProfileModal, followLabel } from '../boys/BoyProfile'
+import { Avatar } from '../../components/ui/Avatar'
+import { formatShort } from '../../lib/format'
+import './groups.css'
+
+/**
+ * GroupsPage — servant follow-up assignments.
+ *
+ * Left/top: assign panel (pick a servant, tick ungrouped boys, save).
+ * Below: one card per servant with his roster + attendance + last avcation.
+ */
+export default function GroupsPage() {
+  const { user, can, classes, isSuperAdmin, classReady } = useAuth()
+  const toast = useToast()
+  const modal = useModal()
+
+  usePageTitle('المجموعات')
+
+  const canWrite = can.writeGroups(user)
+  const showClassPicker = canWrite && classes.length > 1
+
+  const [classId, setClassId] = useState('')
+  const [teacherFilter, setTeacherFilter] = useState('')
+  const [search, setSearch] = useState('')
+  const [selectedTeacher, setSelectedTeacher] = useState('')
+  const [picked, setPicked] = useState(new Set())
+  const [assigning, setAssigning] = useState(false)
+  const [viewing, setViewing] = useState(null)
+  const [importResult, setImportResult] = useState(null)
+
+  const debounced = useDebounced(search, 200)
+  const effectiveClassId = classId || classes[0]?.id || ''
+
+  const { data, loading, error, refetch } = useQuery(
+    () => GroupAPI.list(effectiveClassId ? { class_id: effectiveClassId } : {}),
+    [effectiveClassId],
+    { enabled: Boolean(classReady) },
+  )
+
+  const teachers = useMemo(
+    () => (data?.groups || []).map((g) => ({ id: g.teacher_id, name: g.teacher_name })),
+    [data],
+  )
+
+  const unassigned = useMemo(() => {
+    const q = debounced.trim().toLowerCase()
+    return (data?.unassigned || []).filter((b) => !q || b.boy_name.toLowerCase().includes(q))
+  }, [data, debounced])
+
+  const visibleGroups = useMemo(() => {
+    const q = debounced.trim().toLowerCase()
+    return (data?.groups || []).filter((g) => {
+      if (teacherFilter && String(g.teacher_id) !== teacherFilter) return false
+      if (!q) return true
+      return (
+        g.teacher_name.toLowerCase().includes(q) ||
+        g.boys.some((b) => b.boy_name.toLowerCase().includes(q))
+      )
+    })
+  }, [data, teacherFilter, debounced])
+
+  const togglePick = (boyId) =>
+    setPicked((prev) => {
+      const next = new Set(prev)
+      next.has(boyId) ? next.delete(boyId) : next.add(boyId)
+      return next
+    })
+
+  const assign = async () => {
+    if (!selectedTeacher) return toast.error('اختر الخادم الأول.')
+    if (!picked.size) return toast.error('اختار أولاد على الأقل.')
+    setAssigning(true)
+    try {
+      const res = await GroupAPI.assign(Number(selectedTeacher), [...picked])
+      toast.success(`اتوزع ${res.assigned} على ${res.teacher_name}.`)
+      setPicked(new Set())
+      refetch()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  const unassign = async (boy) => {
+    const ok = await modal.confirm({
+      title: `إلغاء توزيع "${boy.boy_name}"؟`,
+      message: 'هيتحط في قائمة بدون مجموعة تاني.',
+      confirmLabel: 'إلغاء التوزيع',
+    })
+    if (!ok) return
+    try {
+      await GroupAPI.unassign([boy.boy_id])
+      toast.success('تم إلغاء التوزيع.')
+      refetch()
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const unassignMany = async (boys) => {
+    if (!boys.length) return
+    const ok = await modal.confirm({
+      title: `إلغاء توزيع ${boys.length} ولد؟`,
+      message: 'هيتحطوا في قائمة بدون مجموعة تاني.',
+      confirmLabel: 'إلغاء التوزيع',
+    })
+    if (!ok) return
+    try {
+      await GroupAPI.unassign(boys.map((b) => b.boy_id))
+      toast.success(`اتلغى توزيع ${boys.length}.`)
+      refetch()
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const boyRow = (b, withActions = true) => (
+    <tr key={b.boy_id}>
+      <td>
+        <span className="table__name">
+          {b.issue_flag && <span className="flag-dot" />}
+          {b.boy_name}
+        </span>
+      </td>
+      <td className="ltr" style={{ textAlign: 'center' }}>
+        {b.phone || '—'}
+      </td>
+      <td>
+        {b.percent !== null && b.percent !== undefined ? (
+          <span className="row" style={{ gap: 8 }}>
+            <span className="group-att">
+              <span className="group-att__fill" style={{ width: `${b.percent}%` }} />
+            </span>
+            <span className="xsmall bold nowrap">
+              {b.present}/{b.total ?? b.present + b.absent} ({b.percent}%)
+            </span>
+          </span>
+        ) : (
+          <span className="muted xsmall">—</span>
+        )}
+      </td>
+      <td>
+        {b.last_followup ? (
+          <span className="row" style={{ gap: 6 }}>
+            <Badge kind="blue">{followLabel(b.last_followup.status)}</Badge>
+            <span className="xsmall muted">{formatShort(b.last_followup.action_date)}</span>
+          </span>
+        ) : (
+          <span className="muted xsmall">—</span>
+        )}
+      </td>
+      <td className="muted small">{b.note || '—'}</td>
+      {withActions && (
+        <td>
+          <div className="table__actions">
+            <IconButton icon={<Icon name="eye" size={16} />} label="عرض الملف" onClick={() => setViewing(b)} />
+            {canWrite && (
+              <IconButton icon={<Icon name="close" size={16} />} label="إلغاء التوزيع" danger onClick={() => unassign(b)} />
+            )}
+          </div>
+        </td>
+      )}
+    </tr>
+  )
+
+  const HEADERS = ['الاسم', 'التليفون', 'الحضور', 'آخر افتقاد', 'ملاحظات', '']
+
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1 className="page-head__title">المجموعات</h1>
+          <div className="page-head__sub">
+            {data
+              ? `${data.groups.length} مجموعة · ${data.unassigned_count} بدون مجموعة`
+              : 'توزيع الأولاد على الخدام'}
+          </div>
+        </div>
+
+        <FileMenu
+          label="إكسل"
+          items={[
+            {
+              key: 'export',
+              label: 'تصدير شيت التوزيع',
+              icon: 'download',
+              onClick: () => GroupAPI.export(effectiveClassId),
+            },
+            canWrite && {
+              key: 'import',
+              label: 'رفع شيت توزيع',
+              icon: 'upload',
+              fileInput: true,
+              onFile: async (file) => {
+                try {
+                  setImportResult(await GroupAPI.import(file))
+                  refetch()
+                } catch (err) {
+                  toast.error(err.message)
+                }
+              },
+            },
+          ].filter(Boolean)}
+        />
+      </div>
+
+      <Toolbar>
+        {showClassPicker && (
+          <Select
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="select--plain"
+            style={{ minWidth: 180 }}
+          >
+            <option value="">كل الفصول</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
+
+        <Select
+          value={teacherFilter}
+          onChange={(e) => setTeacherFilter(e.target.value)}
+          className="select--plain"
+          style={{ minWidth: 170 }}
+        >
+          <option value="">كل الخدام</option>
+          {teachers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </Select>
+
+        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+        <ToolbarSpacer />
+        {isSuperAdmin && <Badge kind="gold">أدمن عام</Badge>}
+      </Toolbar>
+
+      {loading ? (
+        <div style={{ marginTop: 'var(--sp-4)' }}>
+          <SkeletonRows rows={6} cols={6} />
+        </div>
+      ) : error ? (
+        <ErrorState error={error} onRetry={refetch} />
+      ) : (
+        <>
+          {/* ---------------------------------------------------- assign panel */}
+          {canWrite && (
+            <section className="assign-panel card">
+              <div className="card__head">
+                <span className="card__title">توزيع المجموعات</span>
+                <span className="small muted">
+                  {picked.size > 0 ? `تم اختيار ${picked.size}` : 'اختار الخادم والأولاد'}
+                </span>
+              </div>
+              <div className="card__body stack">
+                <div className="row" style={{ flexWrap: 'wrap' }}>
+                  <Select
+                    value={selectedTeacher}
+                    onChange={(e) => setSelectedTeacher(e.target.value)}
+                    style={{ minWidth: 220 }}
+                  >
+                    <option value="">— اختر الخادم —</option>
+                    {teachers.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <ToolbarSpacer />
+                  <Button variant="ghost" size="sm" onClick={() => setPicked(new Set(unassigned.map((b) => b.boy_id)))}>
+                    اختيار الكل
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setPicked(new Set())}>
+                    مسح الاختيار
+                  </Button>
+                  <Button variant="primary" loading={assigning} disabled={!picked.size} onClick={assign} icon={<Icon name="check" size={16} />}>
+                    حفظ التوزيع
+                  </Button>
+                </div>
+
+                {unassigned.length === 0 ? (
+                  <p className="small muted">
+                    <Icon name="check" size={15} /> كل الأولاد متوزعين.
+                  </p>
+                ) : (
+                  <div className="assign-grid">
+                    {unassigned.map((b) => (
+                      <label key={b.boy_id} className={`assign-chip ${picked.has(b.boy_id) ? 'is-picked' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={picked.has(b.boy_id)}
+                          onChange={() => togglePick(b.boy_id)}
+                        />
+                        <span className="truncate">{b.boy_name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* --------------------------------------------------- group cards */}
+          {visibleGroups.length === 0 && !unassigned.length ? (
+            <EmptyState
+              icon="groups"
+              title="لا توجد مجموعات"
+              message="وزّع الأولاد على الخدام من اللوحة فوق."
+            />
+          ) : (
+            <div className="group-list">
+              {visibleGroups.map((g) => (
+                <section key={g.teacher_id} className="group-card card">
+                  <div className="group-card__head">
+                    <div className="row">
+                      <Avatar name={g.teacher_name} size="md" />
+                      <div>
+                        <div className="group-card__name">{g.teacher_name}</div>
+                        <div className="xsmall muted">
+                          {g.phone ? <span className="ltr">{g.phone}</span> : 'بدون تليفون'}
+                          {' · '}
+                          {g.boys_count} ولد
+                        </div>
+                      </div>
+                    </div>
+                    <div className="row" style={{ gap: 8 }}>
+                      {canWrite && g.boys.length > 0 && (
+                        <Button variant="ghost" size="sm" onClick={() => unassignMany(g.boys)}>
+                          إلغاء الكل
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {g.boys.length === 0 ? (
+                    <div className="card__body">
+                      <p className="small muted">لا يوجد أولاد في مجموعة الخادم ده.</p>
+                    </div>
+                  ) : (
+                    <div className="table-wrap group-table">
+                      <table className="table table--compact">
+                        <thead>
+                          <tr>
+                            {HEADERS.map((h, i) => (
+                              <th key={i} style={{ textAlign: 'start' }}>
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>{g.boys.map((b) => boyRow(b))}</tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              ))}
+
+              {unassigned.length > 0 && (
+                <section className="group-card card group-card--empty">
+                  <div className="group-card__head">
+                    <div className="row">
+                      <span className="group-card__icon">
+                        <Icon name="boys" size={20} />
+                      </span>
+                      <div>
+                        <div className="group-card__name">بدون مجموعة</div>
+                        <div className="xsmall muted">{unassigned.length} ولد لسه ماتوزّعوش</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="table-wrap group-table">
+                    <table className="table table--compact">
+                      <thead>
+                        <tr>
+                          {HEADERS.map((h, i) => (
+                            <th key={i} style={{ textAlign: 'start' }}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>{unassigned.map((b) => boyRow(b))}</tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      <BoyProfileModal open={Boolean(viewing)} boy={viewing} onClose={() => setViewing(null)} />
+
+      <ImportResult
+        open={Boolean(importResult)}
+        result={importResult}
+        onClose={() => setImportResult(null)}
+        noun="التوزيع"
+      />
+    </>
+  )
+}

@@ -1,0 +1,49 @@
+/* Servant weekly check sheet. */
+
+.check-person {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.check-person .xsmall {
+  direction: ltr;
+  text-align: start;
+}
+
+.note-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: start;
+  width: 100%;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.note-btn:hover {
+  background: var(--gold-soft);
+  border-color: var(--gold-border);
+  color: var(--gold-ink);
+}
+
+.att-savebar {
+  position: sticky;
+  bottom: var(--sp-4);
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--navy);
+  border: 1px solid var(--navy-dark);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}

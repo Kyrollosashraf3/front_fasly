@@ -1,0 +1,13 @@
+/* Profile + account administration. */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  align-items: start;
+}
+
+.profile-grid .card__title {
+  margin-bottom: var(--sp-3);
+}

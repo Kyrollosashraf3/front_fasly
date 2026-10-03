@@ -1,0 +1,121 @@
+/* Servant follow-up groups. */
+
+.assign-panel {
+  margin-top: var(--sp-4);
+}
+
+.assign-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.assign-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  max-width: 220px;
+  transition: all var(--dur-fast) var(--ease);
+  user-select: none;
+}
+
+.assign-chip:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-muted);
+}
+
+.assign-chip.is-picked {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.assign-chip.is-picked input {
+  accent-color: var(--gold);
+}
+
+.assign-chip input {
+  cursor: pointer;
+  flex: none;
+}
+
+/* ------------------------------------------------------------- group cards */
+
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  margin-top: var(--sp-5);
+}
+
+.group-card {
+  overflow: hidden;
+}
+
+.group-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.group-card__name {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: var(--text-base);
+}
+
+.group-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--border-strong);
+  color: var(--text-muted);
+}
+
+.group-card--empty {
+  border-style: dashed;
+}
+
+.group-table {
+  padding: 0 var(--sp-4) var(--sp-3);
+  background: transparent;
+}
+
+.group-att {
+  display: inline-block;
+  width: 90px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  overflow: hidden;
+  flex: none;
+}
+
+.group-att__fill {
+  display: block;
+  height: 100%;
+  background: var(--navy);
+  border-radius: var(--radius-pill);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
