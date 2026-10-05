@@ -106,11 +106,11 @@ async function request(path, { method = 'GET', body, formData, signal, raw = fal
 
 /**
  * Login is the one endpoint FastAPI expects as form data
- * (`OAuth2PasswordRequestForm`: username = email, password).
+ * (`OAuth2PasswordRequestForm`: username = phone, password).
  */
-async function login(email, password) {
+async function login(identifier, password) {
   const form = new URLSearchParams()
-  form.set('username', email)
+  form.set('username', identifier)
   form.set('password', password)
 
   let res
@@ -126,7 +126,7 @@ async function login(email, password) {
 
   const data = await parseBody(res)
   if (!res.ok) {
-    if (res.status === 401) throw new ApiError(401, 'البريد الإلكتروني أو كلمة المرور غير صحيحة.')
+    if (res.status === 401) throw new ApiError(401, 'رقم التليفون/البريد وكلمة المرور غير صحيحين.')
     throw new ApiError(res.status, data?.detail ?? data)
   }
   return data

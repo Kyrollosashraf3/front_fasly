@@ -6,18 +6,30 @@ import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
 import { AuthAPI, BoyAPI, TeacherAPI } from '../../lib/endpoints'
 import { ROLE_OPTIONS } from '../../lib/roles'
+import { isPhone, normalisePhone } from '../../lib/constants'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { Field, Input, Select } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { Table } from '../../components/ui/Table'
-import { RoleBadge } from '../../components/ui/Badge'
+import { Badge, RoleBadge } from '../../components/ui/Badge'
 import { DetailRow, SectionTitle } from '../../components/ui/Bits'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
+import { FileMenu } from '../../components/ui/FileMenu'
+import { ImportResult } from '../../components/ui/ImportResult'
 import './profile.css'
 
 const OWNER_ROLES = ['teacher', 'admin']
-const EMPTY_USER = { email: '', password: '', role: 'user', teacher_id: '', boy_id: '' }
+const EMPTY_USER = {
+  phone: '',
+  password: '',
+  role: 'user',
+  teacher_id: '',
+  boy_id: '',
+}
+
+/** How a login is addressed: the phone he signs in with. */
+const handleOf = (u) => u?.phone || '—'
 
 /**
  * ProfilePage — who am I, my password, and (for managers) every login.
@@ -31,6 +43,7 @@ export default function ProfilePage() {
   const [pw, setPw] = useState('')
   const [pwBusy, setPwBusy] = useState(false)
   const [dialog, setDialog] = useState(null) // null | 'new' | user object
+  const [importResult, setImportResult] = useState(null)
 
   const isMgr = can.manageAccounts(user)
 
@@ -89,7 +102,7 @@ export default function ProfilePage() {
     if (u.id === user.id) return toast.error('لا يمكنك حذف حسابك الخاص.')
     const ok = await modal.confirm({
       title: 'حذف الحساب؟',
-      message: `"${u.email}" سيتم حذفه نهائيًا.`,
+      message: `"${handleOf(u)}" سيتم حذفه نهائيًا.`,
       confirmLabel: 'حذف',
     })
     if (!ok) return
@@ -107,7 +120,7 @@ export default function ProfilePage() {
       <div className="page-head">
         <div>
           <h1 className="page-head__title">الحساب</h1>
-          <div className="page-head__sub">{user?.email}</div>
+          <div className="page-head__sub">{handleOf(user)}</div>
         </div>
       </div>
 
@@ -116,7 +129,7 @@ export default function ProfilePage() {
           <h3 className="card__title">الملف الشخصي</h3>
           <div className="details">
             <DetailRow label="الاسم">{user?.display_name || '—'}</DetailRow>
-            <DetailRow label="البريد الإلكتروني">{user?.email}</DetailRow>
+            <DetailRow label="رقم التليفون">{user?.phone || '—'}</DetailRow>
             <DetailRow label="الصلاحية">
               <RoleBadge role={user?.role} />
             </DetailRow>
@@ -149,9 +162,42 @@ export default function ProfilePage() {
         <section style={{ marginTop: 'var(--sp-6)' }}>
           <SectionTitle
             action={
-              <Button variant="primary" size="sm" icon={<Icon name="plus" size={16} />} onClick={() => setDialog('new')}>
-                إضافة حساب
-              </Button>
+              <div className="row" style={{ gap: 'var(--sp-2)' }}>
+                <FileMenu
+                  accept=".xlsx,.xlsm,.csv"
+                  items={[
+                    {
+                      key: 'template',
+                      label: 'تنزيل نموذج إكسل',
+                      icon: 'download',
+                      onClick: () => AuthAPI.usersTemplate(),
+                    },
+                    {
+                      key: 'template-csv',
+                      label: 'تنزيل نموذج CSV',
+                      icon: 'download',
+                      onClick: () => AuthAPI.usersTemplateCsv(),
+                    },
+                    {
+                      key: 'import',
+                      label: 'استيراد الحسابات',
+                      icon: 'upload',
+                      fileInput: true,
+                      onFile: async (file) => {
+                        try {
+                          setImportResult(await AuthAPI.import(file))
+                          refetchUsers()
+                        } catch (err) {
+                          toast.error(err.message)
+                        }
+                      },
+                    },
+                  ]}
+                />
+                <Button variant="primary" size="sm" icon={<Icon name="plus" size={16} />} onClick={() => setDialog('new')}>
+                  إضافة حساب
+                </Button>
+              </div>
             }
           >
             الحسابات
@@ -169,7 +215,21 @@ export default function ProfilePage() {
               rows={users}
               rowKey={(u) => u.id}
               columns={[
-                { key: 'email', label: 'البريد الإلكتروني', render: (u) => <span className="table__name">{u.email}</span> },
+                {
+                  key: 'handle',
+                  label: 'رقم التليفون',
+                  render: (u) => (
+                    <span className="table__name">
+                      <span dir="ltr">{handleOf(u)}</span>
+                      {u.pending_signup && (
+                        <>
+                          {' '}
+                          <Badge kind="gold">بانتظار التسجيل</Badge>
+                        </>
+                      )}
+                    </span>
+                  ),
+                },
                 {
                   key: 'role',
                   label: 'الصلاحية',
@@ -216,6 +276,13 @@ export default function ProfilePage() {
           refetchUsers()
         }}
       />
+
+      <ImportResult
+        open={Boolean(importResult)}
+        result={importResult}
+        onClose={() => setImportResult(null)}
+        noun="الحسابات"
+      />
     </>
   )
 }
@@ -235,7 +302,7 @@ function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onS
     setForm(
       isEdit
         ? {
-            email: target.email,
+            phone: target.phone || '',
             password: '',
             role: target.role,
             teacher_id: target.teacher_id ? String(target.teacher_id) : '',
@@ -288,15 +355,22 @@ function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onS
   const submit = async (e) => {
     e.preventDefault()
     const next = {}
-    if (!form.email.trim()) next.email = 'البريد مطلوب.'
-    if (!isEdit && form.password.length < 8) next.password = 'كلمة المرور 8 حروف على الأقل.'
+    const phone = normalisePhone(form.phone)
+
+    // A new account is addressed by phone; the owner sets his own password
+    // later from the signup screen, so the password field stays optional.
+    if (!isEdit && !phone) next.phone = 'رقم التليفون مطلوب.'
+    else if (phone && !isPhone(phone)) next.phone = 'رقم التليفون غير صحيح (01xxxxxxxxx).'
+    if (form.password && form.password.length < 8)
+      next.password = 'كلمة المرور 8 حروف على الأقل.'
     if (OWNER_ROLES.includes(role) && !form.teacher_id) next.owner = 'اختر الخادم.'
     if (role === 'user' && !form.boy_id) next.owner = 'اختر الولد.'
     setErrors(next)
     if (Object.keys(next).length) return
 
-    const payload = { email: form.email.trim(), role }
-    if (!isEdit) payload.password = form.password
+    const payload = { role }
+    payload.phone = phone || null
+    if (form.password) payload.password = form.password
 
     // The schema re-validates the owner on every update that carries `role`,
     // so both keys travel together — the unused one is explicitly null.
@@ -322,7 +396,7 @@ function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onS
       }
       onSaved?.()
     } catch (err) {
-      setErrors({ email: err.message })
+      setErrors({ phone: err.message })
     } finally {
       setBusy(false)
     }
@@ -335,7 +409,7 @@ function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onS
       open
       onClose={onClose}
       title={isEdit ? 'تعديل حساب' : 'إضافة حساب'}
-      sub={isEdit ? target.email : 'حساب جديد لخادم أو ولد أو أمين'}
+      sub={isEdit ? handleOf(target) : 'رقم التليفون + الصلاحية والمسند إليه'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -348,31 +422,42 @@ function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onS
       }
     >
       <form className="stack" onSubmit={submit} noValidate>
-        <Field label="البريد الإلكتروني" required htmlFor="u-email" error={errors.email}>
+        <Field
+          label="رقم التليفون"
+          required={!isEdit}
+          htmlFor="u-phone"
+          error={errors.phone}
+          hint="به يسجّل الدخول ويكمل التسجيل"
+        >
           <Input
-            id="u-email"
-            type="email"
+            id="u-phone"
+            type="tel"
             dir="ltr"
-            autoComplete="username"
-            value={form.email}
-            error={errors.email}
-            onChange={set('email')}
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="01012345678"
+            value={form.phone}
+            error={errors.phone}
+            onChange={set('phone')}
           />
         </Field>
 
-        {!isEdit && (
-          <Field label="كلمة المرور" required htmlFor="u-pass" error={errors.password}>
-            <Input
-              id="u-pass"
-              type="password"
-              minLength={8}
-              autoComplete="new-password"
-              value={form.password}
-              error={errors.password}
-              onChange={set('password')}
-            />
-          </Field>
-        )}
+        <Field
+          label="كلمة المرور"
+          htmlFor="u-pass"
+          error={errors.password}
+          hint={isEdit ? 'اتركه فارغًا عشان تسيبها زي ما هي.' : 'اتركه فارغًا لو هيكمل التسجيل بنفسه.'}
+        >
+          <Input
+            id="u-pass"
+            type="password"
+            minLength={8}
+            autoComplete="new-password"
+            value={form.password}
+            error={errors.password}
+            onChange={set('password')}
+          />
+        </Field>
 
         <Field label="الصلاحية" htmlFor="u-role">
           <Select id="u-role" value={form.role} onChange={set('role')}>

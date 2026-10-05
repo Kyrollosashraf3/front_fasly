@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { BottomBar } from './BottomBar'
 import { TitleProvider } from '../../context/TitleContext'
 
 /** Closes the mobile drawer whenever the route changes. */
@@ -42,6 +43,8 @@ export function AppShell() {
             <Outlet />
           </main>
         </div>
+
+        <BottomBar />
       </div>
     </TitleProvider>
   )

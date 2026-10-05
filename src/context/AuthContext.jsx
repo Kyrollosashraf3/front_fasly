@@ -9,7 +9,8 @@ const AuthContext = createContext(null)
  * AuthContext — session + identity + the class catalogue.
  *
  * Flow: login() posts the token, then loads `me` and resolves which classes
- * this login may open (managers: all; servant/boy: the class they belong to).
+ * this login may open (super_admin: all; everyone else - admin, servant and
+ * boy alike - only the class he belongs to).
  * `classes` is cached here so every screen shares one request.
  */
 export function AuthProvider({ children }) {
@@ -19,9 +20,13 @@ export function AuthProvider({ children }) {
   const [classReady, setClassReady] = useState(false)
   const bootstrapRef = useRef(false)
 
-  /** Which class does this login belong to? (null for super_admin) */
+  /**
+   * Which class does this login belong to? (null = he sees every class)
+   * Only a super_admin is class-less: an admin is attached to a servant and
+   * a servant/boy to his own class, so the answer comes from the owner link.
+   */
   const resolveMyClass = useCallback(async (me) => {
-    if (!me || isManager(me)) return null
+    if (!me || isSuperAdmin(me)) return null
     try {
       if (me.teacher_id) {
         const t = await TeacherAPI.get(me.teacher_id)
@@ -43,7 +48,7 @@ export function AuthProvider({ children }) {
       setClassReady(false)
       try {
         const all = await ClassAPI.list()
-        if (!me || isManager(me)) {
+        if (!me || isSuperAdmin(me)) {
           setClasses(all)
           return all
         }
@@ -101,10 +106,16 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = useCallback(
-    async (email, password) => {
-      const { access_token } = await AuthAPI.login(email, password)
+    async (identifier, password) => {
+      const { access_token } = await AuthAPI.login(identifier, password)
       return bootstrap(access_token)
     },
+    [bootstrap],
+  )
+
+  /** The signup screen already holds a token - open the session with it. */
+  const loginWithToken = useCallback(
+    async (access_token) => bootstrap(access_token),
     [bootstrap],
   )
 
@@ -130,6 +141,7 @@ export function AuthProvider({ children }) {
       ready: status === 'ready',
       isAuthenticated: Boolean(user),
       login,
+      loginWithToken,
       logout,
       refreshClasses,
       refreshUser,
@@ -143,7 +155,7 @@ export function AuthProvider({ children }) {
       isBoy: isBoy(user),
       can,
     }
-  }, [user, classes, classReady, status, login, logout, refreshClasses, refreshUser])
+  }, [user, classes, classReady, status, login, loginWithToken, logout, refreshClasses, refreshUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -1,10 +1,11 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// The API lives on the FastAPI server (default :9003). In dev we proxy the
-// handful of route prefixes it exposes so the browser stays same-origin and
-// CORS never enters the picture. Anything else (VITE_API_BASE) is for prod.
-const API_TARGET = process.env.VITE_API_TARGET || 'http://127.0.0.1:9003'
+// The API lives on the FastAPI server (default :9001, see back_fasly/.env and
+// START_Fasly.bat). In dev we proxy the handful of route prefixes it exposes
+// so the browser stays same-origin and CORS never enters the picture.
+// Anything else (VITE_API_BASE) is for prod.
+const API_TARGET = process.env.VITE_API_TARGET || 'http://127.0.0.1:9001'
 
 const apiPrefixes = [
   '/auth',

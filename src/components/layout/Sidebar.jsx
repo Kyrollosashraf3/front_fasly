@@ -3,10 +3,12 @@ import { useAuth } from '../../context/AuthContext'
 import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { ROLE_LABELS } from '../../lib/roles'
+import { userLabel } from '../../lib/constants'
+import { accountLinks, classHref, classIdFrom, classLinks, navClass, rootLinks } from './navLinks'
 
 function NavItem({ to, icon, label, end, onClick }) {
   return (
-    <NavLink to={to} end={end} className="nav-link" onClick={onClick}>
+    <NavLink to={to} end={end} className={navClass()} onClick={onClick}>
       <span className="nav-link__icon">
         <Icon name={icon} size={17} />
       </span>
@@ -17,21 +19,13 @@ function NavItem({ to, icon, label, end, onClick }) {
 
 /** Global links — shown on every screen. */
 function RootNav({ onNavigate }) {
-  const { user, isBoy, can } = useAuth()
-  const dashboards = can.seeDashboards(user)
-
+  const auth = useAuth()
   return (
     <div className="sidebar__section">
       <div className="sidebar__label">القائمة</div>
-      <NavItem to="/" icon="home" label="الرئيسية" end onClick={onNavigate} />
-      {!isBoy && <NavItem to="/groups" icon="groups" label="المجموعات" onClick={onNavigate} />}
-      {!isBoy && <NavItem to="/reveal" icon="sparkles" label="اكشفلي" onClick={onNavigate} />}
-      {dashboards && (
-        <NavItem to="/dashboard/boys" icon="chart" label="أداء الأولاد" onClick={onNavigate} />
-      )}
-      {dashboards && (
-        <NavItem to="/dashboard/teachers" icon="star" label="أداء الخدام" onClick={onNavigate} />
-      )}
+      {rootLinks(auth).map((l) => (
+        <NavItem key={l.to} {...l} onClick={onNavigate} />
+      ))}
     </div>
   )
 }
@@ -39,21 +33,11 @@ function RootNav({ onNavigate }) {
 /** The class-scoped group: overview / boys / attendance / servants / follow-up. */
 function ClassNav({ classId, onNavigate }) {
   const { isManager, classLabel, classOf } = useAuth()
-  const base = `/class/${classId}`
   const cls = classOf(classId)
-
-  const links = [
-    { to: base, label: 'نظرة عامة', icon: 'home', end: true },
-    { to: `${base}/boys`, label: 'بيانات الأولاد', icon: 'boys' },
-    { to: `${base}/attendance`, label: 'الحضور', icon: 'calendar' },
-    isManager && { to: `${base}/teachers`, label: 'الخدام', icon: 'servant' },
-    isManager && { to: `${base}/checks`, label: 'متابعة الخدام', icon: 'clipboard' },
-    { to: `${base}/followup`, label: 'الافتقاد', icon: 'heart' },
-  ].filter(Boolean)
 
   return (
     <>
-      <NavLink to="/" className="nav-link nav-link--back" end onClick={onNavigate}>
+      <NavLink to="/" className={navClass('nav-link nav-link--back')} end onClick={onNavigate}>
         <span className="nav-link__icon">
           <Icon name="chevronStart" size={15} />
         </span>
@@ -67,8 +51,15 @@ function ClassNav({ classId, onNavigate }) {
 
       <div className="sidebar__section">
         <div className="sidebar__label">إدارة الفصل</div>
-        {links.map((l) => (
-          <NavItem key={l.to} {...l} onClick={onNavigate} />
+        {classLinks({ isManager }).map((l) => (
+          <NavItem
+            key={l.path}
+            to={classHref(classId, l.path)}
+            icon={l.icon}
+            label={l.label}
+            end={l.end}
+            onClick={onNavigate}
+          />
         ))}
       </div>
     </>
@@ -95,8 +86,7 @@ export function Sidebar({ onClose }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
-  const match = pathname.match(/^\/class\/(\d+)/)
-  const classId = match ? match[1] : null
+  const classId = classIdFrom(pathname)
 
   const handleLogout = () => {
     logout()
@@ -121,14 +111,16 @@ export function Sidebar({ onClose }) {
 
       <div className="sidebar__footer">
         <div className="sidebar__user">
-          <Avatar name={user?.display_name || user?.email} size="sm" gold />
+          <Avatar name={userLabel(user)} size="sm" gold />
           <div className="grow" style={{ minWidth: 0 }}>
-            <div className="sidebar__user-name">{user?.display_name || user?.email}</div>
+            <div className="sidebar__user-name">{userLabel(user)}</div>
             <div className="sidebar__user-role">{ROLE_LABELS[user?.role] || user?.role}</div>
           </div>
         </div>
 
-        <NavItem to="/profile" icon="user" label="الحساب" onClick={onClose} />
+        {accountLinks.map((l) => (
+          <NavItem key={l.to} {...l} onClick={onClose} />
+        ))}
 
         <button type="button" className="nav-link" onClick={handleLogout} style={{ width: '100%' }}>
           <span className="nav-link__icon">

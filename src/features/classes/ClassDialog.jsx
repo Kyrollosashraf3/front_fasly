@@ -7,13 +7,15 @@ import { Field, Input, Select } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { Icon } from '../../components/ui/Icon'
 import { ClassAPI } from '../../lib/endpoints'
+import { CLASS_NAMES } from '../../lib/constants'
 import { ApiError } from '../../lib/api'
 
-const EMPTY = { name: '', grade_number: 1, academic_year: '' }
+const EMPTY = { name: '', academic_year: '' }
 
 const defaultYear = () => {
   const now = new Date()
-  const start = now.getMonth() >= 8 ? now.year : now.year - 1
+  const year = now.getFullYear()
+  const start = now.getMonth() >= 8 ? year : year - 1
   return `${start}/${start + 1}`
 }
 
@@ -32,7 +34,7 @@ export function ClassDialog({ class: klass, onSaved, trigger = 'button' }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(
     klass
-      ? { name: klass.name, grade_number: klass.grade_number, academic_year: klass.academic_year }
+      ? { name: klass.name, academic_year: klass.academic_year }
       : { ...EMPTY, academic_year: defaultYear() },
   )
   const [errors, setErrors] = useState({})
@@ -43,7 +45,7 @@ export function ClassDialog({ class: klass, onSaved, trigger = 'button' }) {
 
   const validate = () => {
     const next = {}
-    if (!form.name.trim()) next.name = 'اسم الفصل مطلوب.'
+    if (!CLASS_NAMES.includes(form.name)) next.name = 'اختر اسم الفصل من القائمة.'
     if (!/^\d{4}\s*\/\s*\d{4}$/.test(form.academic_year.trim()))
       next.academic_year = 'الصيغة: 2026/2027'
     setErrors(next)
@@ -56,7 +58,6 @@ export function ClassDialog({ class: klass, onSaved, trigger = 'button' }) {
     setBusy(true)
     const payload = {
       name: form.name.trim(),
-      grade_number: Number(form.grade_number),
       academic_year: form.academic_year.trim(),
     }
     try {
@@ -130,37 +131,34 @@ export function ClassDialog({ class: klass, onSaved, trigger = 'button' }) {
       >
         <form className="stack" onSubmit={submit} noValidate>
           <Field label="اسم الفصل" required htmlFor="cls-name" error={errors.name}>
-            <Input
+            <Select
               id="cls-name"
-              placeholder="مثال: أولى إبتدائي"
               value={form.name}
               error={errors.name}
               onChange={set('name')}
-            />
+            >
+              <option value="">— اختر الفصل —</option>
+              {!CLASS_NAMES.includes(form.name) && form.name ? (
+                <option value={form.name}>{form.name}</option>
+              ) : null}
+              {CLASS_NAMES.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </Select>
           </Field>
 
-          <div className="grid-2">
-            <Field label="الصف" hint="من 1 لـ 6" htmlFor="cls-grade">
-              <Select id="cls-grade" value={form.grade_number} onChange={set('grade_number')}>
-                {Array.from({ length: 6 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <Field label="العام الدراسي" required htmlFor="cls-year" error={errors.academic_year}>
-              <Input
-                id="cls-year"
-                dir="ltr"
-                placeholder="2026/2027"
-                value={form.academic_year}
-                error={errors.academic_year}
-                onChange={set('academic_year')}
-              />
-            </Field>
-          </div>
+          <Field label="العام الدراسي" required htmlFor="cls-year" error={errors.academic_year}>
+            <Input
+              id="cls-year"
+              dir="ltr"
+              placeholder="2026/2027"
+              value={form.academic_year}
+              error={errors.academic_year}
+              onChange={set('academic_year')}
+            />
+          </Field>
 
           <button type="submit" className="sr-only" tabIndex={-1} aria-hidden="true" />
         </form>

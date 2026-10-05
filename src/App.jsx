@@ -4,6 +4,7 @@ import { AppShell } from './components/layout/AppShell'
 import { Toasts } from './components/ui/Toasts'
 
 import LoginPage from './features/auth/LoginPage'
+import SignUpPage from './features/auth/SignUpPage'
 import HomePage from './features/home/HomePage'
 import ClassOverviewPage from './features/classes/ClassOverviewPage'
 import BoysPage from './features/boys/BoysPage'
@@ -33,6 +34,7 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
 
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>

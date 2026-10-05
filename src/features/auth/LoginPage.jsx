@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/Button'
 import { Field, Input } from '../../components/ui/Field'
 import { Icon } from '../../components/ui/Icon'
 import { ApiError } from '../../lib/api'
+import { isPhone, normalisePhone } from '../../lib/constants'
+import { AuthBrand } from './AuthBrand'
 import './login.css'
 
 export default function LoginPage() {
@@ -16,7 +18,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
@@ -26,9 +28,9 @@ export default function LoginPage() {
 
   const validate = () => {
     const next = {}
-    if (!email.trim()) next.email = 'البريد الإلكتروني مطلوب.'
-    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()))
-      next.email = 'البريد الإلكتروني غير صحيح.'
+    const value = identifier.trim()
+    if (!value) next.identifier = 'رقم التليفون مطلوب.'
+    else if (!isPhone(value)) next.identifier = 'اكتب رقم تليفون صحيح (01xxxxxxxxx).'
     if (!password) next.password = 'كلمة المرور مطلوبة.'
     setErrors(next)
     return Object.keys(next).length === 0
@@ -39,9 +41,11 @@ export default function LoginPage() {
     setFormError('')
     if (!validate()) return
 
+    const handle = normalisePhone(identifier)
+
     setBusy(true)
     try {
-      await login(email.trim(), password)
+      await login(handle, password)
       toast.success('مرحبًا بعودتك.')
       navigate(location.state?.from || '/', { replace: true })
     } catch (err) {
@@ -62,26 +66,7 @@ export default function LoginPage() {
   return (
     <div className="login">
       {/* Brand panel — the visual signature of the app. */}
-      <aside className="login__brand">
-        <div className="login__mark">ف</div>
-        <h1 className="login__wordmark">فصلي</h1>
-        <div className="login__rule" />
-        <p className="login__tagline">
-          نظام إدارة مدارس الأحد — الحضور، الافتقاد، ومتابعة الخدام في مكان واحد.
-        </p>
-
-        <ul className="login__points">
-          <li>
-            <Icon name="calendar" size={17} /> حضور الجمعة بضغطة واحدة
-          </li>
-          <li>
-            <Icon name="heart" size={17} /> سجل افتقاد أسبوعي لكل خادم
-          </li>
-          <li>
-            <Icon name="chart" size={17} /> لوحة متابعة الأداء والغياب المتكرر
-          </li>
-        </ul>
-      </aside>
+      <AuthBrand />
 
       {/* Form panel */}
       <main className="login__panel">
@@ -100,16 +85,17 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Field label="البريد الإلكتروني" required htmlFor="email" error={errors.email}>
+            <Field label="رقم التليفون" required htmlFor="identifier" error={errors.identifier}>
               <Input
-                id="email"
-                type="email"
+                id="identifier"
+                type="tel"
                 dir="ltr"
-                autoComplete="username"
-                placeholder="name@example.com"
-                value={email}
-                error={errors.email}
-                onChange={(e) => setEmail(e.target.value)}
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="01012345678"
+                value={identifier}
+                error={errors.identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
               />
             </Field>
 
@@ -133,7 +119,12 @@ export default function LoginPage() {
 
           <div className="login__hint">
             <Icon name="lock" size={14} />
-            الحساب بيتوفّر من أمين الفصل أو الأدمن العام.
+            <span>
+              الحساب بيتوفّر من أمين الفصل أو الأدمن العام.{' '}
+              <Link to="/signup" className="login__link">
+                سجّل برقمك
+              </Link>
+            </span>
           </div>
         </div>
       </main>

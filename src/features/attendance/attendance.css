@@ -47,7 +47,7 @@
 
 @media (max-width: 768px) {
   .att-savebar {
-    bottom: var(--sp-2);
+    bottom: calc(62px + env(safe-area-inset-bottom));
   }
   .note-btn {
     max-width: none;

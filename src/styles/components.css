@@ -1120,4 +1120,73 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  /* A stretched toolbar made the dropdown anchor to the wrong edge. */
+  .file-menu__list {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (max-width: 560px) {
+  .page-head {
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+  .page-head__title {
+    font-size: var(--text-xl);
+  }
+
+  .toolbar {
+    padding: var(--sp-3);
+    gap: var(--sp-2);
+  }
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tabs__btn {
+    flex: none;
+  }
+
+  .table {
+    font-size: var(--text-sm);
+  }
+  .table th,
+  .table td {
+    padding: 9px var(--sp-3);
+  }
+
+  .modal__body {
+    padding: var(--sp-4);
+  }
+  .modal__head {
+    padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  }
+  .modal__foot {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  }
+  .modal__foot .btn {
+    width: 100%;
+  }
+
+  .card__body,
+  .stat-card {
+    padding: var(--sp-3);
+  }
+
+  .toast-root {
+    inset-inline: var(--sp-3);
+    max-width: none;
+  }
 }

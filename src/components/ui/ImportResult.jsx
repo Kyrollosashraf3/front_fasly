@@ -55,7 +55,7 @@ export function ImportResult({ open, result, onClose, noun = 'السجلات' })
                     {f.row ? `صف ${f.row}:` : '—'}
                   </span>
                   <span className="grow">
-                    <strong>{f.boy_name || f.teacher_name || ''}</strong> {f.error}
+                    <strong>{f.boy_name || f.teacher_name || f.phone || ''}</strong> {f.error}
                   </span>
                 </div>
               ))}

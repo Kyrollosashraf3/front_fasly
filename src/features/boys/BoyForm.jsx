@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useQuery } from '../../hooks'
 import { Button } from '../../components/ui/Button'
 import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { Icon } from '../../components/ui/Icon'
-import { BoyAPI } from '../../lib/endpoints'
+import { BoyAPI, TeacherAPI } from '../../lib/endpoints'
 import { ApiError } from '../../lib/api'
 import { calcAge } from '../../lib/format'
 
@@ -13,6 +14,7 @@ const EMPTY = {
   boy_name: '',
   gender: 'm',
   class_id: '',
+  teacher_id: '',
   birth_date: '',
   phone: '',
   phone_2: '',
@@ -62,6 +64,21 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
   const set = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
+  // Servants of the class being picked - a boy may only be filed under one
+  // of them, so the list has to follow the class select.
+  const { data: servants } = useQuery(
+    () => (form.class_id ? TeacherAPI.list({ class_id: form.class_id }) : Promise.resolve([])),
+    [open, form.class_id],
+    { enabled: open },
+  )
+
+  useEffect(() => {
+    if (!open || !servants) return
+    if (form.teacher_id && !servants.some((t) => String(t.id) === form.teacher_id)) {
+      setForm((f) => ({ ...f, teacher_id: '' }))
+    }
+  }, [open, servants, form.teacher_id])
+
   const validate = () => {
     const next = {}
     if (!form.boy_name.trim()) next.boy_name = 'اسم الولد مطلوب.'
@@ -89,6 +106,9 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
       location: form.location.trim(),
       note: form.note.trim(),
     })
+    // Kept out of `compact` on purpose: `null` means "no servant", which is a
+    // real instruction when editing (it unfiles him from his group).
+    payload.teacher_id = form.teacher_id ? Number(form.teacher_id) : null
 
     try {
       if (isEdit) await BoyAPI.update(boy.id, payload)
@@ -165,6 +185,22 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field
+            label="الخادم"
+            htmlFor="boy-servant"
+            error={errors.teacher_id}
+            hint="الخادم ده هو اللي هياخد حضوره — اختياري"
+          >
+            <Select id="boy-servant" value={form.teacher_id} onChange={set('teacher_id')}>
+              <option value="">— من غير خادم —</option>
+              {(servants || []).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.teacher_name}
                 </option>
               ))}
             </Select>

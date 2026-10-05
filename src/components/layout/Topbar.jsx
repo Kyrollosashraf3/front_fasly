@@ -1,5 +1,6 @@
 import { useAuth } from '../../context/AuthContext'
 import { useTopbarTitle } from '../../context/TitleContext'
+import { userLabel } from '../../lib/constants'
 import { Avatar } from '../ui/Avatar'
 import { Icon } from '../ui/Icon'
 
@@ -7,7 +8,7 @@ import { Icon } from '../ui/Icon'
 export function Topbar({ onMenu }) {
   const { user } = useAuth()
   const title = useTopbarTitle()
-  const name = user?.display_name || user?.email
+  const name = userLabel(user)
 
   return (
     <header className="topbar">

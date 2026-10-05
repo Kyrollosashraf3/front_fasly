@@ -210,7 +210,7 @@ hr {
   }
 }
 
-/* LTR islands inside an RTL page (phone numbers, charts, emails). */
+/* LTR islands inside an RTL page (phone numbers, charts, ids). */
 .ltr {
   direction: ltr;
   unicode-bidi: isolate;

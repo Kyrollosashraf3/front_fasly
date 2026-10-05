@@ -24,6 +24,7 @@ export function BoyDetails({ boy, classLabel }) {
             : '—'}
       </DetailRow>
       <DetailRow label="الفصل">{classLabel ? classLabel(boy.class_id) : boy.class_id}</DetailRow>
+      <DetailRow label="الخادم">{boy.teacher_name || '—'}</DetailRow>
       <DetailRow label="التليفون">
         {boy.phone ? (
           <a className="row ltr" style={{ gap: 6, justifyContent: 'flex-end' }} href={`tel:${boy.phone}`}>
