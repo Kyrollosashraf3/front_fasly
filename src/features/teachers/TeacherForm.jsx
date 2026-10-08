@@ -7,7 +7,17 @@ import { Modal } from '../../components/ui/Modal'
 import { TeacherAPI } from '../../lib/endpoints'
 import { ApiError } from '../../lib/api'
 
-const EMPTY = { teacher_name: '', phone: '', class_id: '', last_visit_date: '', note: '' }
+const EMPTY = {
+  teacher_name: '',
+  phone: '',
+  phone_2: '',
+  zone: '',
+  address: '',
+  location: '',
+  class_id: '',
+  last_visit_date: '',
+  note: '',
+}
 
 const compact = (obj) =>
   Object.fromEntries(
@@ -30,6 +40,10 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
         ? {
             teacher_name: teacher.teacher_name,
             phone: teacher.phone || '',
+            phone_2: teacher.phone_2 || '',
+            zone: teacher.zone || '',
+            address: teacher.address || '',
+            location: teacher.location || '',
             class_id: String(teacher.class_id),
             last_visit_date: teacher.last_visit_date || '',
             note: teacher.note || '',
@@ -55,6 +69,10 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
       last_visit_date: form.last_visit_date || null,
       note: form.note.trim(),
       phone: form.phone.trim(),
+      phone_2: form.phone_2.trim(),
+      zone: form.zone.trim(),
+      address: form.address.trim(),
+      location: form.location.trim(),
     })
     try {
       if (isEdit) await TeacherAPI.update(teacher.id, payload)
@@ -104,6 +122,10 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             <Input id="t-phone" dir="ltr" placeholder="01012345678" value={form.phone} onChange={set('phone')} />
           </Field>
 
+          <Field label="التليفون الثانى" htmlFor="t-phone2">
+            <Input id="t-phone2" dir="ltr" placeholder="01012345678" value={form.phone_2} onChange={set('phone_2')} />
+          </Field>
+
           <Field label="الفصل" required htmlFor="t-class">
             <Select id="t-class" value={form.class_id} onChange={set('class_id')}>
               <option value="">— اختر الفصل —</option>
@@ -115,6 +137,10 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             </Select>
           </Field>
 
+          <Field label="المنطقة/الشارع" htmlFor="t-zone">
+            <Input id="t-zone" placeholder="مثال: مصر الجديدة" value={form.zone} onChange={set('zone')} />
+          </Field>
+
           <Field label="آخر اعتراف / زيارة للأب" htmlFor="t-visit">
             <Input
               id="t-visit"
@@ -124,7 +150,27 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
               onChange={set('last_visit_date')}
             />
           </Field>
+
+          <Field label="رابط الموقع الجغرافى" htmlFor="t-loc">
+            <Input
+              id="t-loc"
+              dir="ltr"
+              placeholder="https://maps.app.goo.gl/..."
+              value={form.location}
+              onChange={set('location')}
+            />
+          </Field>
         </div>
+
+        <Field label="عنوان المنزل بالتفصيل" htmlFor="t-address">
+          <Textarea
+            id="t-address"
+            rows={2}
+            placeholder="العنوان بالتفصيل"
+            value={form.address}
+            onChange={set('address')}
+          />
+        </Field>
 
         <Field label="ملاحظات" htmlFor="t-note">
           <Textarea

@@ -46,7 +46,13 @@ export default function TeachersPage() {
   const rows = useMemo(() => {
     const q = debounced.trim().toLowerCase()
     return (teachers || []).filter(
-      (t) => !q || t.teacher_name.toLowerCase().includes(q) || (t.phone || '').includes(q),
+      (t) =>
+        !q ||
+        t.teacher_name.toLowerCase().includes(q) ||
+        (t.phone || '').includes(q) ||
+        (t.phone_2 || '').includes(q) ||
+        (t.zone || '').toLowerCase().includes(q) ||
+        (t.address || '').toLowerCase().includes(q),
     )
   }, [teachers, debounced])
 
@@ -156,7 +162,7 @@ export default function TeachersPage() {
       </div>
 
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون..." />
+        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون أو العنوان..." />
         <ToolbarSpacer />
         <FileMenu
           items={[
