@@ -25,7 +25,7 @@ const EMPTY = {
   father_name: '',
   national_id: '',
   skills: [],
-  skills_custom: '',
+  custom: '',
   last_visit_date: '',
   note: '',
   issue_flag: false,
@@ -61,7 +61,12 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
             ),
             class_id: String(boy.class_id),
             birth_date: boy.birth_date || '',
-            skills: Array.isArray(boy.skills) ? boy.skills : [],
+            skills: Array.isArray(boy.skills)
+              ? boy.skills.filter((s) => SKILLS.includes(s))
+              : [],
+            custom: Array.isArray(boy.skills)
+              ? boy.skills.filter((s) => !SKILLS.includes(s)).join('، ')
+              : '',
           }
         : { ...EMPTY, class_id: String(defaultClassId ?? classes[0]?.id ?? '') },
     )
@@ -101,8 +106,17 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
     if (!validate()) return
     setBusy(true)
 
+    const { custom, ...rest } = form
+    // The typed «أخرى» skill lives inside the same `skills` array.
+    const customText = custom.trim()
+    const skillsOut = [...form.skills]
+    if (customText)
+      skillsOut.push(
+        ...customText.split('،').map((s) => s.trim()).filter(Boolean),
+      )
+
     const payload = compact({
-      ...form,
+      ...rest,
       boy_name: form.boy_name.trim(),
       class_id: Number(form.class_id),
       birth_date: form.birth_date || null,
@@ -114,15 +128,14 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
       location: form.location.trim(),
       national_id: form.national_id.trim(),
       note: form.note.trim(),
+      skills: skillsOut,
     })
     // Kept out of `compact` on purpose: `null` means "no servant", which is a
     // real instruction when editing (it unfiles him from his group).
     payload.teacher_id = form.teacher_id ? Number(form.teacher_id) : null
-    // Same for the optional enums/text: "" means "clear it", and PATCH only
+    // Same for the optional enums: "" means "clear it", and PATCH only
     // obeys an explicit null.
     payload.father_name = form.father_name || null
-    payload.skills = form.skills
-    payload.skills_custom = form.skills_custom.trim() || null
 
     try {
       if (isEdit) await BoyAPI.update(boy.id, payload)
@@ -277,7 +290,7 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
             />
           </Field>
 
-          <Field label="المهارات" htmlFor="boy-skills" hint="اختار واحد أو أكتر من المهارات">
+          <Field label="المهارات" htmlFor="boy-skills" hint="اختار واحد أو أكتر؛ لو مش موجودة اختار «أخرى» واكتبها">
             <ChipSelect
               options={SKILLS}
               value={form.skills}
@@ -286,14 +299,20 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
             />
           </Field>
 
-          <Field label="المهارة (كتابة)" htmlFor="boy-skill-custom" hint="لو المهارة «أخرى» اكتبها هنا">
-            <Input
-              id="boy-skill-custom"
-              placeholder="مثال: خياطة"
-              value={form.skills_custom}
-              onChange={set('skills_custom')}
-            />
-          </Field>
+          {(form.skills.includes('أخرى') || form.custom.trim()) && (
+            <Field
+              label="اكتب المهارة"
+              htmlFor="boy-skill-custom"
+              hint="ظهرت لأنك اخترت «أخرى» — بتتخزن في نفس عمود المهارات"
+            >
+              <Input
+                id="boy-skill-custom"
+                placeholder="مثال: خياطة"
+                value={form.custom}
+                onChange={set('custom')}
+              />
+            </Field>
+          )}
 
           <Field label="آخر اعتراف / زيارة للأب" htmlFor="boy-visit">
             <Input

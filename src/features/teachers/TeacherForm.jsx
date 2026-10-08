@@ -17,7 +17,7 @@ const EMPTY = {
   location: '',
   father_name: '',
   skills: [],
-  skills_custom: '',
+  custom: '',
   class_id: '',
   last_visit_date: '',
   note: '',
@@ -49,8 +49,12 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             address: teacher.address || '',
             location: teacher.location || '',
             father_name: teacher.father_name || '',
-            skills: Array.isArray(teacher.skills) ? teacher.skills : [],
-            skills_custom: teacher.skills_custom || '',
+            skills: Array.isArray(teacher.skills)
+              ? teacher.skills.filter((s) => SKILLS.includes(s))
+              : [],
+            custom: Array.isArray(teacher.skills)
+              ? teacher.skills.filter((s) => !SKILLS.includes(s)).join('، ')
+              : '',
             class_id: String(teacher.class_id),
             last_visit_date: teacher.last_visit_date || '',
             note: teacher.note || '',
@@ -69,8 +73,17 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
       return
     }
     setBusy(true)
+    const { custom, ...rest } = form
+    // The typed «أخرى» skill lives inside the same `skills` array.
+    const customText = custom.trim()
+    const skillsOut = [...form.skills]
+    if (customText)
+      skillsOut.push(
+        ...customText.split('،').map((s) => s.trim()).filter(Boolean),
+      )
+
     const payload = compact({
-      ...form,
+      ...rest,
       teacher_name: form.teacher_name.trim(),
       class_id: Number(form.class_id),
       last_visit_date: form.last_visit_date || null,
@@ -80,12 +93,11 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
       zone: form.zone.trim(),
       address: form.address.trim(),
       location: form.location.trim(),
+      skills: skillsOut,
     })
     // "" means "clear it" - PATCH only obeys an explicit null, and compact
     // would drop the key entirely.
     payload.father_name = form.father_name || null
-    payload.skills = form.skills
-    payload.skills_custom = form.skills_custom.trim() || null
     try {
       if (isEdit) await TeacherAPI.update(teacher.id, payload)
       else await TeacherAPI.create(payload)
@@ -164,7 +176,7 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             </Select>
           </Field>
 
-          <Field label="المهارات" htmlFor="t-skills" hint="اختار واحد أو أكتر من المهارات">
+          <Field label="المهارات" htmlFor="t-skills" hint="اختار واحد أو أكتر؛ لو مش موجودة اختار «أخرى» واكتبها">
             <ChipSelect
               options={SKILLS}
               value={form.skills}
@@ -173,14 +185,20 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             />
           </Field>
 
-          <Field label="المهارة (كتابة)" htmlFor="t-skill-custom" hint="لو المهارة «أخرى» اكتبها هنا">
-            <Input
-              id="t-skill-custom"
-              placeholder="مثال: خياطة"
-              value={form.skills_custom}
-              onChange={set('skills_custom')}
-            />
-          </Field>
+          {(form.skills.includes('أخرى') || form.custom.trim()) && (
+            <Field
+              label="اكتب المهارة"
+              htmlFor="t-skill-custom"
+              hint="ظهرت لأنك اخترت «أخرى» — بتتخزن في نفس عمود المهارات"
+            >
+              <Input
+                id="t-skill-custom"
+                placeholder="مثال: خياطة"
+                value={form.custom}
+                onChange={set('custom')}
+              />
+            </Field>
+          )}
 
           <Field label="آخر اعتراف / زيارة للأب" htmlFor="t-visit">
             <Input

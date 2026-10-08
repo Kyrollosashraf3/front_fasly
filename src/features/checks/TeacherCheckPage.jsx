@@ -21,6 +21,7 @@ const FLAGS = [
   { key: 'prepare', label: 'تحضير الدرس' },
   { key: 'liturgy', label: 'القداس' },
   { key: 'follow', label: 'افتقاد' },
+  { key: 'teachers_meeting', label: 'اجتماع الخدام' },
 ]
 
 /**
@@ -65,6 +66,7 @@ export default function TeacherCheckPage() {
         prepare: c.prepare,
         liturgy: c.liturgy,
         follow: c.follow,
+        teachers_meeting: c.teachers_meeting,
         note: c.note || '',
       }
     }
@@ -72,7 +74,14 @@ export default function TeacherCheckPage() {
   }, [data])
 
   const getMark = (id) =>
-    marks[id] || { attend: false, prepare: false, liturgy: false, follow: false, note: '' }
+    marks[id] || {
+      attend: false,
+      prepare: false,
+      liturgy: false,
+      follow: false,
+      teachers_meeting: false,
+      note: '',
+    }
 
   const setFlag = (id, flag, value) =>
     setMarks((m) => ({ ...m, [id]: { ...getMark(id), [flag]: value } }))
@@ -90,9 +99,16 @@ export default function TeacherCheckPage() {
       const remote = server.get(t.id)
       if (!remote && !local) continue
       if (!remote) return true
-      const base = { attend: false, prepare: false, liturgy: false, follow: false, note: '' }
+      const base = {
+        attend: false,
+        prepare: false,
+        liturgy: false,
+        follow: false,
+        teachers_meeting: false,
+        note: '',
+      }
       const l = local || base
-      for (const f of ['attend', 'prepare', 'liturgy', 'follow']) {
+      for (const f of FLAGS.map((x) => x.key)) {
         if (Boolean(l[f]) !== Boolean(remote[f])) return true
       }
       if ((l.note || '') !== (remote.note || '')) return true
