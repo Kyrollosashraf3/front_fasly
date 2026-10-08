@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { Button } from '../../components/ui/Button'
-import { Field, Input, Select, Textarea } from '../../components/ui/Field'
+import { ChipSelect, Field, Input, Select, Textarea } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { TeacherAPI } from '../../lib/endpoints'
 import { ApiError } from '../../lib/api'
+import { FATHERS, SKILLS } from '../../lib/constants'
 
 const EMPTY = {
   teacher_name: '',
@@ -14,6 +15,9 @@ const EMPTY = {
   zone: '',
   address: '',
   location: '',
+  father_name: '',
+  skills: [],
+  skills_custom: '',
   class_id: '',
   last_visit_date: '',
   note: '',
@@ -44,6 +48,9 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             zone: teacher.zone || '',
             address: teacher.address || '',
             location: teacher.location || '',
+            father_name: teacher.father_name || '',
+            skills: Array.isArray(teacher.skills) ? teacher.skills : [],
+            skills_custom: teacher.skills_custom || '',
             class_id: String(teacher.class_id),
             last_visit_date: teacher.last_visit_date || '',
             note: teacher.note || '',
@@ -74,6 +81,11 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
       address: form.address.trim(),
       location: form.location.trim(),
     })
+    // "" means "clear it" - PATCH only obeys an explicit null, and compact
+    // would drop the key entirely.
+    payload.father_name = form.father_name || null
+    payload.skills = form.skills
+    payload.skills_custom = form.skills_custom.trim() || null
     try {
       if (isEdit) await TeacherAPI.update(teacher.id, payload)
       else await TeacherAPI.create(payload)
@@ -139,6 +151,35 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
 
           <Field label="المنطقة/الشارع" htmlFor="t-zone">
             <Input id="t-zone" placeholder="مثال: مصر الجديدة" value={form.zone} onChange={set('zone')} />
+          </Field>
+
+          <Field label="أبونا الاعتراف" htmlFor="t-father">
+            <Select id="t-father" value={form.father_name} onChange={set('father_name')}>
+              <option value="">— بدون —</option>
+              {FATHERS.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field label="المهارات" htmlFor="t-skills" hint="اختار واحد أو أكتر من المهارات">
+            <ChipSelect
+              options={SKILLS}
+              value={form.skills}
+              ariaLabel="مهارات الخادم"
+              onChange={(v) => setForm((f) => ({ ...f, skills: v }))}
+            />
+          </Field>
+
+          <Field label="المهارة (كتابة)" htmlFor="t-skill-custom" hint="لو المهارة «أخرى» اكتبها هنا">
+            <Input
+              id="t-skill-custom"
+              placeholder="مثال: خياطة"
+              value={form.skills_custom}
+              onChange={set('skills_custom')}
+            />
           </Field>
 
           <Field label="آخر اعتراف / زيارة للأب" htmlFor="t-visit">

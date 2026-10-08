@@ -271,6 +271,38 @@
   cursor: pointer;
 }
 
+/* ------------------------------------------------------------- chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.chip {
+  padding: 6px 14px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.chip:hover {
+  border-color: var(--navy);
+  color: var(--navy);
+}
+.chip:active {
+  transform: scale(0.97);
+}
+.chip--on {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--text-on-dark);
+  font-weight: var(--weight-bold);
+}
+
 .search-input {
   position: relative;
   display: flex;

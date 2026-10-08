@@ -3,12 +3,13 @@ import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useQuery } from '../../hooks'
 import { Button } from '../../components/ui/Button'
-import { Checkbox, Field, Input, Select, Textarea } from '../../components/ui/Field'
+import { Checkbox, ChipSelect, Field, Input, Select, Textarea } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { Icon } from '../../components/ui/Icon'
 import { BoyAPI, TeacherAPI } from '../../lib/endpoints'
 import { ApiError } from '../../lib/api'
 import { calcAge } from '../../lib/format'
+import { FATHERS, SKILLS } from '../../lib/constants'
 
 const EMPTY = {
   boy_name: '',
@@ -21,6 +22,11 @@ const EMPTY = {
   zone: '',
   address: '',
   location: '',
+  father_name: '',
+  national_id: '',
+  skills: [],
+  skills_custom: '',
+  last_visit_date: '',
   note: '',
   issue_flag: false,
 }
@@ -55,6 +61,7 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
             ),
             class_id: String(boy.class_id),
             birth_date: boy.birth_date || '',
+            skills: Array.isArray(boy.skills) ? boy.skills : [],
           }
         : { ...EMPTY, class_id: String(defaultClassId ?? classes[0]?.id ?? '') },
     )
@@ -99,16 +106,23 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
       boy_name: form.boy_name.trim(),
       class_id: Number(form.class_id),
       birth_date: form.birth_date || null,
+      last_visit_date: form.last_visit_date || null,
       phone: form.phone.trim(),
       phone_2: form.phone_2.trim(),
       zone: form.zone.trim(),
       address: form.address.trim(),
       location: form.location.trim(),
+      national_id: form.national_id.trim(),
       note: form.note.trim(),
     })
     // Kept out of `compact` on purpose: `null` means "no servant", which is a
     // real instruction when editing (it unfiles him from his group).
     payload.teacher_id = form.teacher_id ? Number(form.teacher_id) : null
+    // Same for the optional enums/text: "" means "clear it", and PATCH only
+    // obeys an explicit null.
+    payload.father_name = form.father_name || null
+    payload.skills = form.skills
+    payload.skills_custom = form.skills_custom.trim() || null
 
     try {
       if (isEdit) await BoyAPI.update(boy.id, payload)
@@ -237,6 +251,57 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
               placeholder="https://maps.app.goo.gl/..."
               value={form.location}
               onChange={set('location')}
+            />
+          </Field>
+
+          <Field label="أبونا الاعتراف" htmlFor="boy-father">
+            <Select id="boy-father" value={form.father_name} onChange={set('father_name')}>
+              <option value="">— بدون —</option>
+              {FATHERS.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field label="الرقم القومى" htmlFor="boy-national">
+            <Input
+              id="boy-national"
+              dir="ltr"
+              inputMode="numeric"
+              maxLength={20}
+              placeholder="14 رقم"
+              value={form.national_id}
+              onChange={set('national_id')}
+            />
+          </Field>
+
+          <Field label="المهارات" htmlFor="boy-skills" hint="اختار واحد أو أكتر من المهارات">
+            <ChipSelect
+              options={SKILLS}
+              value={form.skills}
+              ariaLabel="مهارات الولد"
+              onChange={(v) => setForm((f) => ({ ...f, skills: v }))}
+            />
+          </Field>
+
+          <Field label="المهارة (كتابة)" htmlFor="boy-skill-custom" hint="لو المهارة «أخرى» اكتبها هنا">
+            <Input
+              id="boy-skill-custom"
+              placeholder="مثال: خياطة"
+              value={form.skills_custom}
+              onChange={set('skills_custom')}
+            />
+          </Field>
+
+          <Field label="آخر اعتراف / زيارة للأب" htmlFor="boy-visit">
+            <Input
+              id="boy-visit"
+              type="date"
+              max={new Date().toISOString().slice(0, 10)}
+              value={form.last_visit_date}
+              onChange={set('last_visit_date')}
             />
           </Field>
         </div>

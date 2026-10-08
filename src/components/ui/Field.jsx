@@ -43,6 +43,30 @@ export function Checkbox({ label, ...rest }) {
   )
 }
 
+/** Multi-select as toggle chips - pick as many as you need. */
+export function ChipSelect({ options, value = [], onChange, ariaLabel }) {
+  const toggle = (opt) =>
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt])
+  return (
+    <div className="chips" role="group" aria-label={ariaLabel}>
+      {options.map((opt) => {
+        const on = value.includes(opt)
+        return (
+          <button
+            type="button"
+            key={opt}
+            className={`chip${on ? ' chip--on' : ''}`}
+            aria-pressed={on}
+            onClick={() => toggle(opt)}
+          >
+            {opt}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 /** Debounce is applied by the caller (useDebounced) so this stays dumb. */
 export function SearchInput({ value, onChange, placeholder = 'ابحث...', className = '' }) {
   return (

@@ -24,6 +24,30 @@ export const CLASS_NAMES = [
 /** Egyptian mobile: 01xxxxxxxxx */
 export const PHONE_PATTERN = /^01[0-9]{9}$/
 
+/**
+ * Mirrors FatherEnum / SkillEnum in back_fasly/app/models/enums.py - the API
+ * rejects anything outside these lists, so the selects only offer them.
+ */
+export const FATHERS = [
+  'ابونا كيرلس روماني',
+  'ابونا ارسانيوس عزت',
+  'ابونا فام عبدالمسيح',
+]
+
+export const SKILLS = [
+  'تمثيل',
+  'رسم',
+  'تلوين',
+  'عزف',
+  'ديكور',
+  'برمجة',
+  'تصميم جرافيك',
+  'اكسيل',
+  'كمبيوتر',
+  'تأليف',
+  'أخرى',
+]
+
 export const isPhone = (value) => PHONE_PATTERN.test(normalisePhone(value || ''))
 
 /** Strip the separators people type and fold +20 / 0020 down to a leading 0. */
