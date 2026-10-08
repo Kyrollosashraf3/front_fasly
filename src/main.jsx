@@ -21,3 +21,13 @@ createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </StrictMode>,
 )
+
+/**
+ * Offline shell. Registered in production builds only — during `vite dev` the
+ * worker would serve a stale index.html and hide the next HMR update.
+ */
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
+  })
+}

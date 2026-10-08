@@ -6,9 +6,19 @@
  * (`NavItem` in Sidebar.jsx, `SheetLink` in BottomBar.jsx).
  */
 
-/** Top-level links, already filtered by role. `auth` is the AuthContext value. */
-export function rootLinks({ user, isBoy, can }) {
-  const links = [{ to: '/', icon: 'home', label: 'الرئيسية', end: true }]
+/**
+ * Top-level links, already filtered by role. `auth` is the AuthContext value.
+ *
+ * The class catalogue is only linked when there is a choice to make: an amin,
+ * a servant or a boy belongs to exactly one class, so `/` would just repeat
+ * that class's title — he starts on the class itself instead.
+ */
+export function rootLinks({ user, isBoy, can, classes = [] }) {
+  const links = []
+
+  if (classes.length > 1) {
+    links.push({ to: '/', icon: 'home', label: 'الفصول', end: true })
+  }
 
   if (!isBoy) {
     links.push({ to: '/groups', icon: 'groups', label: 'المجموعات' })

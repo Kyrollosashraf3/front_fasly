@@ -5,7 +5,7 @@ import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useDebounced, useQuery } from '../../hooks'
-import { BoyAPI, FollowUpAPI, GroupAPI, TeacherAPI } from '../../lib/endpoints'
+import { AttendAPI, BoyAPI, FollowUpAPI, GroupAPI, TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { Input, SearchInput, Select } from '../../components/ui/Field'
@@ -13,10 +13,9 @@ import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
-import { FlagDot } from '../boys/BoyForm'
+import { BoyName } from '../boys/BoyName'
 import { followLabel } from '../boys/BoyProfile'
-import { formatDate, lastFridayISO, todayISO } from '../../lib/format'
-import './followup.css'
+import { formatDate, formatPercent, lastFridayISO, todayISO } from '../../lib/format'
 
 const STATUS_OPTIONS = [
   { value: '', label: '—' },
@@ -46,6 +45,9 @@ export default function FollowUpPage() {
 
   const canWrite = can.writeFollowUp(user)
   const myTeacherId = user?.teacher_id ?? null
+  // "كل الخدام" is an admin/super-admin tool: a servant always works on his own
+  // group (seeded into the state below), so he never needs the picker.
+  const showServantFilter = can.manageClasses(user)
 
   const [date, setDate] = useState(lastFridayISO())
   const [teacherId, setTeacherId] = useState(isServant ? String(myTeacherId || '') : '')
@@ -54,16 +56,22 @@ export default function FollowUpPage() {
   const [draft, setDraft] = useState({})
   const [saving, setSaving] = useState(false)
   const [historyDate, setHistoryDate] = useState('')
+  const [expanded, setExpanded] = useState(null)
 
   const debounced = useDebounced(search, 200)
 
   const { data, loading, error, refetch } = useQuery(
     async () => {
-      const boys = await BoyAPI.list({ class_id: classId })
-      const teachers = isBoy ? [] : await TeacherAPI.list({ class_id: classId }).catch(() => [])
-      const groups = isBoy ? null : await GroupAPI.list({ class_id: classId }).catch(() => null)
-      const existing = await FollowUpAPI.list({ class_id: classId, action_date: date })
-      return { boys, teachers, groups, existing }
+      const [boys, teachers, groups, existing, attends] = await Promise.all([
+        BoyAPI.list({ class_id: classId }),
+        isBoy ? Promise.resolve([]) : TeacherAPI.list({ class_id: classId }).catch(() => []),
+        isBoy ? Promise.resolve(null) : GroupAPI.list({ class_id: classId }).catch(() => null),
+        FollowUpAPI.list({ class_id: classId, action_date: date }),
+        // The boy's own Friday record — the follow-up sheet is where his past
+        // attendance is judged, so it rides along with the sheet request.
+        AttendAPI.list({ class_id: classId }).catch(() => []),
+      ])
+      return { boys, teachers, groups, existing, attends }
     },
     [classId, date, isBoy],
   )
@@ -111,6 +119,32 @@ export default function FollowUpPage() {
     }),
     [roster, draft],
   )
+
+  /** boyId -> every Friday recorded BEFORE the sheet on screen, newest first. */
+  const fridaysByBoy = useMemo(() => {
+    const map = new Map()
+    for (const row of data?.attends || []) {
+      if (String(row.date) >= date) continue
+      const list = map.get(row.boy_id)
+      if (list) list.push(row)
+      else map.set(row.boy_id, [row])
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    }
+    return map
+  }, [data, date])
+
+  /** The Friday right before this sheet — nothing recorded means no verdict. */
+  const lastFridayOf = (boyId) => (fridaysByBoy.get(boyId) || [])[0] || null
+
+  /** How often he turned up on the Fridays that were recorded. */
+  const rateOf = (boyId) => {
+    const list = fridaysByBoy.get(boyId) || []
+    if (!list.length) return null
+    const present = list.filter((r) => r.present).length
+    return Math.round((present / list.length) * 100)
+  }
 
   const askNote = async (boy) => {
     const note = await modal.prompt({ title: `ملاحظة — ${boy.boy_name}`, value: noteOf(boy.id) })
@@ -180,6 +214,8 @@ export default function FollowUpPage() {
   const nameOfTeacher = (id) =>
     data?.teachers?.find((t) => t.id === id)?.teacher_name || `خادم #${id}`
   const nameOfBoy = (id) => roster.find((b) => b.id === id)?.boy_name || `ولد #${id}`
+  /** The same row as a record, so its name cell carries the ✎ marker. */
+  const boyOf = (id) => roster.find((b) => b.id === id) || { id, boy_name: nameOfBoy(id) }
 
   const editHistory = async (row) => {
     const next = await modal.prompt({ title: 'تعديل الملاحظة', value: row.note || '' })
@@ -210,17 +246,56 @@ export default function FollowUpPage() {
     {
       key: 'boy_name',
       label: 'الولد',
-      render: (b) => (
-        <span className="table__name">
-          <FlagDot show={b.issue_flag} />
-          {b.boy_name}
-        </span>
-      ),
+      mobile: 'الولد',
+      render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
+    },
+    {
+      key: 'last_friday',
+      label: 'الجمعة الماضية',
+      width: 132,
+      mobile: 'الجمعة الماضية',
+      render: (b) => {
+        const row = lastFridayOf(b.id)
+        if (!row) return <span className="muted xsmall">لا يوجد تسجيل</span>
+        return (
+          <span className="att-last">
+            {row.present ? (
+              <span className="badge badge--green">حاضر</span>
+            ) : (
+              <span className="badge badge--red">غائب</span>
+            )}
+            <span className="xsmall muted">{formatDate(row.date)}</span>
+          </span>
+        )
+      },
+    },
+    {
+      key: 'rate',
+      label: 'نسبة الحضور',
+      width: 116,
+      align: 'center',
+      mobile: 'نسبة الحضور',
+      render: (b) => {
+        const rate = rateOf(b.id)
+        const list = fridaysByBoy.get(b.id) || []
+        if (rate === null) return <span className="muted xsmall">—</span>
+        return (
+          <span
+            className="att-rate"
+            title={`${list.length} جمعة مسجّلة`}
+            style={{ '--rate': `${rate}%` }}
+          >
+            <span className="att-rate__bar" aria-hidden="true" />
+            <span className="att-rate__num">{formatPercent(rate)}</span>
+          </span>
+        )
+      },
     },
     {
       key: 'status',
       label: 'الافتقاد',
       width: 170,
+      mobile: 'الافتقاد',
       render: (b) => (
         <Select
           value={statusOf(b.id)}
@@ -239,6 +314,7 @@ export default function FollowUpPage() {
     {
       key: 'note',
       label: 'ملاحظة',
+      mobile: 'ملاحظة',
       render: (b) => {
         const note = noteOf(b.id)
         if (!canWrite) return note ? <span className="small">{note}</span> : <span className="muted xsmall">—</span>
@@ -252,24 +328,95 @@ export default function FollowUpPage() {
         )
       },
     },
+    {
+      key: 'details',
+      label: '',
+      width: 116,
+      align: 'end',
+      mobile: '',
+      render: (b) => {
+        const open = expanded === b.id
+        const count = (fridaysByBoy.get(b.id) || []).length
+        return (
+          <button
+            type="button"
+            className={`att-details${open ? ' is-open' : ''}`}
+            aria-expanded={open}
+            title={`${count} جمعة مسجّلة`}
+            onClick={() => setExpanded(open ? null : b.id)}
+          >
+            <Icon name="history" size={15} />
+            <span>{open ? 'إخفاء' : 'التفاصيل'}</span>
+            <Icon name="chevronDown" size={14} className="att-details__chev" />
+          </button>
+        )
+      },
+    },
   ]
 
+  /** Expanded row: every recorded Friday before this sheet, with his note. */
+  const fridayPanel = (boy) => {
+    const list = fridaysByBoy.get(boy.id) || []
+    const present = list.filter((r) => r.present).length
+    const rate = rateOf(boy.id)
+
+    return (
+      <div className="att-history">
+        <div className="att-history__head">
+          <span className="att-history__title">
+            <Icon name="history" size={16} />
+            حضور {boy.boy_name}
+          </span>
+          <span className="att-history__summary">
+            {list.length ? (
+              <>
+                <span className="badge badge--green">حاضر {present}</span>
+                <span className="badge badge--red">غائب {list.length - present}</span>
+                <span className="badge badge--gold">{formatPercent(rate)} من {list.length} جمعة</span>
+              </>
+            ) : (
+              <span className="muted small">لسه مفيش حضور متسجل قبل {formatDate(date)}</span>
+            )}
+          </span>
+        </div>
+
+        {list.length > 0 && (
+          <ul className="att-history__list">
+            {list.map((r) => (
+              <li key={r.id ?? r.date} className={r.present ? 'is-present' : 'is-absent'}>
+                <span className="att-history__date">{formatDate(r.date)}</span>
+                {r.present ? (
+                  <span className="badge badge--green">حاضر</span>
+                ) : (
+                  <span className="badge badge--red">غائب</span>
+                )}
+                {r.note && <span className="att-history__note">{r.note}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+  }
+
   const historyColumns = [
-    { key: 'action_date', label: 'التاريخ', width: 130, render: (r) => formatDate(r.action_date, { withDay: false }) },
-    { key: 'teacher_id', label: 'الخادم', width: 150, render: (r) => nameOfTeacher(r.teacher_id) },
-    { key: 'boy_id', label: 'الولد', render: (r) => nameOfBoy(r.boy_id) },
+    { key: 'action_date', label: 'التاريخ', width: 130, mobile: 'التاريخ', render: (r) => formatDate(r.action_date, { withDay: false }) },
+    { key: 'teacher_id', label: 'الخادم', width: 150, mobile: 'الخادم', render: (r) => nameOfTeacher(r.teacher_id) },
+    { key: 'boy_id', label: 'الولد', mobile: 'الولد', render: (r) => <BoyName boy={boyOf(r.boy_id)} classId={classId} onSaved={refetchHistory} /> },
     {
       key: 'status',
       label: 'الطريقة',
       width: 130,
+      mobile: 'الطريقة',
       render: (r) => <Badge kind={KIND[r.status] || 'neutral'}>{followLabel(r.status)}</Badge>,
     },
-    { key: 'note', label: 'ملاحظة', render: (r) => r.note || <span className="muted xsmall">—</span> },
+    { key: 'note', label: 'ملاحظة', mobile: 'ملاحظة', render: (r) => r.note || <span className="muted xsmall">—</span> },
     {
       key: 'actions',
       label: '',
       width: 90,
       align: 'end',
+      mobile: '',
       render: (r) =>
         canWrite ? (
           <div className="table__actions">
@@ -305,7 +452,7 @@ export default function FollowUpPage() {
       </div>
 
       <Toolbar>
-        {!isBoy && (
+        {showServantFilter && (
           <label className="row small bold" style={{ gap: 8 }}>
             <Icon name="servant" size={16} />
             <Select
@@ -313,6 +460,7 @@ export default function FollowUpPage() {
               onChange={(e) => setTeacherId(e.target.value)}
               className="select--plain"
               style={{ minWidth: 190 }}
+              aria-label="اختيار الخادم"
             >
               <option value="">كل الخدام</option>
               {(data?.teachers || []).map((t) => (
@@ -352,7 +500,7 @@ export default function FollowUpPage() {
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {loading ? (
-          <SkeletonRows rows={7} cols={3} />
+          <SkeletonRows rows={7} cols={6} />
         ) : error ? (
           <ErrorState error={error} onRetry={refetch} />
         ) : rows.length === 0 ? (
@@ -378,6 +526,8 @@ export default function FollowUpPage() {
             rows={rows}
             rowKey={(b) => b.id}
             rowClassName={(b) => (draft[b.id]?.status ? 'is-present' : '')}
+            renderExpanded={(b) => (expanded === b.id ? fridayPanel(b) : null)}
+            stackOnMobile
           />
         )}
       </div>
@@ -428,7 +578,7 @@ export default function FollowUpPage() {
             ) : !historyRows.length ? (
               <EmptyState icon="heart" title="لا يوجد سجل" message="لسه مفيش افتقادات مسجّلة." inline />
             ) : (
-              <Table columns={historyColumns} rows={historyRows} rowKey={(r) => r.id} compact />
+              <Table columns={historyColumns} rows={historyRows} rowKey={(r) => r.id} stackOnMobile compact />
             )}
           </div>
         </>

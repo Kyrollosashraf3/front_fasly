@@ -209,12 +209,14 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  height: var(--topbar-height);
+  min-height: var(--topbar-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-4);
-  padding: 0 var(--sp-6);
+  /* Keeps the bar clear of the notch/status bar when installed standalone. */
+  padding-block-start: env(safe-area-inset-top);
+  padding-inline: var(--sp-6);
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--surface-border);

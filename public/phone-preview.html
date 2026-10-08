@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>فصلي — معاينة التليفون (تجريبي)</title>
+    <!--
+      EXPERIMENTAL phone preview — a scratch page, not part of the app.
+
+      It embeds the real build (./index.html) inside a phone-sized frame so you
+      can see the Android layout and click through it on the desktop, next to
+      (or instead of) a real device. Nothing in the app imports it.
+
+      Remove it whenever: delete public/phone-preview.html and rebuild —
+      the URL /ui/phone-preview.html simply disappears.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d1526;
+        --panel: #16203a;
+        --line: #26324f;
+        --text: #e8ecf6;
+        --muted: #8f9bb8;
+        --gold: #d8a744;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, 'Segoe UI', Tahoma, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+
+      header {
+        width: min(980px, 100%);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      header .spacer {
+        flex: 1;
+      }
+
+      button,
+      .chip {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 7px 14px;
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      button:hover,
+      .chip:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+
+      .routes {
+        width: min(980px, 100%);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip.is-active {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: #241a06;
+        font-weight: 700;
+      }
+
+      .stage {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 24px;
+      }
+
+      .phone {
+        position: relative;
+        width: 412px;
+        height: 915px;
+        max-height: calc(100vh - 220px);
+        padding: 12px;
+        border-radius: 44px;
+        border: 2px solid #2c3a5c;
+        background: #05080f;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+      }
+
+      .phone.is-landscape {
+        width: 915px;
+        height: 412px;
+        max-height: none;
+        border-radius: 28px;
+      }
+
+      .screen {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 34px;
+        background: #fff;
+        overflow: hidden;
+      }
+
+      .phone.is-landscape .screen {
+        border-radius: 18px;
+      }
+
+      .note {
+        width: min(980px, 100%);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.7;
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+      }
+
+      .note code {
+        color: var(--gold);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>معاينة التليفون — فصلي</h1>
+      <p>صفحة تجريبية: بتعرض نفس التطبيق داخل إطار تليفون بحجم أندرويد.</p>
+      <span class="spacer"></span>
+      <button type="button" id="rotate">تدوير</button>
+      <button type="button" id="reload">إعادة تحميل</button>
+    </header>
+
+    <div class="routes" id="routes"></div>
+
+    <div class="stage">
+      <div class="phone" id="phone">
+        <iframe class="screen" id="app" src="./index.html" title="فصلي"></iframe>
+      </div>
+    </div>
+
+    <p class="note">
+      سجّل دخول مرة واحدة جوّه الإطار وباقي التنقل هيشتغل عادي. الصفحة دي تجريبية ومش متوصولة ببقية
+      التطبيق — مسح <code>public/phone-preview.html</code> وإعادة البناء بيشيلها تمامًا، وكمان تقدر
+      تفتح <code>/ui/</code> على التليفون نفسه في وضع Standalone بعد التثبيت.
+    </p>
+
+    <script>
+      const ROUTES = [
+        { hash: '', label: 'الفصول' },
+        { hash: '/class/1', label: 'نظرة الفصل' },
+        { hash: '/class/1/boys', label: 'الأولاد' },
+        { hash: '/class/1/attendance', label: 'الحضور' },
+        { hash: '/class/1/followup', label: 'الافتقاد' },
+        { hash: '/class/1/teachers', label: 'الخدام' },
+        { hash: '/class/1/checks', label: 'متابعة الخدام' },
+        { hash: '/groups', label: 'المجموعات' },
+        { hash: '/reveal', label: 'اكشفلي' },
+        { hash: '/dashboard/boys', label: 'أداء الأولاد' },
+        { hash: '/dashboard/teachers', label: 'أداء الخدام' },
+        { hash: '/profile', label: 'الحساب' },
+      ]
+
+      const frame = document.getElementById('app')
+      const routes = document.getElementById('routes')
+      const phone = document.getElementById('phone')
+
+      const paint = (hash) => {
+        for (const chip of routes.children) {
+          chip.classList.toggle('is-active', chip.dataset.hash === hash)
+        }
+      }
+
+      // Same-origin, so the hash is swapped in place — no reload, no re-login.
+      const go = (hash) => {
+        paint(hash)
+        try {
+          frame.contentWindow.location.hash = `#${hash}`
+        } catch {
+          frame.src = `./index.html#${hash}`
+        }
+      }
+
+      ROUTES.forEach((route) => {
+        const chip = document.createElement('button')
+        chip.type = 'button'
+        chip.className = 'chip'
+        chip.textContent = route.label
+        chip.dataset.hash = route.hash
+        chip.addEventListener('click', () => go(route.hash))
+        routes.append(chip)
+      })
+
+      document.getElementById('reload').addEventListener('click', () => {
+        frame.contentWindow.location.reload()
+      })
+
+      document.getElementById('rotate').addEventListener('click', () => {
+        phone.classList.toggle('is-landscape')
+      })
+
+      go(window.location.hash.slice(1) || '')
+    </script>
+  </body>
+</html>

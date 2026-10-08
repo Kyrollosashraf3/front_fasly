@@ -8,6 +8,7 @@ import { ErrorState, Loading } from '../../components/ui/States'
 import { Icon } from '../../components/ui/Icon'
 import { DashboardAPI } from '../../lib/endpoints'
 import { calcAge, formatDate, shortLink } from '../../lib/format'
+import { BoyNameEdit } from './BoyName'
 import './boy-profile.css'
 
 /** Read-only key/value block — reused by the list, groups and dashboards. */
@@ -118,11 +119,14 @@ export function BoyProfileModal({ open, boy, onClose }) {
           : classLabel(boy.class_id)
       }
       headExtra={
-        pct !== null ? (
-          <span className="profile-score">
-            <ScorePill value={pct} />
-          </span>
-        ) : null
+        <div className="row" style={{ gap: 8 }}>
+          {pct !== null && (
+            <span className="profile-score">
+              <ScorePill value={pct} />
+            </span>
+          )}
+          <BoyNameEdit boy={boy} label={`تعديل بيانات ${boy.boy_name}`} />
+        </div>
       }
       footer={
         <Button variant="secondary" onClick={onClose}>

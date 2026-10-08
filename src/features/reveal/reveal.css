@@ -24,6 +24,23 @@
   transition: all var(--dur-fast) var(--ease);
 }
 
+.candidate__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  cursor: inherit;
+  text-align: start;
+}
+
 .candidate:hover {
   border-color: var(--navy);
   background: var(--navy-soft);
@@ -52,4 +69,16 @@
   margin-top: var(--sp-4);
   font-size: var(--text-sm);
   color: var(--text-secondary);
+}
+
+/* The pill looks tappable, so the whole of it must be: on a phone the pick
+   button stretches to fill the pill instead of hugging the name. */
+@media (max-width: 768px) {
+  .candidate {
+    padding: 10px 12px;
+  }
+  .candidate__pick {
+    align-self: stretch;
+    min-height: 40px;
+  }
 }

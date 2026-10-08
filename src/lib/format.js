@@ -103,3 +103,22 @@ export function plural(n, { one, few, many }) {
 /** Egyptian-colloquial counts used across empty states: "3 أولاد". */
 export const boysWord = (n) => (n === 1 ? 'ولد' : 'أولاد')
 export const servantWord = (n) => (n === 1 ? 'خادم' : 'خدام')
+
+/**
+ * WhatsApp deep link for a local phone number.
+ *
+ * The backend validates Egyptian numbers and stores them as "01xxxxxxxxx", so
+ * the country code (20) is prepended here. Returns null when the number is
+ * missing or too short to be dialled.
+ */
+export function waLink(phone) {
+  const digits = String(phone ?? '').replace(/\D/g, '')
+  if (digits.length < 10) return null
+
+  let international = digits
+  if (international.startsWith('00')) international = international.slice(2)
+  else if (international.startsWith('0')) international = `20${international.slice(1)}`
+  else if (!international.startsWith('20')) international = `20${international}`
+
+  return `https://wa.me/${international}`
+}

@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button'
 import { Input, SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
+import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { formatDate, lastFridayISO, todayISO } from '../../lib/format'
 import './checks.css'
@@ -143,6 +144,7 @@ export default function TeacherCheckPage() {
     {
       key: 'teacher_name',
       label: 'الخادم',
+      mobile: 'الخادم',
       render: (t) => (
         <div className="check-person">
           <span className="table__name">{t.teacher_name}</span>
@@ -155,6 +157,7 @@ export default function TeacherCheckPage() {
       label: f.label,
       width: 110,
       align: 'center',
+      mobile: f.label,
       render: (t) => (
         <input
           key={f.key}
@@ -171,6 +174,7 @@ export default function TeacherCheckPage() {
       key: 'note',
       label: 'ملاحظة',
       width: 200,
+      mobile: 'ملاحظة',
       render: (t) => {
         const note = getMark(t.id).note
         if (!canWrite) return note ? <span className="small">{note}</span> : <span className="muted xsmall">—</span>
@@ -253,7 +257,7 @@ export default function TeacherCheckPage() {
             }
           />
         ) : (
-          <Table columns={columns} rows={rows} rowKey={(t) => t.id} />
+          <Table columns={columns} rows={rows} rowKey={(t) => t.id} stackOnMobile />
         )}
       </div>
 
@@ -268,7 +272,7 @@ export default function TeacherCheckPage() {
             </span>
           </div>
           <div className="row" style={{ gap: 10 }}>
-            {dirty && <span className="badge badge--gold" dot>تعديلات غير محفوظة</span>}
+            {dirty && <Badge kind="gold" dot>تعديلات غير محفوظة</Badge>}
             <Button variant="accent" loading={saving} disabled={!dirty} onClick={save} icon={<Icon name="check" size={16} />}>
               حفظ المتابعة
             </Button>

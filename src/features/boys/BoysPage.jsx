@@ -14,7 +14,8 @@ import { Table } from '../../components/ui/Table'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { FileMenu } from '../../components/ui/FileMenu'
 import { ImportResult } from '../../components/ui/ImportResult'
-import { BoyForm, FlagDot, NoteCell } from './BoyForm'
+import { BoyForm, NoteCell } from './BoyForm'
+import { BoyName } from './BoyName'
 import { BoyProfileModal } from './BoyProfile'
 import { calcAge } from '../../lib/format'
 import './boys.css'
@@ -90,19 +91,16 @@ export default function BoysPage() {
     {
       key: 'boy_name',
       label: 'الاسم',
-      render: (b) => (
-        <span className="table__name">
-          <FlagDot show={b.issue_flag} />
-          <span>{b.boy_name}</span>
-        </span>
-      ),
+      mobile: 'الاسم',
+      render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
     },
-    { key: 'gender', label: 'النوع', width: 80, render: (b) => (b.gender === 'f' ? 'بنت' : 'ولد') },
-    { key: 'age', label: 'السن', width: 70, render: (b) => calcAge(b.birth_date) ?? '—' },
+    { key: 'gender', label: 'النوع', width: 80, mobile: 'النوع', render: (b) => (b.gender === 'f' ? 'بنت' : 'ولد') },
+    { key: 'age', label: 'السن', width: 70, mobile: 'السن', render: (b) => calcAge(b.birth_date) ?? '—' },
     {
       key: 'phone',
       label: 'التليفون',
       width: 140,
+      mobile: 'التليفون',
       render: (b) =>
         b.phone ? (
           <a className="ltr" style={{ display: 'block', textAlign: 'center' }} href={`tel:${b.phone}`}>
@@ -112,12 +110,13 @@ export default function BoysPage() {
           '—'
         ),
     },
-    { key: 'note', label: 'ملاحظة', render: (b) => <NoteCell note={b.note} /> },
+    { key: 'note', label: 'ملاحظة', mobile: 'ملاحظة', render: (b) => <NoteCell note={b.note} /> },
     {
       key: 'actions',
       label: '',
       width: 130,
       align: 'end',
+      mobile: '',
       render: (b) => (
         <div className="table__actions">
           <IconButton icon={<Icon name="eye" size={16} />} label="عرض" onClick={() => setViewing(b)} />
@@ -234,7 +233,7 @@ export default function BoysPage() {
             }
           />
         ) : (
-          <Table columns={columns} rows={rows} rowKey={(b) => b.id} />
+          <Table columns={columns} rows={rows} rowKey={(b) => b.id} stackOnMobile />
         )}
       </div>
 

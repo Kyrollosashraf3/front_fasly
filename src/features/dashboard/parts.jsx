@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { Badge } from '../../components/ui/Badge'
+import { BoyName } from '../boys/BoyName'
 
 import { Progress } from '../../components/ui/Avatar'
 import { EmptyState } from '../../components/ui/States'
@@ -168,8 +169,12 @@ export function ClassGroups({
             {groups[c].map((b) => (
               <div className="name-list__item" key={b.boy_id}>
                 <span className="name-list__main">
-                  <strong>{b.boy_name}</strong>
-                  {badge && badge(b)}
+                  <BoyName
+                    boy={b}
+                    classId={Number(c)}
+                    flag={false}
+                    suffix={badge ? badge(b) : null}
+                  />
                 </span>
                 <Button variant="secondary" size="sm" onClick={() => onBoy?.(b)}>
                   {actionLabel}

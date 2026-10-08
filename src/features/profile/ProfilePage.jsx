@@ -17,6 +17,7 @@ import { DetailRow, SectionTitle } from '../../components/ui/Bits'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { FileMenu } from '../../components/ui/FileMenu'
 import { ImportResult } from '../../components/ui/ImportResult'
+import { BoyName } from '../boys/BoyName'
 import './profile.css'
 
 const OWNER_ROLES = ['teacher', 'admin']
@@ -47,7 +48,10 @@ export default function ProfilePage() {
 
   const isMgr = can.manageAccounts(user)
 
-  const { data: people } = useQuery(
+  const {
+    data: people,
+    refetch: refetchPeople,
+  } = useQuery(
     async () => {
       const [teachers, boys] = await Promise.all([
         TeacherAPI.list().catch(() => []),
@@ -212,12 +216,14 @@ export default function ProfilePage() {
           ) : (
             <Table
               compact
+              stackOnMobile
               rows={users}
               rowKey={(u) => u.id}
               columns={[
                 {
                   key: 'handle',
                   label: 'رقم التليفون',
+                  mobile: 'رقم التليفون',
                   render: (u) => (
                     <span className="table__name">
                       <span dir="ltr">{handleOf(u)}</span>
@@ -234,14 +240,32 @@ export default function ProfilePage() {
                   key: 'role',
                   label: 'الصلاحية',
                   width: 130,
+                  mobile: 'الصلاحية',
                   render: (u) => <RoleBadge role={u.role} />,
                 },
-                { key: 'linked', label: 'المسند إليه', render: (u) => linkedLabel(u) },
+                {
+                  key: 'linked',
+                  label: 'المسند إليه',
+                  mobile: 'المسند إليه',
+                  render: (u) => {
+                    const b = u?.boy_id ? boys.find((x) => x.id === u.boy_id) : null
+                    if (b) {
+                      return (
+                        <span className="row" style={{ gap: 8 }}>
+                          <BoyName boy={b} onSaved={refetchPeople} flag={false} />
+                          <span className="xsmall muted">{classLabel(b.class_id)}</span>
+                        </span>
+                      )
+                    }
+                    return linkedLabel(u)
+                  },
+                },
                 {
                   key: 'actions',
                   label: '',
                   width: 100,
                   align: 'end',
+                  mobile: '',
                   render: (u) => (
                     <div className="table__actions">
                       <IconButton

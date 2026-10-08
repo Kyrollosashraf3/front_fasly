@@ -32,17 +32,20 @@ function RootNav({ onNavigate }) {
 
 /** The class-scoped group: overview / boys / attendance / servants / follow-up. */
 function ClassNav({ classId, onNavigate }) {
-  const { isManager, classLabel, classOf } = useAuth()
+  const { isManager, classLabel, classOf, classes } = useAuth()
   const cls = classOf(classId)
+  const multi = classes.length > 1
 
   return (
     <>
-      <NavLink to="/" className={navClass('nav-link nav-link--back')} end onClick={onNavigate}>
-        <span className="nav-link__icon">
-          <Icon name="chevronStart" size={15} />
-        </span>
-        كل الفصول
-      </NavLink>
+      {multi && (
+        <NavLink to="/" className={navClass('nav-link nav-link--back')} end onClick={onNavigate}>
+          <span className="nav-link__icon">
+            <Icon name="chevronStart" size={15} />
+          </span>
+          كل الفصول
+        </NavLink>
+      )}
 
       <div className="sidebar__class">
         <div className="sidebar__class-name">{classLabel(classId)}</div>
@@ -69,7 +72,8 @@ function ClassNav({ classId, onNavigate }) {
 /** Quick jump list, shown on the home screen. */
 function ClassesList({ onNavigate }) {
   const { classes, classReady } = useAuth()
-  if (!classReady || !classes.length) return null
+  // One class = the jump list would be a single copy of the link above it.
+  if (!classReady || classes.length < 2) return null
 
   return (
     <div className="sidebar__section">

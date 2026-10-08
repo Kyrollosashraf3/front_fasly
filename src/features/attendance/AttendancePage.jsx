@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useDebounced, useQuery } from '../../hooks'
@@ -11,13 +10,17 @@ import { Button } from '../../components/ui/Button'
 import { Input, SearchInput } from '../../components/ui/Field'
 import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
+import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
-import { FlagDot } from '../boys/BoyForm'
+import { BoyName } from '../boys/BoyName'
+import { AttendEditMarker } from './AttendEditDialog'
 import { formatDate, lastFridayISO, todayISO } from '../../lib/format'
 import './attendance.css'
 
 /**
- * AttendancePage — the Friday sheet.
+ * AttendancePage — the Friday sheet, kept deliberately bare: a name, the box to
+ * tick, and a small red flag when the boy missed the previous Friday. The full
+ * history, the percentage and the boy's file live in the follow-up sheet.
  *
  * Local `marks` holds the working copy (boyId -> {present, note}); the save
  * bar only appears when something actually changed, and everything is written
@@ -27,7 +30,6 @@ export default function AttendancePage() {
   const { classId } = useParams()
   const { classLabel, can, user, isBoy } = useAuth()
   const toast = useToast()
-  const modal = useModal()
 
   const label = classLabel(classId)
   usePageTitle(`الحضور — ${label}`)
@@ -53,6 +55,12 @@ export default function AttendancePage() {
     },
     [classId, date],
   )
+
+  /**
+   * The whole Friday history of the class, once, regardless of the date being
+   * edited — all it needs from it is "was he there the Friday before?".
+   */
+  const { data: history } = useQuery(() => AttendAPI.list({ class_id: classId }), [classId])
 
   // Seed the working copy whenever the source data changes.
   useEffect(() => {
@@ -107,18 +115,27 @@ export default function AttendancePage() {
 
   const allDone = counts.total > 0 && counts.present + counts.absent === counts.total && counts.present === counts.total
 
+  /**
+   * boyId -> the most recent Friday recorded *before* this sheet, used for the
+   * small "غاب الجمعة اللي فاتت" flag. A missing row means nothing was recorded.
+   */
+  const previousAbsent = useMemo(() => {
+    const map = new Map()
+    for (const row of history || []) {
+      if (String(row.date) >= date) continue
+      if (row.present) continue
+      const seen = map.get(row.boy_id)
+      if (!seen || String(row.date) > String(seen)) map.set(row.boy_id, row.date)
+    }
+    return map
+  }, [history, date])
+
   const setAll = (value) => {
     setMarks((m) => {
       const next = { ...m }
       for (const b of data?.boys || []) next[b.id] = { ...getMark(b.id), present: value }
       return next
     })
-  }
-
-  const askNote = async (boy) => {
-    const current = getMark(boy.id).note
-    const note = await modal.prompt({ title: `ملاحظة — ${boy.boy_name}`, value: current })
-    if (note !== null) setMark(boy.id, { note })
   }
 
   const save = async () => {
@@ -141,6 +158,13 @@ export default function AttendancePage() {
     }
   }
 
+  /** boyId -> the row already stored on the server for this sheet, if any. */
+  const savedRecords = useMemo(
+    () => new Map((data?.attends || []).map((a) => [a.boy_id, a])),
+    [data],
+  )
+  const savedOf = (boyId) => savedRecords.get(boyId)
+
   const columns = [
     ...(canWrite
       ? [
@@ -149,6 +173,7 @@ export default function AttendancePage() {
             label: 'حاضر',
             width: 78,
             align: 'center',
+            mobile: '',
             render: (b) => (
               <input
                 type="checkbox"
@@ -164,40 +189,25 @@ export default function AttendancePage() {
     {
       key: 'boy_name',
       label: 'الاسم',
+      mobile: 'الاسم',
       render: (b) => (
         <span className="table__name">
-          <FlagDot show={b.issue_flag} />
-          {b.boy_name}
-          {b.gender === 'f' && <span className="xsmall muted">(بنت)</span>}
+          <BoyName
+            boy={b}
+            classId={classId}
+            onSaved={refetch}
+            suffix={b.gender === 'f' ? <span className="xsmall muted">(بنت)</span> : null}
+          />
+          {previousAbsent.has(b.id) && (
+            <span className="att-hint att-hint--absent" title="غاب الجمعة اللي فاتت">
+              غاب الجمعة اللي فاتت
+            </span>
+          )}
+          {canWrite && savedOf(b.id) && (
+            <AttendEditMarker boy={b} record={savedOf(b.id)} date={date} onSaved={refetch} />
+          )}
         </span>
       ),
-    },
-    {
-      key: 'present',
-      label: 'الحالة',
-      width: 110,
-      render: (b) =>
-        getMark(b.id).present ? (
-          <span className="badge badge--green">حاضر</span>
-        ) : (
-          <span className="badge badge--red">غائب</span>
-        ),
-    },
-    {
-      key: 'note',
-      label: 'ملاحظة',
-      render: (b) => {
-        const note = getMark(b.id).note
-        if (!canWrite) return note ? <span className="small">{note}</span> : <span className="muted xsmall">—</span>
-        return (
-          <button type="button" className="note-btn" onClick={() => askNote(b)} title="إضافة ملاحظة">
-            <Icon name="note" size={15} className={note ? 'note-indicator' : ''} />
-            <span className="small truncate" style={{ maxWidth: 190 }}>
-              {note || 'أضف ملاحظة'}
-            </span>
-          </button>
-        )
-      },
     },
   ]
 
@@ -302,6 +312,7 @@ export default function AttendancePage() {
             rows={rows}
             rowKey={(b) => b.id}
             rowClassName={(b) => (getMark(b.id).present ? 'is-present' : '')}
+            stackOnMobile
           />
         )}
       </div>
@@ -322,7 +333,7 @@ export default function AttendancePage() {
           </div>
 
           <div className="row" style={{ gap: 10 }}>
-            {dirty && <span className="badge badge--gold" dot>فيه تعديلات لمتحفظش</span>}
+            {dirty && <Badge kind="gold" dot>فيه تعديلات لمتحفظش</Badge>}
             <Button variant="accent" loading={saving} disabled={!dirty} onClick={save} icon={<Icon name="check" size={16} />}>
               حفظ الحضور
             </Button>

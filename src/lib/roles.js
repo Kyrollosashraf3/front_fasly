@@ -44,6 +44,13 @@ export const can = {
   /** Read/write the boys & servants directory, classes and accounts. */
   writeDirectory: (user) => isManager(user),
 
+  /**
+   * Edit one boy's file (name, phones, address, ...). Any non-boy login may:
+   * the backend allows the class amin, a servant of that class and the super
+   * admin, and refuses a boy writing his own row.
+   */
+  editBoys: (user) => roleOf(user) !== ROLES.USER,
+
   /** Create/rename/delete a class. */
   manageClasses: (user) => isManager(user),
 

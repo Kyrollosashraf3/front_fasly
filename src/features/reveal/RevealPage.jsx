@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States
 import { Badge } from '../../components/ui/Badge'
 import { Avatar } from '../../components/ui/Avatar'
 import { BoyProfileModal } from '../boys/BoyProfile'
+import { BoyNameEdit } from '../boys/BoyName'
 import './reveal.css'
 
 /**
@@ -46,6 +47,8 @@ export default function RevealPage() {
   }, [data, debounced])
 
   const showPicker = can.seeServants(user) && !isBoy
+  // One class in the catalogue = nothing to pick.
+  const showClassPicker = classes.length > 1
 
   return (
     <>
@@ -57,23 +60,25 @@ export default function RevealPage() {
       </div>
 
       <Toolbar>
-        <Select
-          value={effectiveClassId}
-          onChange={(e) => {
-            setClassId(e.target.value)
-            setPicked(null)
-          }}
-          className="select--plain"
-          style={{ minWidth: 190 }}
-          aria-label="اختيار الفصل"
-        >
-          <option value="">— اختر الفصل —</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+        {showClassPicker && (
+          <Select
+            value={effectiveClassId}
+            onChange={(e) => {
+              setClassId(e.target.value)
+              setPicked(null)
+            }}
+            className="select--plain"
+            style={{ minWidth: 190 }}
+            aria-label="اختيار الفصل"
+          >
+            <option value="">— اختر الفصل —</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
 
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
         <ToolbarSpacer />
@@ -107,16 +112,19 @@ export default function RevealPage() {
         ) : (
           <div className="candidate-list">
             {rows.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                className={`candidate ${picked?.id === b.id ? 'is-picked' : ''}`}
-                onClick={() => setPicked(b)}
-              >
-                <Avatar name={b.boy_name} size="sm" />
-                <span className="candidate__name truncate">{b.boy_name}</span>
+              <div key={b.id} className={`candidate ${picked?.id === b.id ? 'is-picked' : ''}`}>
+                <button type="button" className="candidate__pick" onClick={() => setPicked(b)}>
+                  <Avatar name={b.boy_name} size="sm" />
+                  <span className="candidate__name truncate">{b.boy_name}</span>
+                </button>
                 {b.issue_flag && <Badge kind="red" dot />}
-              </button>
+                <BoyNameEdit
+                  boy={b}
+                  classId={effectiveClassId}
+                  onSaved={refetch}
+                  label={`تعديل بيانات ${b.boy_name}`}
+                />
+              </div>
             ))}
           </div>
         )}

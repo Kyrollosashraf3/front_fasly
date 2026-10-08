@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
@@ -14,11 +15,17 @@ import './home.css'
  *
  * Counts come from ONE scoped /boys (+ /teachers for managers) request grouped
  * client-side, instead of the old one-request-per-class.
+ *
+ * A login that belongs to one class (an amin, a servant, a boy) never sees it:
+ * the catalogue would only repeat his own class title, so he is sent straight to
+ * it. Only a multi-class login — the super admin — gets the grid.
  */
 export default function HomePage() {
   usePageTitle('الفصول')
   const { user, classes, classReady, refreshClasses, can, isBoy, isServant } = useAuth()
   const isMgr = can.manageClasses(user)
+
+  const single = classReady && classes.length === 1
 
   const { data, loading, error, refetch } = useQuery(
     async () => {
@@ -27,7 +34,12 @@ export default function HomePage() {
       return { boys, teachers }
     },
     [isMgr],
+    // Wait for the catalogue first: a single-class login is redirected away, so
+    // counting boys for a grid nobody will see is a wasted request.
+    { enabled: classReady && classes.length !== 1 },
   )
+
+  if (single) return <Navigate to={`/class/${classes[0].id}`} replace />
 
   const countBy = (rows) => {
     const map = new Map()

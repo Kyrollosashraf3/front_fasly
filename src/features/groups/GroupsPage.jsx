@@ -15,6 +15,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States
 import { FileMenu } from '../../components/ui/FileMenu'
 import { ImportResult } from '../../components/ui/ImportResult'
 import { BoyProfileModal, followLabel } from '../boys/BoyProfile'
+import { BoyName, BoyNameEdit } from '../boys/BoyName'
 import { Avatar } from '../../components/ui/Avatar'
 import { formatShort } from '../../lib/format'
 import './groups.css'
@@ -34,6 +35,9 @@ export default function GroupsPage() {
 
   const canWrite = can.writeGroups(user)
   const showClassPicker = canWrite && classes.length > 1
+  // The servant filter is for the admin / super admin only — a servant browsing
+  // the groups page just wants his own group, and the cards are already that.
+  const showServantFilter = can.manageClasses(user)
 
   const [classId, setClassId] = useState('')
   const [teacherFilter, setTeacherFilter] = useState('')
@@ -134,10 +138,7 @@ export default function GroupsPage() {
   const boyRow = (b, withActions = true) => (
     <tr key={b.boy_id}>
       <td>
-        <span className="table__name">
-          {b.issue_flag && <span className="flag-dot" />}
-          {b.boy_name}
-        </span>
+        <BoyName boy={b} className="table__name" classId={effectiveClassId} onSaved={refetch} />
       </td>
       <td className="ltr" style={{ textAlign: 'center' }}>
         {b.phone || '—'}
@@ -238,19 +239,27 @@ export default function GroupsPage() {
           </Select>
         )}
 
-        <Select
-          value={teacherFilter}
-          onChange={(e) => setTeacherFilter(e.target.value)}
-          className="select--plain"
-          style={{ minWidth: 170 }}
-        >
-          <option value="">كل الخدام</option>
-          {teachers.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </Select>
+        {showServantFilter ? (
+          <Select
+            value={teacherFilter}
+            onChange={(e) => setTeacherFilter(e.target.value)}
+            className="select--plain"
+            style={{ minWidth: 170 }}
+            aria-label="اختيار الخادم"
+          >
+            <option value="">كل الخدام</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </Select>
+        ) : (
+          <span className="small muted row" style={{ gap: 6 }}>
+            <Icon name="servant" size={15} />
+            {visibleGroups.length} مجموعة
+          </span>
+        )}
 
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
         <ToolbarSpacer />
@@ -313,7 +322,9 @@ export default function GroupsPage() {
                           checked={picked.has(b.boy_id)}
                           onChange={() => togglePick(b.boy_id)}
                         />
+                        {/* the ✎ stops the click, so it never ticks the chip */}
                         <span className="truncate">{b.boy_name}</span>
+                        <BoyNameEdit boy={b} classId={effectiveClassId} onSaved={refetch} />
                       </label>
                     ))}
                   </div>
@@ -411,7 +422,13 @@ export default function GroupsPage() {
         </>
       )}
 
-      <BoyProfileModal open={Boolean(viewing)} boy={viewing} onClose={() => setViewing(null)} />
+      <BoyProfileModal
+        open={Boolean(viewing)}
+        // group rows carry `boy_id`; the profile modal (and its dashboard
+        // history request) wants the plain `id`.
+        boy={viewing ? { ...viewing, id: viewing.boy_id, class_id: viewing.class_id ?? Number(effectiveClassId) } : null}
+        onClose={() => setViewing(null)}
+      />
 
       <ImportResult
         open={Boolean(importResult)}

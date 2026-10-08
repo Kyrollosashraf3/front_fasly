@@ -70,20 +70,22 @@ export default function BoysDashboard() {
       </div>
 
       <Toolbar>
-        <Select
-          value={classId}
-          onChange={(e) => setClassId(e.target.value)}
-          className="select--plain"
-          style={{ minWidth: 190 }}
-          aria-label="اختيار الفصل"
-        >
-          {showAll && <option value="">كل الفصول</option>}
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+        {classes.length > 1 && (
+          <Select
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="select--plain"
+            style={{ minWidth: 190 }}
+            aria-label="اختيار الفصل"
+          >
+            {showAll && <option value="">كل الفصول</option>}
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
         <ToolbarSpacer />
         <span className="small muted">آخر جمعة مسجلة: {d?.last_friday?.date || '—'}</span>
       </Toolbar>

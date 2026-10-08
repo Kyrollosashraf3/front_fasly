@@ -70,12 +70,14 @@ export default function TeachersPage() {
     {
       key: 'teacher_name',
       label: 'الاسم',
+      mobile: 'الاسم',
       render: (t) => <span className="table__name">{t.teacher_name}</span>,
     },
     {
       key: 'phone',
       label: 'التليفون',
       width: 150,
+      mobile: 'التليفون',
       render: (t) =>
         t.phone ? (
           <a className="ltr" style={{ display: 'block', textAlign: 'center' }} href={`tel:${t.phone}`}>
@@ -89,6 +91,7 @@ export default function TeachersPage() {
       key: 'last_visit_date',
       label: 'آخر اعتراف / زيارة',
       width: 170,
+      mobile: 'آخر زيارة',
       render: (t) =>
         t.last_visit_date ? (
           <span className="row" style={{ gap: 6 }}>
@@ -99,12 +102,13 @@ export default function TeachersPage() {
           <Badge kind="neutral">لم يُسجّل</Badge>
         ),
     },
-    { key: 'note', label: 'ملاحظة', render: (t) => <NoteCell note={t.note} /> },
+    { key: 'note', label: 'ملاحظة', mobile: 'ملاحظة', render: (t) => <NoteCell note={t.note} /> },
     {
       key: 'actions',
       label: '',
       width: 90,
       align: 'end',
+      mobile: '',
       render: (t) =>
         canWrite ? (
           <div className="table__actions">
@@ -201,7 +205,7 @@ export default function TeachersPage() {
             }
           />
         ) : (
-          <Table columns={columns} rows={rows} rowKey={(t) => t.id} />
+          <Table columns={columns} rows={rows} rowKey={(t) => t.id} stackOnMobile />
         )}
       </div>
 

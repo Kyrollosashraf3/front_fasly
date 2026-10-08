@@ -98,7 +98,7 @@ const TABS = [
  */
 export function BottomBar() {
   const auth = useAuth()
-  const { user, logout, classes, classReady, isManager } = auth
+  const { user, logout, classes, classReady, classLabel, isManager } = auth
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [sheet, setSheet] = useState(null)
@@ -111,7 +111,17 @@ export function BottomBar() {
   }, [pathname])
 
   const classId = classIdFrom(pathname)
-  const routeTab = pathname === '/profile' ? 'me' : classId ? 'menu' : 'home'
+  const single = classReady && classes.length === 1
+  const myClassId = single ? String(classes[0].id) : classId
+  const tabs = single
+    ? [
+        { key: 'class', icon: 'home', label: classLabel(classes[0].id) },
+        { key: 'menu', icon: 'menu', label: 'القائمة' },
+        { key: 'me', icon: 'user', label: 'الحساب' },
+      ]
+    : TABS
+  const routeTab =
+    pathname === '/profile' ? 'me' : single ? (classId ? 'class' : 'menu') : classId ? 'menu' : 'home'
   const active = sheet || routeTab
 
   const roots = rootLinks(auth)
@@ -135,7 +145,7 @@ export function BottomBar() {
   return (
     <>
       <nav className="tabbar" aria-label="التنقل السريع">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -161,7 +171,7 @@ export function BottomBar() {
 
       <Sheet open={sheet === 'classes'} title="الفصول" onClose={close}>
         <SheetLabel>الفصول</SheetLabel>
-        <SheetLink to="/" end icon="list" label="كل الفصول" onNavigate={close} />
+        {!single && <SheetLink to="/" end icon="list" label="كل الفصول" onNavigate={close} />}
         {!classReady ? (
           <p className="muted small sheet__note">جاري تحميل الفصول...</p>
         ) : classes.length === 0 ? (
@@ -174,15 +184,17 @@ export function BottomBar() {
         {accountSection}
       </Sheet>
 
-      <Sheet open={sheet === 'menu'} title="القائمة" onClose={close}>
-        {classId ? (
+      <Sheet open={sheet === 'menu' || sheet === 'class'} title="القائمة" onClose={close}>
+        {myClassId ? (
           <>
-            <SheetLink to="/" end icon="chevronStart" label="كل الفصول" onNavigate={close} />
+            {!single && (
+              <SheetLink to="/" end icon="chevronStart" label="كل الفصول" onNavigate={close} />
+            )}
             <SheetLabel>إدارة الفصل</SheetLabel>
             {classLinks({ isManager }).map((l) => (
               <SheetLink
                 key={l.path}
-                to={classHref(classId, l.path)}
+                to={classHref(myClassId, l.path)}
                 icon={l.icon}
                 label={l.label}
                 end={l.end}

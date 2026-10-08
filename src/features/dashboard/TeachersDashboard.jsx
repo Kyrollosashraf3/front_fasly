@@ -44,14 +44,14 @@ export default function TeachersDashboard() {
     : '—'
 
   const columns = [
-    { key: 'teacher_name', label: 'الخادم', render: (s) => <span className="table__name">{s.teacher_name}</span> },
-    { key: 'class_id', label: 'الفصل', width: 150, render: (s) => classLabel(s.class_id) },
-    { key: 'score', label: 'النقاط', width: 90, render: (s) => <ScorePill value={s.score} suffix="" /> },
-    { key: 'checks', label: 'متابعات', width: 90, align: 'center' },
-    { key: 'attend', label: 'حاضر', width: 70, align: 'center' },
-    { key: 'prepare', label: 'تحضير', width: 70, align: 'center' },
-    { key: 'liturgy', label: 'قداس', width: 70, align: 'center' },
-    { key: 'follow', label: 'افتقاد', width: 70, align: 'center' },
+    { key: 'teacher_name', label: 'الخادم', mobile: 'الخادم', render: (s) => <span className="table__name">{s.teacher_name}</span> },
+    { key: 'class_id', label: 'الفصل', width: 150, mobile: 'الفصل', render: (s) => classLabel(s.class_id) },
+    { key: 'score', label: 'النقاط', width: 90, mobile: 'النقاط', render: (s) => <ScorePill value={s.score} suffix="" /> },
+    { key: 'checks', label: 'متابعات', width: 90, align: 'center', mobile: 'متابعات' },
+    { key: 'attend', label: 'حاضر', width: 70, align: 'center', mobile: 'حاضر' },
+    { key: 'prepare', label: 'تحضير', width: 70, align: 'center', mobile: 'تحضير' },
+    { key: 'liturgy', label: 'قداس', width: 70, align: 'center', mobile: 'قداس' },
+    { key: 'follow', label: 'افتقاد', width: 70, align: 'center', mobile: 'افتقاد' },
   ]
 
   return (
@@ -66,20 +66,22 @@ export default function TeachersDashboard() {
       </div>
 
       <Toolbar>
-        <Select
-          value={classId}
-          onChange={(e) => setClassId(e.target.value)}
-          className="select--plain"
-          style={{ minWidth: 190 }}
-          aria-label="اختيار الفصل"
-        >
-          {showAll && <option value="">كل الفصول</option>}
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+        {classes.length > 1 && (
+          <Select
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="select--plain"
+            style={{ minWidth: 190 }}
+            aria-label="اختيار الفصل"
+          >
+            {showAll && <option value="">كل الفصول</option>}
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
         <ToolbarSpacer />
         <span className="small muted">النقاط من 4 لكل جمعة</span>
       </Toolbar>
@@ -152,7 +154,7 @@ export default function TeachersDashboard() {
               title="أداء الخدام"
               hint="مجموع علامات ✓ التي جمعها كل خادم في كل المتابعات المسجلة."
             >
-              <Table columns={columns} rows={d.servants} rowKey={(s) => s.teacher_id} compact />
+              <Table columns={columns} rows={d.servants} rowKey={(s) => s.teacher_id} compact stackOnMobile />
             </DashSection>
           )}
         </div>
