@@ -25,10 +25,9 @@ const proxy = Object.fromEntries(
 
 export default defineConfig({
   plugins: [react()],
-  // Relative asset URLs: the build is mounted under a path (/ui) by FastAPI,
-  // and the hash router never changes the document URL, so './' is always
-  // resolved against the directory that holds index.html.
-  base: './',
+  // The SPA is served from its own origin (vite dev :5173 / any static host);
+  // the hash router never changes the document URL, so '/' is always the root.
+  base: '/',
   server: {
     port: 5173,
     proxy,
@@ -38,8 +37,8 @@ export default defineConfig({
     proxy,
   },
   build: {
-    // Served by FastAPI under /ui in a single-server deploy.
-    outDir: '../back_fasly/app/static_react',
+    // Standalone frontend - output stays inside front_fasly (dist/).
+    outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false,
   },
