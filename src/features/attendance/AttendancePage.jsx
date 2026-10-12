@@ -26,6 +26,35 @@ import './attendance.css'
  * bar only appears when something actually changed, and everything is written
  * in ONE POST /attendance/bulk (the API upserts per boy+date).
  */
+
+/**
+ * AttMark — a labelled tick chip for one attendance fact.
+ *
+ * A bare checkbox gave no clue which box was «حضور» and which was «قداس», so
+ * each fact now carries its own name. `type` picks the colour: green for the
+ * Sunday-school attendance, gold for the mass.
+ */
+function AttMark({ type, checked, onToggle, disabled }) {
+  const conf =
+    type === 'liturgy'
+      ? { label: 'قداس', hint: 'حضر القداس' }
+      : { label: 'حضور', hint: 'حضر مدارس الأحد' }
+
+  return (
+    <button
+      type="button"
+      className={`att-mark att-mark--${type}${checked ? ' is-on' : ''}`}
+      aria-pressed={checked}
+      aria-label={`${conf.hint}: ${checked ? 'نعم' : 'لا'}`}
+      disabled={disabled}
+      onClick={() => onToggle(!checked)}
+    >
+      <span className="att-mark__box">{checked && <Icon name="check" size={14} />}</span>
+      <span className="att-mark__label">{conf.label}</span>
+    </button>
+  )
+}
+
 export default function AttendancePage() {
   const { classId } = useParams()
   const { classLabel, can, user, isBoy } = useAuth()
@@ -100,7 +129,9 @@ export default function AttendancePage() {
       if (gender !== 'all' && b.gender !== gender) return false
       if (q && !b.boy_name.toLowerCase().includes(q) && !(b.phone || '').includes(q)) return false
       if (view === 'present' && !getMark(b.id).present) return false
-      if (view === 'absent' && getMark(b.id).present) return false
+      // smart "absent" view: a boy only drops off the list once BOTH facts are
+      // in — marked present AND marked mass. Ticking one of them keeps him here.
+      if (view === 'absent' && getMark(b.id).present && getMark(b.id).liturgy) return false
       return true
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +165,13 @@ export default function AttendancePage() {
   const setAll = (value) => {
     setMarks((m) => {
       const next = { ...m }
-      for (const b of data?.boys || []) next[b.id] = { ...getMark(b.id), present: value }
+      for (const b of data?.boys || []) {
+        const cur = getMark(b.id)
+        // storm "كل الغائبين": wiping present also wipes mass (mass implies present)
+        next[b.id] = value
+          ? { ...cur, present: true }
+          : { ...cur, present: false, liturgy: false }
+      }
       return next
     })
   }
@@ -168,46 +205,11 @@ export default function AttendancePage() {
   const savedOf = (boyId) => savedRecords.get(boyId)
 
   const columns = [
-    ...(canWrite
-      ? [
-          {
-            key: 'present',
-            label: 'حاضر',
-            width: 78,
-            align: 'center',
-            mobile: '',
-            render: (b) => (
-              <input
-                type="checkbox"
-                className="att-check"
-                aria-label={`حاضر: ${b.boy_name}`}
-                checked={getMark(b.id).present}
-                onChange={(e) => setMark(b.id, { present: e.target.checked })}
-              />
-            ),
-          },
-          {
-            key: 'liturgy',
-            label: 'قداس',
-            width: 78,
-            align: 'center',
-            mobile: '',
-            render: (b) => (
-              <input
-                type="checkbox"
-                className="att-check"
-                aria-label={`قداس: ${b.boy_name}`}
-                checked={Boolean(getMark(b.id).liturgy)}
-                onChange={(e) => setMark(b.id, { liturgy: e.target.checked })}
-              />
-            ),
-          },
-        ]
-      : []),
     {
       key: 'boy_name',
       label: 'الاسم',
-      mobile: 'الاسم',
+      // no label on the phone card — the name speaks for itself
+      mobile: '',
       render: (b) => (
         <span className="table__name">
           <BoyName
@@ -227,6 +229,37 @@ export default function AttendancePage() {
         </span>
       ),
     },
+    ...(canWrite
+      ? [
+          {
+            key: 'marks',
+            label: '',
+            width: 200,
+            align: 'center',
+            mobile: '',
+            render: (b) => (
+              <div className="att-marks">
+                <AttMark
+                  type="present"
+                  checked={getMark(b.id).present}
+                  // un-ticking presence also un-ticks the mass (mass implies presence)
+                  onToggle={(v) =>
+                    setMark(b.id, v ? { present: true } : { present: false, liturgy: false })
+                  }
+                />
+                <AttMark
+                  type="liturgy"
+                  checked={Boolean(getMark(b.id).liturgy)}
+                  // ticking the mass ticks presence too — you can't attend mass and be absent
+                  onToggle={(v) =>
+                    setMark(b.id, v ? { liturgy: true, present: true } : { liturgy: false })
+                  }
+                />
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const noRecords = !loading && (data?.boys || []).length === 0
@@ -263,7 +296,7 @@ export default function AttendancePage() {
           />
         </label>
 
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+        <SearchInput className="att-search-inline" value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
 
         <Tabs
           value={gender}
@@ -298,6 +331,12 @@ export default function AttendancePage() {
           </div>
         )}
       </Toolbar>
+
+      {/* on the phone the toolbar scrolls away, so the search gets its own
+          sticky bar that stays reachable while the list scrolls */}
+      <div className="att-search-sticky">
+        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+      </div>
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {loading ? (

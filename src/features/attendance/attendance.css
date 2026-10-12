@@ -10,6 +10,110 @@
   cursor: pointer;
 }
 
+/* ---------------------------------------------- named attendance marks
+   Two bare checkboxes gave no hint which one was «حضور» and which was «قداس».
+   Each fact is now a labelled chip with its own colour: green for the
+   Sunday-school attendance, gold for the mass. */
+.att-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.att-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.att-mark:hover {
+  border-color: var(--border-strong);
+}
+
+.att-mark:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.att-mark__box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  color: transparent;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.att-mark--present.is-on {
+  background: #e8f7ee;
+  border-color: #b9e6cb;
+  color: #146c43;
+}
+
+.att-mark--present.is-on .att-mark__box {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.att-mark--liturgy.is-on {
+  background: var(--gold-soft);
+  border-color: var(--gold-border);
+  color: var(--gold-ink);
+}
+
+.att-mark--liturgy.is-on .att-mark__box {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy-dark);
+}
+
+/* ---------------------------------------------- sticky search (mobile)
+   On the phone the toolbar scrolls out of reach, so the search lives in its
+   own bar that pins under the topbar while the boys list scrolls. */
+.att-search-sticky {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .att-search-inline {
+    display: none;
+  }
+
+  .att-search-sticky {
+    display: block;
+    position: sticky;
+    top: calc(var(--topbar-height) + env(safe-area-inset-top));
+    z-index: 18;
+    margin-top: var(--sp-3);
+    padding: var(--sp-2) 0;
+    background: var(--bg);
+  }
+
+  .att-search-sticky .search-input {
+    width: 100%;
+  }
+
+  .att-search-sticky .input {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
 /* Small flag on the name when the boy missed the Friday before this sheet.
    Deliberately carries no date — the sheet itself is that Friday. */
 .att-hint {
@@ -103,5 +207,17 @@
   }
   .att-hint {
     padding: 5px 10px;
+  }
+  /* roomier, thumb-sized mark chips */
+  .att-marks {
+    gap: 10px;
+  }
+  .att-mark {
+    padding: 9px 15px 9px 10px;
+    font-size: var(--text-base);
+  }
+  .att-mark__box {
+    width: 23px;
+    height: 23px;
   }
 }
