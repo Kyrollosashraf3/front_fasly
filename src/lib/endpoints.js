@@ -11,7 +11,7 @@ export const AuthAPI = {
   login: (identifier, password) => api.login(identifier, password),
   me: () => api.get('/auth/me'),
   users: () => api.get('/auth/users'),
-  createUser: (body) => api.post('/auth/register', body),
+
   updateUser: (id, body) => api.patch(`/auth/users/${id}`, body),
   deleteUser: (id) => api.del(`/auth/users/${id}`),
   /** Does this phone belong to an account that still needs a password? */
@@ -19,10 +19,7 @@ export const AuthAPI = {
   /** Set the password of a phone-registered account. Returns a Token. */
   signup: (body) => api.post('/auth/signup', body),
   /** Bulk-create accounts from a sheet: phone | class_name | name | role. */
-  import: (file) => api.upload('/auth/users/import', file),
-  usersTemplate: () => download('/auth/users/template', null, 'users-template.xlsx'),
-  usersTemplateCsv: () =>
-    download('/auth/users/template', { format: 'csv' }, 'users-template.csv'),
+
 }
 
 /* --------------------------------------------------------------- classes */

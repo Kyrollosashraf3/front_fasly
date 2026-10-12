@@ -67,28 +67,29 @@ export default function AttendancePage() {
     if (!data) return
     const next = {}
     for (const a of data.attends || []) {
-      next[a.boy_id] = { present: a.present, note: a.note || '' }
+      next[a.boy_id] = { present: a.present, liturgy: a.liturgy ?? false, note: a.note || '' }
     }
     setMarks(next)
   }, [data])
 
   const getMark = (boyId) =>
-    marks[boyId] || { present: false, note: '' }
+    marks[boyId] || { present: false, liturgy: false, note: '' }
 
   const setMark = (boyId, patch) =>
     setMarks((m) => ({ ...m, [boyId]: { ...getMark(boyId), ...patch } }))
 
-  /** Server state vs local state — drives the "unsaved" pill. */
+  /** Server state vs local state �?" drives the "unsaved" pill. */
   const dirty = useMemo(() => {
     if (!data) return false
     const server = new Map((data.attends || []).map((a) => [a.boy_id, a]))
     for (const boy of data.boys || []) {
       const local = marks[boy.id]
       // No row on the server yet == the default (absent, no note).
-      const remote = server.get(boy.id) ?? { present: false, note: '' }
+      const remote = server.get(boy.id) ?? { present: false, liturgy: false, note: '' }
       const present = local?.present ?? false
+      const liturgy = local?.liturgy ?? false
       const note = local?.note ?? ''
-      if (remote.present !== present || (remote.note || '') !== note) return true
+      if (remote.present !== present || (remote.liturgy ?? false) !== liturgy || (remote.note || '') !== note) return true
     }
     return false
   }, [data, marks])
@@ -146,6 +147,7 @@ export default function AttendancePage() {
         items: (data?.boys || []).map((b) => ({
           boy_id: b.id,
           present: Boolean(getMark(b.id).present),
+          liturgy: Boolean(getMark(b.id).liturgy),
           note: getMark(b.id).note || null,
         })),
       })
@@ -181,6 +183,22 @@ export default function AttendancePage() {
                 aria-label={`حاضر: ${b.boy_name}`}
                 checked={getMark(b.id).present}
                 onChange={(e) => setMark(b.id, { present: e.target.checked })}
+              />
+            ),
+          },
+          {
+            key: 'liturgy',
+            label: 'قداس',
+            width: 78,
+            align: 'center',
+            mobile: '',
+            render: (b) => (
+              <input
+                type="checkbox"
+                className="att-check"
+                aria-label={`قداس: ${b.boy_name}`}
+                checked={Boolean(getMark(b.id).liturgy)}
+                onChange={(e) => setMark(b.id, { liturgy: e.target.checked })}
               />
             ),
           },

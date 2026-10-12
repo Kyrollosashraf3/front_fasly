@@ -167,40 +167,8 @@ export default function ProfilePage() {
           <SectionTitle
             action={
               <div className="row" style={{ gap: 'var(--sp-2)' }}>
-                <FileMenu
-                  accept=".xlsx,.xlsm,.csv"
-                  items={[
-                    {
-                      key: 'template',
-                      label: 'تنزيل نموذج إكسل',
-                      icon: 'download',
-                      onClick: () => AuthAPI.usersTemplate(),
-                    },
-                    {
-                      key: 'template-csv',
-                      label: 'تنزيل نموذج CSV',
-                      icon: 'download',
-                      onClick: () => AuthAPI.usersTemplateCsv(),
-                    },
-                    {
-                      key: 'import',
-                      label: 'استيراد الحسابات',
-                      icon: 'upload',
-                      fileInput: true,
-                      onFile: async (file) => {
-                        try {
-                          setImportResult(await AuthAPI.import(file))
-                          refetchUsers()
-                        } catch (err) {
-                          toast.error(err.message)
-                        }
-                      },
-                    },
-                  ]}
-                />
-                <Button variant="primary" size="sm" icon={<Icon name="plus" size={16} />} onClick={() => setDialog('new')}>
-                  إضافة حساب
-                </Button>
+
+
               </div>
             }
           >

@@ -20,21 +20,23 @@ import { formatDate } from '../../lib/format'
 export function AttendEditDialog({ open, boy, record, date, onClose, onSaved }) {
   const toast = useToast()
   const [present, setPresent] = useState(false)
+  const [liturgy, setLiturgy] = useState(false)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (!open) return
     setPresent(Boolean(record?.present))
+    setLiturgy(Boolean(record?.liturgy))
     setNote(record?.note || '')
   }, [open, record])
 
   const save = async () => {
     setBusy(true)
     try {
-      await AttendAPI.update(record.id, { present, note: note.trim() || null })
+      await AttendAPI.update(record.id, { present, liturgy, note: note.trim() || null })
       toast.success(
-        present ? `${boy.boy_name} اتسجّل حاضر.` : `${boy.boy_name} اتسجّل غائب.`,
+        present ? `${boy.boy_name} تم تسجيله حاضر.` : `${boy.boy_name} تم تسجيله غائب.`,
       )
       onSaved?.()
       onClose()
@@ -80,12 +82,21 @@ export function AttendEditDialog({ open, boy, record, date, onClose, onSaved }) 
           <span className="att-toggle__hint">اضغط للتبديل</span>
         </button>
 
+        <label className="field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input
+            type="checkbox"
+            checked={liturgy}
+            onChange={(e) => setLiturgy(e.target.checked)}
+          />
+          <span className="field__label" style={{ marginBottom: 0 }}>حضر القداس</span>
+        </label>
+
         <label className="field">
-          <span className="field__label">ملاحظة</span>
+          <span className="field__label">ملاحظات</span>
           <Textarea
             rows={3}
             maxLength={500}
-            placeholder="سبب الغياب أو أي ملاحظة"
+            placeholder="أضف ملاحظات عن حضور أو غياب الولد"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
