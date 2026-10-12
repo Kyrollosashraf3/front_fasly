@@ -30,7 +30,9 @@ export default function HomePage() {
   const { data, loading, error, refetch } = useQuery(
     async () => {
       const boys = await BoyAPI.list()
-      const teachers = isMgr ? await TeacherAPI.list() : []
+      // The servant count is a nice-to-have: if it alone fails, still paint the
+      // catalogue instead of turning the whole page into an error.
+      const teachers = isMgr ? await TeacherAPI.list().catch(() => []) : []
       return { boys, teachers }
     },
     [isMgr],
