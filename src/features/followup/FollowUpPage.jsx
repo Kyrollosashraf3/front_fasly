@@ -8,6 +8,7 @@ import { useDebounced, useQuery } from '../../hooks'
 import { AttendAPI, BoyAPI, FollowUpAPI, GroupAPI, TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
+import { ContactActions } from '../../components/ui/ContactActions'
 import { Input, SearchInput, Select } from '../../components/ui/Field'
 import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
@@ -248,6 +249,14 @@ export default function FollowUpPage() {
       label: 'الولد',
       mobile: 'الولد',
       render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
+    },
+    {
+      key: 'contact',
+      label: 'تواصل',
+      width: 96,
+      align: 'center',
+      mobile: 'تواصل',
+      render: (b) => <ContactActions phone={b.phone} phone2={b.phone_2} />,
     },
     {
       key: 'last_friday',

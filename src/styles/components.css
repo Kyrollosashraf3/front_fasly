@@ -589,6 +589,42 @@
   justify-content: flex-end;
 }
 
+/* Call / WhatsApp quick links (components/ui/ContactActions.jsx). */
+.contact-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contact-actions__btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.contact-actions__btn:hover {
+  text-decoration: none;
+}
+.contact-actions__btn--call:hover {
+  color: var(--navy);
+  background: var(--surface-sunken);
+  border-color: var(--surface-border);
+}
+.contact-actions__btn--wa {
+  color: #25d366;
+  border-color: #b7e9c9;
+}
+.contact-actions__btn--wa:hover {
+  color: #128c4b;
+  background: #e7f9ee;
+  border-color: #8fdcac;
+}
+
 .table__name {
   display: flex;
   align-items: center;

@@ -8,6 +8,7 @@ import { useDebounced, useQuery } from '../../hooks'
 import { TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
+import { ContactActions } from '../../components/ui/ContactActions'
 import { SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
@@ -92,6 +93,14 @@ export default function TeachersPage() {
         ) : (
           '—'
         ),
+    },
+    {
+      key: 'contact',
+      label: 'تواصل',
+      width: 96,
+      align: 'center',
+      mobile: 'تواصل',
+      render: (t) => <ContactActions phone={t.phone} phone2={t.phone_2} />,
     },
     {
       key: 'last_visit_date',
