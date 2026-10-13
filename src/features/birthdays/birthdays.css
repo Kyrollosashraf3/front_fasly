@@ -1,0 +1,81 @@
+/* Birthdays module — a friendly card list, not a table. */
+
+.bday-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.bday-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.bday-card:hover {
+  border-color: var(--gold-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.bday-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.bday-card__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+}
+
+.bday-card__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: var(--text-sm);
+}
+
+.bday-card__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--weight-bold);
+  color: var(--gold-ink);
+}
+
+.bday-card__stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: 2px;
+}
+
+.bday-card__actions {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 560px) {
+  .bday-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .bday-card__actions {
+    margin-inline-start: auto;
+  }
+}

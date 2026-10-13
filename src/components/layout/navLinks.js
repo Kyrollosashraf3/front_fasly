@@ -17,16 +17,19 @@ export function rootLinks({ user, isBoy, can, classes = [] }) {
   const links = []
 
   if (classes.length > 1) {
-    links.push({ to: '/', icon: 'home', label: 'الفصول', end: true })
+    links.push({ to: '/', icon: 'home', label: 'الرئيسية', end: true })
   }
 
   if (!isBoy) {
     links.push({ to: '/groups', icon: 'groups', label: 'المجموعات' })
     links.push({ to: '/reveal', icon: 'sparkles', label: 'اكشفلي' })
+    links.push({ to: '/birthdays', icon: 'gift', label: 'أعياد الميلاد' })
   }
 
-  if (can.seeDashboards(user)) {
+  if (can.seeBoysDashboard(user)) {
     links.push({ to: '/dashboard/boys', icon: 'chart', label: 'أداء الأولاد' })
+  }
+  if (can.seeTeachersDashboard(user)) {
     links.push({ to: '/dashboard/teachers', icon: 'star', label: 'أداء الخدام' })
   }
 
@@ -51,6 +54,49 @@ export function classLinks({ isManager }) {
 
   links.push({ path: 'followup', label: 'الافتقاد', icon: 'heart' })
   return links
+}
+
+/**
+ * The "modules" grid shown on the home page and in the phone's quick sheets.
+ * Each entry is class-scoped (`path` relative to `/class/:id`).
+ */
+export function classModules({ can, user }) {
+  const mods = [
+    { path: '', icon: 'home', label: 'نظرة عامة', desc: 'ملخص الفصل', end: true },
+    { path: 'boys', icon: 'boys', label: 'بيانات الأولاد', desc: 'سجل الأولاد وبياناتهم' },
+    { path: 'attendance', icon: 'calendar', label: 'الحضور', desc: 'حضور الجمعة والقداس' },
+    { path: 'followup', icon: 'heart', label: 'الافتقاد', desc: 'متابعة الأولاد والاتصال بهم' },
+  ]
+
+  if (can.seeServants(user)) {
+    mods.push({ path: 'teachers', icon: 'servant', label: 'الخدام', desc: 'بيانات خدام الفصل' })
+  }
+  if (can.seeChecks(user)) {
+    mods.push({ path: 'checks', icon: 'clipboard', label: 'متابعة الخدام', desc: 'تقييم الخدام أسبوعيًا' })
+  }
+
+  return mods
+}
+
+/**
+ * The "تحليل" (analytics) modules — global routes, no class in the URL.
+ * Boys performance is open to any staff member; servants performance and the
+ * reveal picker follow their own permission.
+ */
+export function analyticsModules({ can, user }) {
+  const out = [
+    { to: '/dashboard/boys', icon: 'chart', label: 'أداء الأولاد', desc: 'مؤشرات الحضور والمواظبة' },
+  ]
+  if (can.seeTeachersDashboard(user)) {
+    out.push({ to: '/dashboard/teachers', icon: 'star', label: 'أداء الخدام', desc: 'متابعة أداء الخدام' })
+  }
+  if (can.seeReveal(user)) {
+    out.push({ to: '/reveal', icon: 'sparkles', label: 'اكشفلي', desc: 'اختيار عشوائي للأولاد' })
+  }
+  if (can.seeBirthdays(user)) {
+    out.push({ to: '/birthdays', icon: 'gift', label: 'أعياد الميلاد', desc: 'مناسبات الشهر القادم' })
+  }
+  return out
 }
 
 /** Account links — identical everywhere they appear. */

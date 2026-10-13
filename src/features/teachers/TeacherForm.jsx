@@ -12,6 +12,7 @@ const EMPTY = {
   teacher_name: '',
   phone: '',
   phone_2: '',
+  birth_date: '',
   zone: '',
   address: '',
   location: '',
@@ -45,6 +46,7 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             teacher_name: teacher.teacher_name,
             phone: teacher.phone || '',
             phone_2: teacher.phone_2 || '',
+            birth_date: teacher.birth_date || '',
             zone: teacher.zone || '',
             address: teacher.address || '',
             location: teacher.location || '',
@@ -199,6 +201,16 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
               />
             </Field>
           )}
+
+          <Field label="تاريخ الميلاد" htmlFor="t-birth" hint="لسه بيستخدم في موديول أعياد الميلاد">
+            <Input
+              id="t-birth"
+              type="date"
+              max={new Date().toISOString().slice(0, 10)}
+              value={form.birth_date}
+              onChange={set('birth_date')}
+            />
+          </Field>
 
           <Field label="آخر اعتراف / زيارة للأب" htmlFor="t-visit">
             <Input

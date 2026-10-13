@@ -57,6 +57,32 @@ export function PeriodField({ value, onChange }) {
   )
 }
 
+/**
+ * The date window the whole dashboard is measured over:
+ * last Friday (default) / the whole history / the current church year.
+ * Mirrors the backend's `date_mode` query values.
+ */
+export const DATE_MODE_OPTIONS = [
+  { value: 'last_friday', label: 'آخر جمعة' },
+  { value: 'all', label: 'كل الفترة' },
+  { value: 'season', label: 'من بداية السنة الكنسية' },
+]
+
+export function DateModeField({ value, onChange }) {
+  return (
+    <label className="n-field">
+      الفترة
+      <Select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: 190 }}>
+        {DATE_MODE_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </Select>
+    </label>
+  )
+}
+
 /* ------------------------------------------------------------------- kpi */
 
 export function Kpi({ hero = false, value, label, sub, progress }) {

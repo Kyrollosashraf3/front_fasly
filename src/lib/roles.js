@@ -63,6 +63,9 @@ export const can = {
   /** The weekly servant check sheet — managers only (an amin's job). */
   writeChecks: (user) => isManager(user),
 
+  /** See the servant check sheet at all (a servant reads his own, read-only). */
+  seeChecks: (user) => roleOf(user) !== ROLES.USER,
+
   /** Assign boys to servant groups. */
   writeGroups: (user) => isManager(user),
 
@@ -75,8 +78,17 @@ export const can = {
   /** The "اكشفلي" random-picker page. */
   seeReveal: (user) => roleOf(user) !== ROLES.USER,
 
-  /** Both performance dashboards. */
+  /** Boys performance dashboard — any staff member (not a boy). */
+  seeBoysDashboard: (user) => roleOf(user) !== ROLES.USER,
+
+  /** Servants performance dashboard — managers only. */
+  seeTeachersDashboard: (user) => isManager(user),
+
+  /** Both performance dashboards (kept for the sidebar/shortcuts). */
   seeDashboards: (user) => isManager(user),
+
+  /** The birthdays module — staff only, servant sees boys alone. */
+  seeBirthdays: (user) => roleOf(user) !== ROLES.USER,
 
   /** The account administration table (profile page). */
   manageAccounts: (user) => isManager(user),

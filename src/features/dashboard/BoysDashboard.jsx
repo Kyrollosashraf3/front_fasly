@@ -12,17 +12,18 @@ import {
   AbsentNowBadge,
   ClassGroups,
   DashSection,
+  DateModeField,
   FollowedBadge,
   Kpi,
   KpiRow,
   LateBadge,
   NField,
-  PeriodField,
   StreakBadge,
   TodoBadge,
   TrendChart,
   useBoyDrawer,
 } from './parts'
+import { formatShort } from '../../lib/format'
 import './dashboard.css'
 
 /**
@@ -37,7 +38,7 @@ export default function BoysDashboard() {
   const { user, classes, can, classLabel } = useAuth()
 
   const [classId, setClassId] = useState('')
-  const [periodDays, setPeriodDays] = useState(30)
+  const [dateMode, setDateMode] = useState('last_friday')
   const [streakN, setStreakN] = useState(4)
   const [absentN, setAbsentN] = useState(4)
   const [trendN, setTrendN] = useState(8)
@@ -48,12 +49,12 @@ export default function BoysDashboard() {
     () =>
       DashboardAPI.summary({
         ...(classId ? { class_id: classId } : {}),
-        period_days: periodDays,
+        date_mode: dateMode,
         streak_n: streakN,
         absent_n: absentN,
         trend_n: trendN,
       }),
-    [classId, periodDays, streakN, absentN, trendN],
+    [classId, dateMode, streakN, absentN, trendN],
   )
 
   const d = data
@@ -98,7 +99,7 @@ export default function BoysDashboard() {
             ))}
           </Select>
         )}
-        <PeriodField value={periodDays} onChange={setPeriodDays} />
+        <DateModeField value={dateMode} onChange={setDateMode} />
         <ToolbarSpacer />
         <span className="small muted">آخر جمعة مسجلة: {d?.last_friday?.date || '—'}</span>
       </Toolbar>
@@ -169,7 +170,7 @@ export default function BoysDashboard() {
 
           <DashSection
             title="افتقاد الأولاد"
-            hint={`الأولاد الذين تم افتقادهم خلال الفترة مقابل من لم يُفتقد بعد (${d.scope.period_days} يوم).`}
+            hint={`الأولاد الذين تم افتقادهم خلال الفترة مقابل من لم يُفتقد بعد (من ${formatShort(d.scope.period_start)}).`}
             control={
               <Tabs
                 value={coverTab}
@@ -201,7 +202,7 @@ export default function BoysDashboard() {
             title="متأخرون عن الاعتراف"
             hint={
               late?.late_count
-                ? `${late.late_count} ولد لم يعترفوا خلال ${d.scope.period_days} يوم.`
+                ? `${late.late_count} ولد لم يعترفوا من ${formatShort(d.scope.period_start)}.`
                 : 'الكل اعترفوا خلال الفترة المختارة.'
             }
           >

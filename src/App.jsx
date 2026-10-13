@@ -17,6 +17,7 @@ import RevealPage from './features/reveal/RevealPage'
 import ProfilePage from './features/profile/ProfilePage'
 import BoysDashboard from './features/dashboard/BoysDashboard'
 import TeachersDashboard from './features/dashboard/TeachersDashboard'
+import BirthdaysPage from './features/birthdays/BirthdaysPage'
 import NotFound from './router/NotFound'
 
 /**
@@ -62,7 +63,7 @@ export default function App() {
             <Route
               path="dashboard/boys"
               element={
-                <RoleGuard allow={(c, u) => c.seeDashboards(u)}>
+                <RoleGuard allow={(c, u) => c.seeBoysDashboard(u)}>
                   <BoysDashboard />
                 </RoleGuard>
               }
@@ -70,8 +71,17 @@ export default function App() {
             <Route
               path="dashboard/teachers"
               element={
-                <RoleGuard allow={(c, u) => c.seeDashboards(u)}>
+                <RoleGuard allow={(c, u) => c.seeTeachersDashboard(u)}>
                   <TeachersDashboard />
+                </RoleGuard>
+              }
+            />
+
+            <Route
+              path="birthdays"
+              element={
+                <RoleGuard allow={(c, u) => c.seeBirthdays(u)}>
+                  <BirthdaysPage />
                 </RoleGuard>
               }
             />
@@ -96,7 +106,7 @@ export default function App() {
               path="class/:classId/checks"
               element={
                 <ClassRoute>
-                  <RoleGuard allow={(c, u) => c.writeChecks(u)}>
+                  <RoleGuard allow={(c, u) => c.seeChecks(u)}>
                     <TeacherCheckPage />
                   </RoleGuard>
                 </ClassRoute>

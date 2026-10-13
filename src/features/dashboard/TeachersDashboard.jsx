@@ -10,16 +10,17 @@ import { Table } from '../../components/ui/Table'
 import { ScorePill } from '../../components/ui/Bits'
 import {
   DashSection,
+  DateModeField,
   FollowedBadge,
   Kpi,
   KpiRow,
   LateBadge,
   NField,
-  PeriodField,
   ServantGroups,
   TodoBadge,
   TrendChart,
 } from './parts'
+import { formatShort } from '../../lib/format'
 import './dashboard.css'
 
 /**
@@ -34,7 +35,7 @@ export default function TeachersDashboard() {
   const { user, classes, can, classLabel } = useAuth()
 
   const [classId, setClassId] = useState('')
-  const [periodDays, setPeriodDays] = useState(30)
+  const [dateMode, setDateMode] = useState('last_friday')
   const [topN, setTopN] = useState(5)
   const [trendN, setTrendN] = useState(8)
   const [coverTab, setCoverTab] = useState('todo')
@@ -43,11 +44,11 @@ export default function TeachersDashboard() {
     () =>
       DashboardAPI.summary({
         ...(classId ? { class_id: classId } : {}),
-        period_days: periodDays,
+        date_mode: dateMode,
         top_n: topN,
         teacher_trend_n: trendN,
       }),
-    [classId, periodDays, topN, trendN],
+    [classId, dateMode, topN, trendN],
   )
 
   const d = data
@@ -68,12 +69,11 @@ export default function TeachersDashboard() {
     { key: 'teacher_name', label: 'الخادم', mobile: 'الخادم', render: (s) => <span className="table__name">{s.teacher_name}</span> },
     { key: 'class_id', label: 'الفصل', width: 150, mobile: 'الفصل', render: (s) => classLabel(s.class_id) },
     { key: 'score', label: 'النقاط', width: 90, mobile: 'النقاط', render: (s) => <ScorePill value={s.score} suffix="" /> },
-    { key: 'checks', label: 'متابعات', width: 90, align: 'center', mobile: 'متابعات' },
     { key: 'attend', label: 'حاضر', width: 70, align: 'center', mobile: 'حاضر' },
-    { key: 'prepare', label: 'تحضير', width: 70, align: 'center', mobile: 'تحضير' },
-    { key: 'liturgy', label: 'قداس', width: 70, align: 'center', mobile: 'قداس' },
+    { key: 'prepare', label: 'تحضير الدرس', width: 90, align: 'center', mobile: 'تحضير الدرس' },
+    { key: 'liturgy', label: 'القداس', width: 70, align: 'center', mobile: 'القداس' },
     { key: 'follow', label: 'افتقاد', width: 70, align: 'center', mobile: 'افتقاد' },
-    { key: 'teachers_meeting', label: 'اجتماع', width: 80, align: 'center', mobile: 'اجتماع' },
+    { key: 'teachers_meeting', label: 'اجتماع الخدام', width: 100, align: 'center', mobile: 'اجتماع الخدام' },
   ]
 
   return (
@@ -104,7 +104,7 @@ export default function TeachersDashboard() {
             ))}
           </Select>
         )}
-        <PeriodField value={periodDays} onChange={setPeriodDays} />
+        <DateModeField value={dateMode} onChange={setDateMode} />
         <ToolbarSpacer />
         <span className="small muted">النقاط من 5 لكل جمعة</span>
       </Toolbar>
@@ -175,7 +175,7 @@ export default function TeachersDashboard() {
 
           <DashSection
             title="افتقاد الخدام"
-            hint={`الخدام الذين سجّلوا افتقادًا خلال الفترة مقابل من لم يسجّل بعد (${d.scope.period_days} يوم).`}
+            hint={`الخدام الذين سجّلوا افتقادًا خلال الفترة مقابل من لم يسجّل بعد (من ${formatShort(d.scope.period_start)}).`}
             control={
               <Tabs
                 value={coverTab}
@@ -206,7 +206,7 @@ export default function TeachersDashboard() {
             title="متأخرون عن الاعتراف"
             hint={
               late?.late_count
-                ? `${late.late_count} خادم لم يعترفوا خلال ${d.scope.period_days} يوم.`
+                ? `${late.late_count} خادم لم يعترفوا من ${formatShort(d.scope.period_start)}.`
                 : 'الكل اعترفوا خلال الفترة المختارة.'
             }
           >

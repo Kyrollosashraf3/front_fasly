@@ -7,9 +7,11 @@ import { ROLE_LABELS } from '../../lib/roles'
 import { userLabel } from '../../lib/constants'
 import {
   accountLinks,
+  analyticsModules,
   classHref,
   classIdFrom,
   classLinks,
+  classModules,
   navClass,
   rootLinks,
 } from './navLinks'
@@ -98,7 +100,7 @@ const TABS = [
  */
 export function BottomBar() {
   const auth = useAuth()
-  const { user, logout, classes, classReady, classLabel, isManager } = auth
+  const { user, logout, classes, classReady, isManager } = auth
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [sheet, setSheet] = useState(null)
@@ -115,16 +117,18 @@ export function BottomBar() {
   const myClassId = single ? String(classes[0].id) : classId
   const tabs = single
     ? [
-        { key: 'class', icon: 'home', label: classLabel(classes[0].id) },
+        { key: 'home', icon: 'home', label: 'الرئيسية' },
         { key: 'menu', icon: 'menu', label: 'القائمة' },
         { key: 'me', icon: 'user', label: 'الحساب' },
       ]
     : TABS
   const routeTab =
-    pathname === '/profile' ? 'me' : single ? (classId ? 'class' : 'menu') : classId ? 'menu' : 'home'
+    pathname === '/profile' ? 'me' : pathname === '/' ? 'home' : classId ? 'menu' : 'home'
   const active = sheet || routeTab
 
   const roots = rootLinks(auth)
+  const mods = classModules(auth)
+  const analytics = analyticsModules(auth)
 
   const handleLogout = () => {
     close()
@@ -161,8 +165,31 @@ export function BottomBar() {
         ))}
       </nav>
 
-      <Sheet open={sheet === 'home'} title="الوصول السريع" onClose={close}>
-        <SheetLabel>الوصول السريع</SheetLabel>
+      <Sheet open={sheet === 'home'} title="الرئيسية" onClose={close}>
+        {myClassId && mods.length > 0 && (
+          <>
+            <SheetLabel>وحدات الفصل</SheetLabel>
+            {mods.map((m) => (
+              <SheetLink
+                key={m.path || 'overview'}
+                to={classHref(myClassId, m.path)}
+                icon={m.icon}
+                label={m.label}
+                end={m.end}
+                onNavigate={close}
+              />
+            ))}
+          </>
+        )}
+        {analytics.length > 0 && (
+          <>
+            <SheetLabel>تحليل</SheetLabel>
+            {analytics.map((m) => (
+              <SheetLink key={m.to} {...m} onNavigate={close} />
+            ))}
+          </>
+        )}
+        <SheetLabel>وصول سريع</SheetLabel>
         {roots.map((l) => (
           <SheetLink key={l.to} {...l} onNavigate={close} />
         ))}

@@ -1,139 +1,151 @@
-import { Navigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useQuery } from '../../hooks'
-import { BoyAPI, TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
-
-import { Badge } from '../../components/ui/Badge'
-import { EmptyState, ErrorState } from '../../components/ui/States'
-import { ClassDialog } from '../classes/ClassDialog'
+import { SectionTitle } from '../../components/ui/Bits'
+import { Loading } from '../../components/ui/States'
+import { classHref, classModules, analyticsModules } from '../../components/layout/navLinks'
 import './home.css'
 
+/** One module tile — icon, title, one-line description. */
+function ModuleCard({ to, icon, label, desc }) {
+  return (
+    <Link to={to} className="module-card">
+      <span className="module-card__icon">
+        <Icon name={icon} size={24} />
+      </span>
+      <span className="module-card__text">
+        <span className="module-card__label">{label}</span>
+        {desc && <span className="module-card__desc">{desc}</span>}
+      </span>
+      <Icon name="chevron" size={16} className="module-card__go" />
+    </Link>
+  )
+}
+
 /**
- * HomePage — the class catalogue.
+ * HomePage — every module in one place.
  *
- * Counts come from ONE scoped /boys (+ /teachers for managers) request grouped
- * client-side, instead of the old one-request-per-class.
- *
- * A login that belongs to one class (an amin, a servant, a boy) never sees it:
- * the catalogue would only repeat his own class title, so he is sent straight to
- * it. Only a multi-class login — the super admin — gets the grid.
+ * An amin or a servant lands on his own class and gets the module tiles
+ * straight away; the super admin picks a class first, then the whole grid
+ * lights up. The same links are mirrored in the phone's bottom bar so nothing
+ * is ever more than two taps away.
  */
 export default function HomePage() {
-  usePageTitle('الفصول')
-  const { user, classes, classReady, refreshClasses, can, isBoy, isServant } = useAuth()
-  const isMgr = can.manageClasses(user)
+  usePageTitle('الرئيسية')
+  const { user, classes, classReady, can, isBoy, classLabel } = useAuth()
 
+  // A super admin picks a class before the module grid appears; everyone else
+  // is pinned to their one class and sees the grid straight away.
+  const [picked, setPicked] = useState('')
+  const multi = classes.length > 1
   const single = classReady && classes.length === 1
+  const activeClassId = single ? String(classes[0]?.id) : picked
 
-  const { data, loading, error, refetch } = useQuery(
-    async () => {
-      const boys = await BoyAPI.list()
-      // The servant count is a nice-to-have: if it alone fails, still paint the
-      // catalogue instead of turning the whole page into an error.
-      const teachers = isMgr ? await TeacherAPI.list().catch(() => []) : []
-      return { boys, teachers }
-    },
-    [isMgr],
-    // Wait for the catalogue first: a single-class login is redirected away, so
-    // counting boys for a grid nobody will see is a wasted request.
-    { enabled: classReady && classes.length !== 1 },
-  )
+  const mods = useMemo(() => classModules({ can, user }), [can, user])
+  const analytics = useMemo(() => analyticsModules({ can, user }), [can, user])
 
-  if (single) return <Navigate to={`/class/${classes[0].id}`} replace />
-
-  const countBy = (rows) => {
-    const map = new Map()
-    for (const row of rows || []) map.set(row.class_id, (map.get(row.class_id) || 0) + 1)
-    return map
+  if (isBoy) {
+    return (
+      <>
+        <div className="page-head">
+          <div>
+            <h1 className="page-head__title">الرئيسية</h1>
+            <div className="page-head__sub">حسابك</div>
+          </div>
+        </div>
+        <div className="module-grid">
+          <ModuleCard to="/profile" icon="user" label="حسابي" desc="بياناتك ومتابعتك" />
+        </div>
+      </>
+    )
   }
-
-  const boysByClass = countBy(data?.boys)
-  const teachersByClass = countBy(data?.teachers)
-
-  const subtitle = (classId) => {
-    if (isBoy) return 'حسابك'
-    const boys = boysByClass.get(classId) || 0
-    if (isServant) return `${boys} في مجمعتي`
-    return `${boys} ولد · ${teachersByClass.get(classId) || 0} خادم`
-  }
-
-  const year = classes[0]?.academic_year
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">الفصول</h1>
+          <h1 className="page-head__title">الرئيسية</h1>
           <div className="page-head__sub">
-            {year ? `العام الدراسي ${year}` : 'اختار فصل عشان تبدأ'}
-            {classes.length > 0 && ` · ${classes.length} فصل`}
+            {multi
+              ? 'اختار الفصل الأول عشان تظهر كل الوحدات'
+              : `${classLabel(activeClassId)} · كل الوحدات في مكان واحد`}
           </div>
         </div>
-        {isMgr && <ClassDialog onSaved={refreshClasses} />}
       </div>
 
-      {!classReady || loading ? (
-        <div className="home-grid">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="class-card class-card--skeleton">
-              <div className="skeleton" style={{ height: 20, width: '60%' }} />
-              <div className="skeleton" style={{ height: 14, width: '40%' }} />
-              <div className="skeleton" style={{ height: 34, width: '80%' }} />
-            </div>
-          ))}
+      {!classReady ? (
+        <div className="home-loading">
+          <Loading label="جارٍ تحميل الوحدات..." />
         </div>
-      ) : error ? (
-        <ErrorState error={error} onRetry={refetch} />
-      ) : classes.length === 0 ? (
-        <EmptyState
-          icon="list"
-          title="لا توجد فصول مسندة"
-          message={
-            isMgr
-              ? 'ابدأ بإضافة فصل جديد عشان تضيف الأولاد والخدام.'
-              : 'مفيش فصل مسكّر على حسابك. كلّم الأدمن.'
-          }
-          action={isMgr ? <ClassDialog onSaved={refreshClasses} trigger="btn" /> : null}
-        />
       ) : (
-        <div className="home-grid">
-          {classes.map((c) => (
-            <a key={c.id} href={`#/class/${c.id}`} className="class-card">
-              <div className="class-card__top">
-                <span className="class-card__icon">
-                  <Icon name="boys" size={22} />
-                </span>
-                <Badge kind="gold">{c.academic_year}</Badge>
+        <>
+          {multi && (
+            <section className="home-section">
+              <SectionTitle>اختر الفصل أولاً</SectionTitle>
+              <div className="home-classes">
+                {classes.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`choose-chip${String(c.id) === String(picked) ? ' is-on' : ''}`}
+                    onClick={() => setPicked(String(c.id))}
+                  >
+                    <span className="choose-chip__icon">
+                      <Icon name="list" size={16} />
+                    </span>
+                    <span className="truncate">{c.name}</span>
+                  </button>
+                ))}
               </div>
+            </section>
+          )}
 
-              <h3 className="class-card__name">{c.name}</h3>
-              <div className="class-card__meta">{subtitle(c.id)}</div>
-
-              {!loading && (
-                <div className="class-card__stats">
-                  <div className="class-card__stat">
-                    <span className="class-card__stat-num">
-                      {boysByClass.get(c.id) ?? '—'}
-                    </span>
-                    <span className="class-card__stat-label">الأولاد</span>
-                  </div>
-                  <div className="class-card__stat">
-                    <span className="class-card__stat-num">
-                      {isBoy ? '—' : teachersByClass.get(c.id) ?? '—'}
-                    </span>
-                    <span className="class-card__stat-label">الخدام</span>
-                  </div>
+          {activeClassId ? (
+            <>
+              <section className="home-section">
+                <SectionTitle>وحدات الفصل</SectionTitle>
+                <div className="module-grid">
+                  {mods.map((m) => (
+                    <ModuleCard
+                      key={m.path || 'overview'}
+                      to={classHref(activeClassId, m.path)}
+                      icon={m.icon}
+                      label={m.label}
+                      desc={m.desc}
+                    />
+                  ))}
                 </div>
-              )}
+              </section>
 
-              <span className="class-card__go">
-                افتح الفصل <Icon name="chevron" size={15} />
-              </span>
-            </a>
-          ))}
-        </div>
+              {analytics.length > 0 && (
+                <section className="home-section">
+                  <SectionTitle>تحليل</SectionTitle>
+                  <div className="module-grid">
+                    {analytics.map((m) => (
+                      <ModuleCard
+                        key={m.to}
+                        to={m.to}
+                        icon={m.icon}
+                        label={m.label}
+                        desc={m.desc}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
+          ) : (
+            <div className="state-block state-block--inline">
+              <div className="state-block__icon">
+                <Icon name="list" size={28} />
+              </div>
+              <div className="state-block__title">اختار فصل الأول</div>
+              <div className="state-block__msg">بعد ما تختار الفصل هتظهر كل الوحدات هنا.</div>
+            </div>
+          )}
+        </>
       )}
     </>
   )
