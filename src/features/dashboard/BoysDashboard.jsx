@@ -4,7 +4,7 @@ import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
 import { DashboardAPI } from '../../lib/endpoints'
 import { Select } from '../../components/ui/Field'
-import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSpacer, Tabs } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
 import { Badge } from '../../components/ui/Badge'
 import { BoyProfileModal } from '../boys/BoyProfile'
@@ -12,10 +12,14 @@ import {
   AbsentNowBadge,
   ClassGroups,
   DashSection,
+  FollowedBadge,
   Kpi,
   KpiRow,
+  LateBadge,
   NField,
+  PeriodField,
   StreakBadge,
+  TodoBadge,
   TrendChart,
   useBoyDrawer,
 } from './parts'
@@ -24,28 +28,32 @@ import './dashboard.css'
 /**
  * BoysDashboard — "أداء الأولاد".
  *
- * One GET /dashboard/summary drives every card; the three N-controls are
- * query params, so changing one re-requests with the debounce below.
+ * One GET /dashboard/summary drives every card. The class picker, the period
+ * and the three N-controls are query params, so changing one re-requests.
+ * The class picker now drives the WHOLE page (totals included).
  */
 export default function BoysDashboard() {
   usePageTitle('أداء الأولاد')
   const { user, classes, can, classLabel } = useAuth()
 
   const [classId, setClassId] = useState('')
+  const [periodDays, setPeriodDays] = useState(30)
   const [streakN, setStreakN] = useState(4)
   const [absentN, setAbsentN] = useState(4)
   const [trendN, setTrendN] = useState(8)
+  const [coverTab, setCoverTab] = useState('todo')
   const [boy, openBoy, closeBoy] = useBoyDrawer()
 
   const { data, loading, error, refetch } = useQuery(
     () =>
       DashboardAPI.summary({
         ...(classId ? { class_id: classId } : {}),
+        period_days: periodDays,
         streak_n: streakN,
         absent_n: absentN,
         trend_n: trendN,
       }),
-    [classId, streakN, absentN, trendN],
+    [classId, periodDays, streakN, absentN, trendN],
   )
 
   const d = data
@@ -55,6 +63,10 @@ export default function BoysDashboard() {
   const byClass = (a?.by_class ? Object.entries(a.by_class) : [])
     .filter(([, v]) => v.total > 0)
     .sort((x, y) => y[1].percent - x[1].percent)
+
+  const cover = d?.follow?.boys
+  const late = d?.confession?.boys
+  const coverGroups = coverTab === 'done' ? cover?.done : cover?.todo
 
   return (
     <>
@@ -86,6 +98,7 @@ export default function BoysDashboard() {
             ))}
           </Select>
         )}
+        <PeriodField value={periodDays} onChange={setPeriodDays} />
         <ToolbarSpacer />
         <span className="small muted">آخر جمعة مسجلة: {d?.last_friday?.date || '—'}</span>
       </Toolbar>
@@ -106,6 +119,11 @@ export default function BoysDashboard() {
               progress={a.percent}
               sub={`حاضر ${a.present} • غائب ${a.absent} • الكل ${a.total}`}
             />
+            <Kpi
+              value={`${a.liturgy_percent}%`}
+              label="حضور القداس"
+              sub={`قداس ${a.liturgy_present} من ${a.total}`}
+            />
             <Kpi value={d.counts.boys} label="الأولاد" />
             <Kpi value={d.counts.fridays} label="جمع مسجلة" />
           </KpiRow>
@@ -118,11 +136,14 @@ export default function BoysDashboard() {
                     <div className="class-bars__row">
                       <strong>{classLabel(Number(cid))}</strong>
                       <span>
-                        {v.percent}% ({v.present}/{v.total})
+                        {v.percent}% حضور · {v.liturgy_percent}% قداس ({v.present}/{v.total})
                       </span>
                     </div>
                     <div className="progress">
                       <div className="progress__fill" style={{ width: `${v.percent}%` }} />
+                    </div>
+                    <div className="progress progress--liturgy">
+                      <div className="progress__fill" style={{ width: `${v.liturgy_percent}%` }} />
                     </div>
                   </div>
                 ))}
@@ -132,7 +153,7 @@ export default function BoysDashboard() {
 
           <DashSection
             title="منحنى حضور الأولاد"
-            hint="عدد الحاضرين في كل جمعة (من الأقدم للأحدث)."
+            hint="عدد الحاضرين وحضور القداس في كل جمعة (من الأقدم للأحدث)."
             control={
               <NField label="عدد الجمع" value={trendN} onChange={setTrendN} from={1} to={12} />
             }
@@ -147,8 +168,56 @@ export default function BoysDashboard() {
           </DashSection>
 
           <DashSection
+            title="افتقاد الأولاد"
+            hint={`الأولاد الذين تم افتقادهم خلال الفترة مقابل من لم يُفتقد بعد (${d.scope.period_days} يوم).`}
+            control={
+              <Tabs
+                value={coverTab}
+                onChange={setCoverTab}
+                options={[
+                  { value: 'todo', label: 'لم يُفتقدوا', count: cover?.todo_count },
+                  { value: 'done', label: 'اتفتقدوا', count: cover?.done_count },
+                ]}
+              />
+            }
+          >
+            <ClassGroups
+              groups={coverGroups || {}}
+              singleClass={d.scope.single_class}
+              emptyTitle={coverTab === 'done' ? 'لا يوجد افتقاد' : 'تم افتقاد الكل'}
+              emptyMsg={
+                coverTab === 'done'
+                  ? 'لم يتم افتقاد أي ولد خلال الفترة المختارة.'
+                  : 'كل الأولاد تم افتقادهم خلال الفترة.'
+              }
+              badge={(b) =>
+                coverTab === 'done' ? <FollowedBadge count={b.count} /> : <TodoBadge />
+              }
+              onBoy={openBoy}
+            />
+          </DashSection>
+
+          <DashSection
+            title="متأخرون عن الاعتراف"
+            hint={
+              late?.late_count
+                ? `${late.late_count} ولد لم يعترفوا خلال ${d.scope.period_days} يوم.`
+                : 'الكل اعترفوا خلال الفترة المختارة.'
+            }
+          >
+            <ClassGroups
+              groups={late?.late || {}}
+              singleClass={d.scope.single_class}
+              emptyTitle="لا يوجد متأخرون"
+              emptyMsg="كل الأولاد اعترفوا خلال الفترة المختارة."
+              badge={(b) => <LateBadge days={b.days} />}
+              onBoy={openBoy}
+            />
+          </DashSection>
+
+          <DashSection
             title="المواظبون على الحضور"
-                hint={`حاضرون جمعات متواصلة حتى آخر جمعة مسجلة (${d.last_friday.date ? d.last_friday.date : '—'}).`}
+            hint={`حاضرون جمعات متواصلة حتى آخر جمعة مسجلة (${d.last_friday.date ? d.last_friday.date : '—'}).`}
             control={
               <NField
                 label="عدد الجمع المتواصلة"

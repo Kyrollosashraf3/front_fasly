@@ -4,44 +4,65 @@ import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
 import { DashboardAPI } from '../../lib/endpoints'
 import { Select } from '../../components/ui/Field'
-import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSpacer, Tabs } from '../../components/ui/Toolbar'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { Table } from '../../components/ui/Table'
 import { ScorePill } from '../../components/ui/Bits'
-import { DashSection, Kpi, KpiRow, NField, TrendChart } from './parts'
+import {
+  DashSection,
+  FollowedBadge,
+  Kpi,
+  KpiRow,
+  LateBadge,
+  NField,
+  PeriodField,
+  ServantGroups,
+  TodoBadge,
+  TrendChart,
+} from './parts'
 import './dashboard.css'
 
 /**
  * TeachersDashboard — "أداء الخدام".
  *
- * Score = true flags summed across checks (attend + prepare + liturgy + follow),
- * max 4 per friday. Ties with the Nth servant are included on purpose.
+ * Score = true flags summed across checks
+ * (attend + prepare + liturgy + follow + teachers_meeting), max 5 per friday.
+ * Ties with the Nth servant are included on purpose.
  */
 export default function TeachersDashboard() {
   usePageTitle('أداء الخدام')
   const { user, classes, can, classLabel } = useAuth()
 
   const [classId, setClassId] = useState('')
+  const [periodDays, setPeriodDays] = useState(30)
   const [topN, setTopN] = useState(5)
   const [trendN, setTrendN] = useState(8)
+  const [coverTab, setCoverTab] = useState('todo')
 
   const { data, loading, error, refetch } = useQuery(
     () =>
       DashboardAPI.summary({
         ...(classId ? { class_id: classId } : {}),
+        period_days: periodDays,
         top_n: topN,
         teacher_trend_n: trendN,
       }),
-    [classId, topN, trendN],
+    [classId, periodDays, topN, trendN],
   )
 
   const d = data
   const showAll = can.manageClasses(user) && classes.length > 1
 
-  const totalChecks = (d?.servants || []).reduce((n, s) => n + s.checks, 0)
+  const sum = (key) => (d?.servants || []).reduce((n, s) => n + s[key], 0)
+  const totalChecks = sum('checks')
+  const attendPct = totalChecks ? Math.round((sum('attend') / totalChecks) * 100) : 0
   const avg = d?.servants?.length
-    ? (d.servants.reduce((n, s) => n + s.score, 0) / d.servants.length).toFixed(1)
+    ? (sum('score') / d.servants.length).toFixed(1)
     : '—'
+
+  const cover = d?.follow?.servants
+  const late = d?.confession?.servants
+  const coverGroups = coverTab === 'done' ? cover?.done : cover?.todo
 
   const columns = [
     { key: 'teacher_name', label: 'الخادم', mobile: 'الخادم', render: (s) => <span className="table__name">{s.teacher_name}</span> },
@@ -52,6 +73,7 @@ export default function TeachersDashboard() {
     { key: 'prepare', label: 'تحضير', width: 70, align: 'center', mobile: 'تحضير' },
     { key: 'liturgy', label: 'قداس', width: 70, align: 'center', mobile: 'قداس' },
     { key: 'follow', label: 'افتقاد', width: 70, align: 'center', mobile: 'افتقاد' },
+    { key: 'teachers_meeting', label: 'اجتماع', width: 80, align: 'center', mobile: 'اجتماع' },
   ]
 
   return (
@@ -82,8 +104,9 @@ export default function TeachersDashboard() {
             ))}
           </Select>
         )}
+        <PeriodField value={periodDays} onChange={setPeriodDays} />
         <ToolbarSpacer />
-        <span className="small muted">النقاط من 4 لكل جمعة</span>
+        <span className="small muted">النقاط من 5 لكل جمعة</span>
       </Toolbar>
 
       {loading && !d ? (
@@ -99,10 +122,11 @@ export default function TeachersDashboard() {
               hero
               value={d.counts.teachers}
               label="خدام تمت متابعتهم"
-              sub={`متابعة مسجلة ${totalChecks} • متوسط النقاط ${avg}`}
+              sub={`متابعة مسجلة ${totalChecks} • متوسط النقاط ${avg} من 5`}
             />
-            <Kpi value={totalChecks} label="متابعة" />
-            <Kpi value={avg} label="متوسط النقاط" />
+            <Kpi value={`${attendPct}%`} label="حضور الخدام" />
+            <Kpi value={sum('teachers_meeting')} label="اجتماع الخدام" sub="مرات الحضور" />
+            <Kpi value={avg} label="متوسط النقاط" sub="من 5" />
           </KpiRow>
 
           <DashSection
@@ -114,7 +138,7 @@ export default function TeachersDashboard() {
           >
             <div className="card">
               {d.teachers_trend.length ? (
-                <TrendChart points={d.teachers_trend} />
+                <TrendChart points={d.teachers_trend} unit="حاضر" />
               ) : (
                 <p className="muted small">لا توجد متابعات مسجلة بعد.</p>
               )}
@@ -123,7 +147,7 @@ export default function TeachersDashboard() {
 
           <DashSection
             title="أفضل الخدام"
-            hint="النقاط = مجموع (الحضور + تحضير الدرس + القداس + الافتقاد) في كل المتابعات. المتساوتون مع الأخير يدخلون معه."
+            hint="النقاط = مجموع (الحضور + تحضير الدرس + القداس + الافتقاد + اجتماع الخدام) في كل المتابعات. المتساوتون مع الأخير يدخلون معه."
             control={<NField label="عدد الأوائل" value={topN} onChange={setTopN} from={1} to={12} />}
           >
             {d.top_servants.length === 0 ? (
@@ -147,6 +171,52 @@ export default function TeachersDashboard() {
                 ))}
               </div>
             )}
+          </DashSection>
+
+          <DashSection
+            title="افتقاد الخدام"
+            hint={`الخدام الذين سجّلوا افتقادًا خلال الفترة مقابل من لم يسجّل بعد (${d.scope.period_days} يوم).`}
+            control={
+              <Tabs
+                value={coverTab}
+                onChange={setCoverTab}
+                options={[
+                  { value: 'todo', label: 'لم يفتقدوا', count: cover?.todo_count },
+                  { value: 'done', label: 'افتقدوا', count: cover?.done_count },
+                ]}
+              />
+            }
+          >
+            <ServantGroups
+              groups={coverGroups || {}}
+              singleClass={d.scope.single_class}
+              emptyTitle={coverTab === 'done' ? 'لا يوجد افتقاد' : 'افتقد الكل'}
+              emptyMsg={
+                coverTab === 'done'
+                  ? 'لم يسجّل أي خادم افتقادًا خلال الفترة.'
+                  : 'كل الخدام سجّلوا افتقادًا خلال الفترة.'
+              }
+              badge={(s) =>
+                coverTab === 'done' ? <FollowedBadge count={s.count} /> : <TodoBadge />
+              }
+            />
+          </DashSection>
+
+          <DashSection
+            title="متأخرون عن الاعتراف"
+            hint={
+              late?.late_count
+                ? `${late.late_count} خادم لم يعترفوا خلال ${d.scope.period_days} يوم.`
+                : 'الكل اعترفوا خلال الفترة المختارة.'
+            }
+          >
+            <ServantGroups
+              groups={late?.late || {}}
+              singleClass={d.scope.single_class}
+              emptyTitle="لا يوجد متأخرون"
+              emptyMsg="كل الخدام اعترفوا خلال الفترة المختارة."
+              badge={(s) => <LateBadge days={s.days} />}
+            />
           </DashSection>
 
           {d.servants.length > 0 && (

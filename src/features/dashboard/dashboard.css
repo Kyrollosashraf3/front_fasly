@@ -105,6 +105,19 @@
   margin-bottom: 5px;
 }
 
+/* Two bars per class: navy = attendance, gold = mass. */
+.class-bars .progress {
+  margin-top: 5px;
+}
+
+.class-bars .progress__fill {
+  background: linear-gradient(90deg, var(--navy-dark), var(--navy));
+}
+
+.progress--liturgy .progress__fill {
+  background: linear-gradient(90deg, var(--gold-hover), var(--gold));
+}
+
 /* ----------------------------------------------------------- group lists */
 
 .class-groups {
@@ -191,6 +204,11 @@
 }
 
 .chart-bar.max {
+  fill: var(--gold);
+}
+
+/* Second series: mass (قداس) attendance beside the navy boys bars. */
+.chart-bar--liturgy {
   fill: var(--gold);
 }
 
