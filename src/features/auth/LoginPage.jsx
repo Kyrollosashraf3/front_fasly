@@ -9,6 +9,7 @@ import { Icon } from '../../components/ui/Icon'
 import { ApiError } from '../../lib/api'
 import { isPhone, normalisePhone } from '../../lib/constants'
 import { AuthBrand } from './AuthBrand'
+import { AuthSupport } from './AuthSupport'
 import './login.css'
 
 export default function LoginPage() {
@@ -126,6 +127,8 @@ export default function LoginPage() {
               </Link>
             </span>
           </div>
+
+          <AuthSupport />
         </div>
       </main>
     </div>

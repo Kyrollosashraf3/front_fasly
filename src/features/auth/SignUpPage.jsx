@@ -10,6 +10,7 @@ import { ApiError } from '../../lib/api'
 import { AuthAPI } from '../../lib/endpoints'
 import { isPhone, normalisePhone } from '../../lib/constants'
 import { AuthBrand } from './AuthBrand'
+import { AuthSupport } from './AuthSupport'
 import './login.css'
 
 /**
@@ -234,6 +235,8 @@ export default function SignUpPage() {
               </Link>
             </span>
           </div>
+
+          <AuthSupport />
         </div>
       </main>
     </div>
