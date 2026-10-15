@@ -34,8 +34,9 @@ const KIND = { call: 'blue', visit: 'green', whatsapp: 'green', no_answer: 'red'
 /**
  * FollowUpPage — the weekly avcation sheet + its history.
  *
- * Roster: the selected servant's group (falls back to the whole class).
- * Save walks only the rows that actually changed: POST for new, PATCH for edits.
+ * Roster: every boy in the class, so a servant can log a follow-up for any of
+ * them (managers can narrow it down to one servant's group). Save walks only the
+ * rows that actually changed: POST for new, PATCH for edits.
  */
 export default function FollowUpPage() {
   const { classLabel, can, user, isBoy, isServant } = useAuth()
@@ -51,8 +52,9 @@ export default function FollowUpPage() {
 
   const canWrite = can.writeFollowUp(user)
   const myTeacherId = user?.teacher_id ?? null
-  // "كل الخدام" is an admin/super-admin tool: a servant always works on his own
-  // group (seeded into the state below), so he never needs the picker.
+  // "كل الخدام" is an admin/super-admin tool: a servant only ever writes his
+  // own follow-ups, but he can log one for any boy in his class — so the roster
+  // stays the whole class and the picker is hidden from him.
   const showServantFilter = can.manageClasses(user)
 
   const [date, setDate] = useState(lastFridayISO())
@@ -93,12 +95,13 @@ export default function FollowUpPage() {
   /** Which boys are on this sheet? */
   const roster = useMemo(() => {
     const all = data?.boys || []
-    if (!teacherId) return all
+    // A servant sees the whole class; a manager can narrow to one group.
+    if (isServant || !teacherId) return all
     const group = data?.groups?.groups?.find((g) => String(g.teacher_id) === String(teacherId))
     if (!group) return []
     const ids = new Set(group.boys.map((b) => b.boy_id))
     return all.filter((b) => ids.has(b.id))
-  }, [data, teacherId])
+  }, [data, teacherId, isServant])
 
   const rows = useMemo(() => {
     const q = debounced.trim().toLowerCase()
@@ -588,10 +591,12 @@ export default function FollowUpPage() {
         ) : rows.length === 0 ? (
           <EmptyState
             icon="heart"
-            title={roster.length === 0 ? 'مفيش أولاد في المجموعة' : 'لا توجد نتائج'}
+            title={roster.length === 0 ? (isServant ? 'مفيش أولاد في الفصل' : 'مفيش أولاد في المجموعة') : 'لا توجد نتائج'}
             message={
               roster.length === 0
-                ? 'وزّع الأولاد على الخادم من صفحة المجموعات أولًا.'
+                ? isServant
+                  ? 'اتأكد إن فيه أولاد متسجلين في الفصل الأول.'
+                  : 'وزّع الأولاد على الخادم من صفحة المجموعات أولًا.'
                 : 'جرّب بحثًا مختلفًا أو غيّر الفلتر.'
             }
             action={

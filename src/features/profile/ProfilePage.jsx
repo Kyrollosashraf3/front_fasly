@@ -5,12 +5,13 @@ import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
 import { AuthAPI, BoyAPI, TeacherAPI } from '../../lib/endpoints'
-import { ROLE_OPTIONS } from '../../lib/roles'
+import { ROLE_LABELS, ROLE_OPTIONS } from '../../lib/roles'
 import { isPhone, normalisePhone } from '../../lib/constants'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { Field, Input, Select } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
+import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge, RoleBadge } from '../../components/ui/Badge'
 import { DetailRow, SectionTitle } from '../../components/ui/Bits'
@@ -31,12 +32,18 @@ const EMPTY_USER = {
 /** How a login is addressed: the phone he signs in with. */
 const handleOf = (u) => u?.phone || '—'
 
+/** The servant / boy a login is attached to, resolved from the loaded lists. */
+const attachedTeacher = (teachers, u) =>
+  u?.teacher_id ? teachers.find((t) => t.id === u.teacher_id) || null : null
+const attachedBoy = (boys, u) =>
+  u?.boy_id ? boys.find((b) => b.id === u.boy_id) || null : null
+
 /**
  * ProfilePage — who am I, my password, and (for managers) every login.
  */
 export default function ProfilePage() {
   usePageTitle('الحساب')
-  const { user, can, isSuperAdmin, classLabel } = useAuth()
+  const { user, can, isSuperAdmin, classLabel, classes } = useAuth()
   const toast = useToast()
   const modal = useModal()
 
@@ -44,6 +51,8 @@ export default function ProfilePage() {
   const [pwBusy, setPwBusy] = useState(false)
   const [dialog, setDialog] = useState(null) // null | 'new' | user object
   const [importResult, setImportResult] = useState(null)
+  const [roleFilter, setRoleFilter] = useState('')
+  const [classFilter, setClassFilter] = useState('')
 
   const isMgr = can.manageAccounts(user)
 
@@ -62,8 +71,8 @@ export default function ProfilePage() {
     { enabled: isMgr },
   )
 
-  const teachers = people?.teachers || []
-  const boys = people?.boys || []
+  const teachers = useMemo(() => people?.teachers || [], [people])
+  const boys = useMemo(() => people?.boys || [], [people])
 
   const {
     data: users,
@@ -85,6 +94,36 @@ export default function ProfilePage() {
     }
     return '—'
   }
+
+  /** The name shown for an account — a super admin may borrow a servant's. */
+  const nameOf = (u) => {
+    const t = attachedTeacher(teachers, u)
+    const b = attachedBoy(boys, u)
+    return u?.display_name || t?.teacher_name || b?.boy_name || '—'
+  }
+
+  /** The class an account belongs to ("كل الفصول" for the global admin). */
+  const classOf = (u) => {
+    if (u?.role === 'super_admin') return 'كل الفصول'
+    const t = attachedTeacher(teachers, u)
+    const b = attachedBoy(boys, u)
+    const cid = t?.class_id ?? b?.class_id
+    return cid ? classLabel(cid) : '—'
+  }
+
+  const filteredUsers = useMemo(
+    () =>
+      (users || []).filter((u) => {
+        if (roleFilter && u.role !== roleFilter) return false
+        if (classFilter) {
+          const t = attachedTeacher(teachers, u)
+          const b = attachedBoy(boys, u)
+          if (String(t?.class_id ?? b?.class_id ?? '') !== String(classFilter)) return false
+        }
+        return true
+      }),
+    [users, roleFilter, classFilter, teachers, boys],
+  )
 
   const changePassword = async (e) => {
     e.preventDefault()
@@ -163,16 +202,7 @@ export default function ProfilePage() {
 
       {isMgr && (
         <section style={{ marginTop: 'var(--sp-6)' }}>
-          <SectionTitle
-            action={
-              <div className="row" style={{ gap: 'var(--sp-2)' }}>
-
-
-              </div>
-            }
-          >
-            الحسابات
-          </SectionTitle>
+          <SectionTitle>الحسابات</SectionTitle>
 
           {usersLoading ? (
             <SkeletonRows rows={4} cols={4} />
@@ -181,76 +211,130 @@ export default function ProfilePage() {
           ) : !users?.length ? (
             <EmptyState icon="lock" title="لا توجد حسابات" message="لا توجد حسابات مسجلة بعد." />
           ) : (
-            <Table
-              compact
-              stackOnMobile
-              rows={users}
-              rowKey={(u) => u.id}
-              columns={[
-                {
-                  key: 'handle',
-                  label: 'رقم التليفون',
-                  mobile: 'رقم التليفون',
-                  render: (u) => (
-                    <span className="table__name">
-                      <span dir="ltr">{handleOf(u)}</span>
-                      {u.pending_signup && (
-                        <>
-                          {' '}
-                          <Badge kind="gold">بانتظار التسجيل</Badge>
-                        </>
-                      )}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'role',
-                  label: 'الصلاحية',
-                  width: 130,
-                  mobile: 'الصلاحية',
-                  render: (u) => <RoleBadge role={u.role} />,
-                },
-                {
-                  key: 'linked',
-                  label: 'المسند إليه',
-                  mobile: 'المسند إليه',
-                  render: (u) => {
-                    const b = u?.boy_id ? boys.find((x) => x.id === u.boy_id) : null
-                    if (b) {
-                      return (
-                        <span className="row" style={{ gap: 8 }}>
-                          <BoyName boy={b} onSaved={refetchPeople} flag={false} />
-                          <span className="xsmall muted">{classLabel(b.class_id)}</span>
+            <>
+              <Toolbar>
+                <label className="row small bold" style={{ gap: 8 }}>
+                  <Icon name="shield" size={16} />
+                  <Select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="select--plain"
+                    style={{ minWidth: 170 }}
+                    aria-label="فلتر الصلاحية"
+                  >
+                    <option value="">كل الصلاحيات</option>
+                    {ROLE_OPTIONS.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+
+                {classes.length > 1 && (
+                  <label className="row small bold" style={{ gap: 8 }}>
+                    <Icon name="groups" size={16} />
+                    <Select
+                      value={classFilter}
+                      onChange={(e) => setClassFilter(e.target.value)}
+                      className="select--plain"
+                      style={{ minWidth: 170 }}
+                      aria-label="فلتر الفصل"
+                    >
+                      <option value="">كل الفصول</option>
+                      {classes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                )}
+
+                <ToolbarSpacer />
+                <span className="small muted">{filteredUsers.length} حساب</span>
+              </Toolbar>
+
+              {!filteredUsers.length ? (
+                <EmptyState
+                  icon="filter"
+                  title="لا توجد نتائج"
+                  message="مفيش حسابات مطابقة للفلتر."
+                />
+              ) : (
+                <Table
+                  sortable
+                  compact
+                  stackOnMobile
+                  rows={filteredUsers}
+                  rowKey={(u) => u.id}
+                  columns={[
+                    {
+                      key: 'name',
+                      label: 'الاسم',
+                      mobile: 'الاسم',
+                      sortValue: nameOf,
+                      render: (u) => {
+                        const b = attachedBoy(boys, u)
+                        if (b) return <BoyName boy={b} onSaved={refetchPeople} flag={false} />
+                        return <span className="table__name">{nameOf(u)}</span>
+                      },
+                    },
+                    {
+                      key: 'class',
+                      label: 'الفصل',
+                      width: 150,
+                      mobile: 'الفصل',
+                      sortValue: classOf,
+                      render: (u) => <span className="small muted">{classOf(u)}</span>,
+                    },
+                    {
+                      key: 'phone',
+                      label: 'رقم التليفون',
+                      width: 170,
+                      mobile: 'رقم التليفون',
+                      sortValue: (u) => u?.phone || '',
+                      render: (u) => (
+                        <span className="table__name">
+                          <span dir="ltr">{handleOf(u)}</span>
+                          {u.pending_signup && <Badge kind="gold">بانتظار التسجيل</Badge>}
                         </span>
-                      )
-                    }
-                    return linkedLabel(u)
-                  },
-                },
-                {
-                  key: 'actions',
-                  label: '',
-                  width: 100,
-                  align: 'end',
-                  mobile: '',
-                  render: (u) => (
-                    <div className="table__actions">
-                      <IconButton
-                        icon={<Icon name="edit" size={15} />}
-                        label="تعديل"
-                        onClick={() => setDialog(u)}
-                      />
-                      <IconButton
-                        icon={<Icon name="trash" size={15} />}
-                        label="حذف"
-                        danger
-                        onClick={() => removeUser(u)}
-                      />
-                    </div>
-                  ),
-                },
-              ]}
-            />
+                      ),
+                    },
+                    {
+                      key: 'role',
+                      label: 'الصلاحية',
+                      width: 130,
+                      mobile: 'الصلاحية',
+                      sortValue: (u) => ROLE_LABELS[u.role] || u.role,
+                      render: (u) => <RoleBadge role={u.role} />,
+                    },
+                    {
+                      key: 'actions',
+                      label: '',
+                      width: 100,
+                      align: 'end',
+                      mobile: '',
+                      render: (u) => (
+                        <div className="table__actions">
+                          <IconButton
+                            icon={<Icon name="edit" size={15} />}
+                            label="تعديل"
+                            onClick={() => setDialog(u)}
+                          />
+                          <IconButton
+                            icon={<Icon name="trash" size={15} />}
+                            label="حذف"
+                            danger
+                            onClick={() => removeUser(u)}
+                          />
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              )}
+            </>
           )}
         </section>
       )}
@@ -310,6 +394,23 @@ function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onS
 
   const role = form.role
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+
+  const capturedOwner = useMemo(() => {
+    if (!isEdit) return ''
+    if (target.teacher_id) {
+      const t = teachers.find((x) => x.id === target.teacher_id)
+      return t ? `${t.teacher_name} — ${classLabel(t.class_id)}` : `خادم #${target.teacher_id}`
+    }
+    if (target.boy_id) {
+      const b = boys.find((x) => x.id === target.boy_id)
+      return b ? `${b.boy_name} — ${classLabel(b.class_id)}` : `ولد #${target.boy_id}`
+    }
+    return ''
+  }, [isEdit, target, teachers, boys, classLabel])
+
+  // Editing keeps the owner the manager clicked on: it is shown read-only so he
+  // never has to pick the servant again. Switching the role re-opens the picker.
+  const lockOwner = isEdit && target.role === role && Boolean(capturedOwner)
 
   const ownerOptions = () => {
     if (OWNER_ROLES.includes(role)) {
@@ -461,20 +562,30 @@ function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onS
         </Field>
 
         {OWNER_ROLES.includes(role) || role === 'user' ? (
-          <Field
-            label={role === 'user' ? 'الولد' : 'الخادم'}
-            required
-            htmlFor="u-owner"
-            error={errors.owner}
-          >
-            <Select
-              id="u-owner"
-              value={role === 'user' ? form.boy_id : form.teacher_id}
+          lockOwner ? (
+            <Field label={role === 'user' ? 'الولد' : 'الخادم'} hint="متحدد تلقائيًا من الحساب.">
+              <Input value={capturedOwner} readOnly disabled />
+            </Field>
+          ) : (
+            <Field
+              label={role === 'user' ? 'الولد' : 'الخادم'}
+              required
+              htmlFor="u-owner"
               error={errors.owner}
-              onChange={set(role === 'user' ? 'boy_id' : 'teacher_id')}
             >
-              {ownerOptions()}
-            </Select>
+              <Select
+                id="u-owner"
+                value={role === 'user' ? form.boy_id : form.teacher_id}
+                error={errors.owner}
+                onChange={set(role === 'user' ? 'boy_id' : 'teacher_id')}
+              >
+                {ownerOptions()}
+              </Select>
+            </Field>
+          )
+        ) : lockOwner ? (
+          <Field label="الخادم" hint="متحدد تلقائيًا من الحساب.">
+            <Input value={capturedOwner} readOnly disabled />
           </Field>
         ) : (
           <p className="small muted">الأدمن العام مسند لكل الفصول تلقائيًا.</p>

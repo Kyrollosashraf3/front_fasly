@@ -1,4 +1,5 @@
-import { Fragment } from 'react'
+import { Fragment, useMemo, useState } from 'react'
+import { Icon } from './Icon'
 
 /**
  * Table — the shared data table.
@@ -20,6 +21,9 @@ import { Fragment } from 'react'
  * `stackOnMobile` turns each row into a card below 768px, using a column's
  * `mobile` label as the field name — wide sheets stay readable on a phone
  * instead of scrolling sideways.
+ *
+ * `sortable` turns any column that defines `sortValue(row)` into a click-to-sort
+ * header (asc → desc → unsorted). Everything else stays exactly as passed.
  */
 export function Table({
   columns,
@@ -31,8 +35,36 @@ export function Table({
   stackOnMobile = false,
   className = '',
   footer,
+  sortable = false,
+  initialSort = null,
 }) {
+  const [sort, setSort] = useState(initialSort)
+
+  const sorted = useMemo(() => {
+    if (!sortable || !sort?.key) return rows
+    const col = columns.find((c) => c.key === sort.key)
+    const valueOf = col?.sortValue
+    if (!valueOf) return rows
+    const dir = sort.dir === 'desc' ? -1 : 1
+    return [...rows].sort((a, b) => {
+      const va = valueOf(a)
+      const vb = valueOf(b)
+      if (va == null && vb == null) return 0
+      if (va == null) return 1
+      if (vb == null) return -1
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
+      return String(va).localeCompare(String(vb), 'ar') * dir
+    })
+  }, [rows, columns, sort, sortable])
+
   if (!rows?.length) return null
+
+  const toggleSort = (key) =>
+    setSort((s) => {
+      if (!s || s.key !== key) return { key, dir: 'asc' }
+      if (s.dir === 'asc') return { key, dir: 'desc' }
+      return null
+    })
 
   const expandedFor = (row, i) => renderExpanded?.(row, i) ?? null
 
@@ -41,18 +73,38 @@ export function Table({
       <table className={`table ${compact ? 'table--compact' : ''} ${stackOnMobile ? 'table--stack' : ''}`}>
         <thead>
           <tr>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                style={{ width: col.width, textAlign: col.align || 'start' }}
-              >
-                {col.label}
-              </th>
-            ))}
+            {columns.map((col) => {
+              const canSort = sortable && Boolean(col.sortValue)
+              const active = sort?.key === col.key
+              return (
+                <th
+                  key={col.key}
+                  style={{ width: col.width, textAlign: col.align || 'start' }}
+                  aria-sort={
+                    active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined
+                  }
+                >
+                  {canSort ? (
+                    <button
+                      type="button"
+                      className={`th-sort${active ? ' is-active' : ''}`}
+                      onClick={() => toggleSort(col.key)}
+                    >
+                      <span>{col.label}</span>
+                      <span className={`th-sort__icon${active && sort.dir === 'asc' ? ' is-asc' : ''}`}>
+                        <Icon name="chevronDown" size={13} />
+                      </span>
+                    </button>
+                  ) : (
+                    col.label
+                  )}
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => {
+          {sorted.map((row, i) => {
             const key = rowKey ? rowKey(row, i) : row.id ?? i
             const detail = expandedFor(row, i)
 
