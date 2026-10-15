@@ -43,6 +43,7 @@
   margin-top: var(--sp-4);
   padding: var(--sp-3) var(--sp-4);
   background: var(--navy);
+  color: #fff;
   border: 1px solid var(--navy-dark);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);

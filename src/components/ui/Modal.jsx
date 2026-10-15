@@ -10,6 +10,14 @@ import { useEffect, useRef } from 'react'
  */
 export function Modal({ open = true, title, sub, size, onClose, children, footer, headExtra }) {
   const panelRef = useRef(null)
+  // `onClose` is usually an inline arrow, so it changes identity on every
+  // parent render. Keep it in a ref so the effect below only runs when the
+  // modal actually opens — otherwise each keystroke re-focused the first
+  // element in the dialog (the ✕ close button), stealing the caret.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return undefined
@@ -17,7 +25,7 @@ export function Modal({ open = true, title, sub, size, onClose, children, footer
     document.body.style.overflow = 'hidden'
 
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose?.()
+      if (e.key === 'Escape') onCloseRef.current?.()
       if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
         // Enter submits the form when one is open inside the modal.
         const form = panelRef.current?.querySelector('form')
@@ -29,8 +37,9 @@ export function Modal({ open = true, title, sub, size, onClose, children, footer
     }
     document.addEventListener('keydown', onKey)
 
+    // First real field, never the header ✕ button.
     const first = panelRef.current?.querySelector(
-      'input:not([type=hidden]), select, textarea, button',
+      'input:not([type=hidden]), select, textarea',
     )
     first?.focus()
 
@@ -38,7 +47,7 @@ export function Modal({ open = true, title, sub, size, onClose, children, footer
       document.body.style.overflow = prevOverflow
       document.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
