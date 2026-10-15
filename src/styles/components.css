@@ -629,11 +629,13 @@
   background: var(--bg-soft);
 }
 
+/* A marked-present row is a faint wash (~40% lighter than before) so the
+   tan/yellow never competes with the green tick words. */
 .table tbody tr.is-present {
-  background: var(--gold-soft);
+  background: rgba(255, 249, 230, 0.6); /* --gold-soft at 60% */
 }
 .table tbody tr.is-present:hover {
-  background: #fff3d1;
+  background: rgba(255, 243, 209, 0.6);
 }
 
 .table__actions {
