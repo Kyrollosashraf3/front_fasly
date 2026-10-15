@@ -15,7 +15,8 @@ import { FATHERS, SKILLS } from '../../lib/constants'
 
 const EMPTY = {
   boy_name: '',
-  gender: 'm',
+  // No default: the type (ولد/بنت) must be picked explicitly on a new boy.
+  gender: '',
   class_id: '',
   teacher_id: '',
   birth_date: '',
@@ -100,6 +101,7 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
   const validate = () => {
     const next = {}
     if (!form.boy_name.trim()) next.boy_name = 'اسم الولد مطلوب.'
+    if (!form.gender) next.gender = 'اختر النوع.'
     if (!form.class_id) next.class_id = 'اختر الفصل.'
     if (form.birth_date && form.birth_date > new Date().toISOString().slice(0, 10))
       next.birth_date = 'تاريخ الميلاد مش ممكن يكون في المستقبل.'
@@ -215,8 +217,9 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
             />
           </Field>
 
-          <Field label="النوع" required htmlFor="boy-gender">
-            <Select id="boy-gender" value={form.gender} onChange={set('gender')}>
+          <Field label="النوع" required htmlFor="boy-gender" error={errors.gender}>
+            <Select id="boy-gender" value={form.gender} error={errors.gender} onChange={set('gender')}>
+              <option value="">— اختر —</option>
               <option value="m">ولد</option>
               <option value="f">بنت</option>
             </Select>

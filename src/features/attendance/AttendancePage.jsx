@@ -11,13 +11,12 @@ import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput } from '../../components/ui/Field'
-import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Tabs, Toolbar } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { BoyName } from '../boys/BoyName'
 import { BoyForm } from '../boys/BoyForm'
-import { AttendEditMarker } from './AttendEditDialog'
 import { formatDate, lastFridayISO, todayISO } from '../../lib/format'
 import './attendance.css'
 
@@ -179,20 +178,6 @@ export default function AttendancePage() {
     return map
   }, [history, date])
 
-  const setAll = (value) => {
-    setMarks((m) => {
-      const next = { ...m }
-      for (const b of data?.boys || []) {
-        const cur = getMark(b.id)
-        // storm "كل الغائبين": wiping present also wipes mass (mass implies present)
-        next[b.id] = value
-          ? { ...cur, present: true }
-          : { ...cur, present: false, liturgy: false }
-      }
-      return next
-    })
-  }
-
   const save = async () => {
     setSaving(true)
     try {
@@ -218,6 +203,25 @@ export default function AttendancePage() {
 
   // Warn before leaving with a Friday sheet that still has unsaved ticks.
   useUnsavedGuard(canWrite && dirty, save, `فيه تعديلات حضور لسه متحفظتش ليوم ${formatDate(date)}.`)
+
+  /**
+   * Opening the quick "add boy" form reloads the sheet, which would wipe any
+   * ticks not saved yet — so offer to save them first.
+   */
+  const openAddBoy = async () => {
+    if (canWrite && dirty) {
+      const ok = await modal.confirm({
+        title: 'تحفظ الحضور الأول؟',
+        message: 'فيه تعديلات حضور لسه متحفظتش. الأفضل تحفظها قبل ما تضيف ولد جديد عشان متضيعش.',
+        confirmLabel: 'احفظ وكمّل',
+        kind: 'primary',
+      })
+      if (!ok) return
+      const ok2 = await save()
+      if (!ok2) return
+    }
+    setAddOpen(true)
+  }
 
   /** Switching the date reloads the sheet — confirm first when it is dirty. */
   const changeDate = async (next) => {
@@ -249,13 +253,6 @@ export default function AttendancePage() {
     setPicked(next)
   }
 
-  /** boyId -> the row already stored on the server for this sheet, if any. */
-  const savedRecords = useMemo(
-    () => new Map((data?.attends || []).map((a) => [a.boy_id, a])),
-    [data],
-  )
-  const savedOf = (boyId) => savedRecords.get(boyId)
-
   const columns = [
     {
       key: 'boy_name',
@@ -267,19 +264,11 @@ export default function AttendancePage() {
       mobile: '',
       render: (b) => (
         <span className="table__name">
-          <BoyName
-            boy={b}
-            classId={classId}
-            onSaved={refetch}
-            suffix={b.gender === 'f' ? <span className="xsmall muted">(بنت)</span> : null}
-          />
+          <BoyName boy={b} classId={classId} onSaved={refetch} />
           {previousAbsent.has(b.id) && (
             <span className="att-hint att-hint--absent" title="غاب الجمعة اللي فاتت">
               غاب الجمعة اللي فاتت
             </span>
-          )}
-          {canWrite && savedOf(b.id) && (
-            <AttendEditMarker boy={b} record={savedOf(b.id)} date={date} onSaved={refetch} />
           )}
         </span>
       ),
@@ -384,19 +373,6 @@ export default function AttendancePage() {
             { value: 'absent', label: 'الغائبون', count: counts.absent },
           ]}
         />
-
-        <ToolbarSpacer />
-
-        {canWrite && (
-          <div className="toolbar__group">
-            <Button variant="ghost" size="sm" onClick={() => setAll(true)}>
-              الكل حاضر
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setAll(false)}>
-              الكل غائب
-            </Button>
-          </div>
-        )}
       </Toolbar>
 
       {/* on the phone the toolbar scrolls away, so the search gets its own
@@ -418,7 +394,7 @@ export default function AttendancePage() {
             action={
               canAdd ? (
                 <div className="row" style={{ gap: 10 }}>
-                  <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={() => setAddOpen(true)}>
+                  <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={openAddBoy}>
                     إضافة ولد
                   </Button>
                   <a className="btn btn-secondary" href={`#/class/${classId}/boys`}>
@@ -467,7 +443,7 @@ export default function AttendancePage() {
               <Button
                 variant="secondary"
                 icon={<Icon name="plus" size={16} />}
-                onClick={() => setAddOpen(true)}
+                onClick={openAddBoy}
               >
                 إضافة ولد
               </Button>
