@@ -71,9 +71,8 @@ export default function AttendancePage() {
   usePageTitle(isGlobal ? 'الحضور' : `الحضور — ${label}`)
 
   const canWrite = can.writeAttendance(user) && !isBoy
-  // Adding a boy is a directory write, not an attendance write — servants take
-  // the sheet but only a manager may grow the class.
-  const canAdd = can.writeDirectory(user) && !isBoy
+  // Servants can grow their class right from the sheet while taking attendance.
+  const canAdd = can.writeBoys(user) && !isBoy
 
   const [date, setDate] = useState(lastFridayISO())
   const [search, setSearch] = useState('')

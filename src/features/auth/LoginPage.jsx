@@ -24,6 +24,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
+  // Set when the number is on file but still has no password — we then nudge
+  // the person to finish signing up instead of just showing "wrong password".
+  const [pendingHandle, setPendingHandle] = useState('')
   const [busy, setBusy] = useState(false)
 
   if (isAuthenticated) return <Navigate to="/" replace />
@@ -41,6 +44,7 @@ export default function LoginPage() {
   const submit = async (e) => {
     e.preventDefault()
     setFormError('')
+    setPendingHandle('')
     if (!validate()) return
 
     const handle = normalisePhone(identifier)
@@ -61,7 +65,8 @@ export default function LoginPage() {
             if (!res.exists) {
               setFormError('الرقم ده مش مسجّل عندنا. كلّم أمين الفصل يضيف حسابك.')
             } else if (res.needs_signup) {
-              setFormError('الحساب لسه محتاج تسجيل. اعمل «سجّل برقمك» وحدّد كلمة مرورك الأول.')
+              // Account on file but no password yet — point them at sign-up.
+              setPendingHandle(handle)
             } else {
               setFormError('رقم التليفون أو كلمة المرور مش صح.')
             }
@@ -100,6 +105,22 @@ export default function LoginPage() {
               <div className="form-error" role="alert">
                 <Icon name="alert" size={16} />
                 <span>{formError}</span>
+              </div>
+            )}
+
+            {pendingHandle && (
+              <div className="login__note" role="status">
+                <p className="login__note-text">
+                  الرقم <b dir="ltr">{pendingHandle}</b> عليه حساب بالفعل بس لسه من غير كلمة
+                  مرور. اضغط «سجّل برقمك»، دخل واختار باسورد.
+                </p>
+                <Link
+                  to="/signup"
+                  state={{ phone: pendingHandle }}
+                  className="btn btn-primary btn-block"
+                >
+                  سجّل برقمك
+                </Link>
               </div>
             )}
 

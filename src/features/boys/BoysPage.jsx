@@ -31,6 +31,8 @@ export default function BoysPage() {
   const label = allClasses ? 'كل الفصول' : classLabel(classId)
   usePageTitle(`الأولاد — ${label}`)
 
+  // Staff may add/edit boys; only managers may delete or bulk-import them.
+  const canManageBoys = can.writeBoys(user)
   const canWrite = can.writeDirectory(user)
 
   const [search, setSearch] = useState('')
@@ -133,16 +135,16 @@ export default function BoysPage() {
       render: (b) => (
         <div className="table__actions">
           <IconButton icon={<Icon name="eye" size={16} />} label="عرض" onClick={() => setViewing(b)} />
+          {canManageBoys && (
+            <IconButton icon={<Icon name="edit" size={16} />} label="تعديل" onClick={() => openEdit(b)} />
+          )}
           {canWrite && (
-            <>
-              <IconButton icon={<Icon name="edit" size={16} />} label="تعديل" onClick={() => openEdit(b)} />
-              <IconButton
-                icon={<Icon name="trash" size={16} />}
-                label="حذف"
-                danger
-                onClick={() => remove(b)}
-              />
-            </>
+            <IconButton
+              icon={<Icon name="trash" size={16} />}
+              label="حذف"
+              danger
+              onClick={() => remove(b)}
+            />
           )}
         </div>
       ),
@@ -173,7 +175,7 @@ export default function BoysPage() {
           </div>
         </div>
 
-        {canWrite && (
+        {canManageBoys && (
           <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={openCreate}>
             إضافة ولد
           </Button>
@@ -248,12 +250,12 @@ export default function BoysPage() {
             message={
               search || flag !== 'all'
                 ? 'جرّب بحثًا مختلفًا.'
-                : canWrite
-                  ? 'ابدأ بإضافة أولاد الفصل أو استورد ملف إكسل.'
+                : canManageBoys
+                  ? 'ابدأ بإضافة أولاد الفصل.'
                   : 'لسه مفيش أولاد متسجلين في الفصل ده.'
             }
             action={
-              canWrite && !search && flag === 'all' ? (
+              canManageBoys && !search && flag === 'all' ? (
                 <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={openCreate}>
                   إضافة ولد
                 </Button>

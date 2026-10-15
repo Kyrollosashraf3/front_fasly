@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
@@ -27,9 +27,11 @@ export default function SignUpPage() {
   const { loginWithToken, isAuthenticated } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [step, setStep] = useState('phone') // phone | password
-  const [phone, setPhone] = useState('')
+  // Prefilled when we arrive from login with a phone that has no password yet.
+  const [phone, setPhone] = useState(location.state?.phone || '')
   const [who, setWho] = useState(null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')

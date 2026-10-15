@@ -171,6 +171,28 @@
   color: var(--gold-deep, var(--gold));
 }
 
+/* Soft callout: the number is on file but still needs a password. */
+.login__note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-md);
+}
+
+.login__note-text {
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--gold-ink);
+  text-align: center;
+}
+
+.login__note-text b {
+  color: var(--navy);
+}
+
 /* WhatsApp support — a hint line with a clear, tappable green button. */
 .login__support {
   display: flex;

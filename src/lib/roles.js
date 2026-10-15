@@ -45,6 +45,12 @@ export const can = {
   writeDirectory: (user) => isManager(user),
 
   /**
+   * Add or edit a boy's file. Any staff member may (the backend allows the
+   * class amin, a servant of that class and the super admin; a boy cannot).
+   */
+  writeBoys: (user) => roleOf(user) !== ROLES.USER,
+
+  /**
    * Edit one boy's file (name, phones, address, ...). Any non-boy login may:
    * the backend allows the class amin, a servant of that class and the super
    * admin, and refuses a boy writing his own row.
