@@ -95,6 +95,12 @@
     display: none;
   }
 
+  /* On the phone the sheet has its own dedicated sticky search bar, so the
+     (tall) toolbar stays in flow to avoid stacking two pinned bars. */
+  .att-toolbar {
+    position: static;
+  }
+
   .att-search-sticky {
     display: block;
     position: sticky;

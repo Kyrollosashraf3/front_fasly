@@ -6,6 +6,7 @@ import { usePageTitle } from '../../context/TitleContext'
 import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
 import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { AttendAPI, BoyAPI } from '../../lib/endpoints'
+import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
@@ -15,6 +16,7 @@ import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { BoyName } from '../boys/BoyName'
+import { BoyForm } from '../boys/BoyForm'
 import { AttendEditMarker } from './AttendEditDialog'
 import { formatDate, lastFridayISO, todayISO } from '../../lib/format'
 import './attendance.css'
@@ -70,6 +72,9 @@ export default function AttendancePage() {
   usePageTitle(isGlobal ? 'الحضور' : `الحضور — ${label}`)
 
   const canWrite = can.writeAttendance(user) && !isBoy
+  // Adding a boy is a directory write, not an attendance write — servants take
+  // the sheet but only a manager may grow the class.
+  const canAdd = can.writeDirectory(user) && !isBoy
 
   const [date, setDate] = useState(lastFridayISO())
   const [search, setSearch] = useState('')
@@ -77,6 +82,7 @@ export default function AttendancePage() {
   const [view, setView] = useState('all')
   const [marks, setMarks] = useState({})
   const [saving, setSaving] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
 
   const debounced = useDebounced(search, 200)
 
@@ -135,10 +141,10 @@ export default function AttendancePage() {
   }, [data, marks])
 
   const rows = useMemo(() => {
-    const q = debounced.trim().toLowerCase()
+    const q = normalizeSearch(debounced)
     return (data?.boys || []).filter((b) => {
       if (gender !== 'all' && b.gender !== gender) return false
-      if (q && !b.boy_name.toLowerCase().includes(q) && !(b.phone || '').includes(q)) return false
+      if (q && !normalizeSearch(b.boy_name).includes(q) && !normalizeSearch(b.phone).includes(q)) return false
       if (view === 'present' && !getMark(b.id).present) return false
       // smart "absent" view: a boy only drops off the list once BOTH facts are
       // in — marked present AND marked mass. Ticking one of them keeps him here.
@@ -254,6 +260,9 @@ export default function AttendancePage() {
     {
       key: 'boy_name',
       label: 'الاسم',
+      // A capped name column keeps the tick chips right beside the name on a
+      // desktop sheet instead of stranded in the middle of a wide table.
+      width: 280,
       // no label on the phone card — the name speaks for itself
       mobile: '',
       render: (b) => (
@@ -280,8 +289,7 @@ export default function AttendancePage() {
           {
             key: 'marks',
             label: '',
-            width: 200,
-            align: 'center',
+            align: 'start',
             mobile: '',
             render: (b) => (
               <div className="att-marks">
@@ -340,7 +348,7 @@ export default function AttendancePage() {
         </a>
       </div>
 
-      <Toolbar>
+      <Toolbar className="att-toolbar">
         {multi && (
           <ClassFilter value={classId} onChange={changeClass} classes={classes} ariaLabel="اختيار فصل الحضور" />
         )}
@@ -408,10 +416,15 @@ export default function AttendancePage() {
             title="لا يوجد أولاد في الفصل"
             message="ضيف الأولاد الأول عشان تقدر تسجّل الحضور."
             action={
-              can.writeDirectory(user) ? (
-                <a className="btn btn-primary" href={`#/class/${classId}/boys`}>
-                  بيانات الأولاد
-                </a>
+              canAdd ? (
+                <div className="row" style={{ gap: 10 }}>
+                  <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={() => setAddOpen(true)}>
+                    إضافة ولد
+                  </Button>
+                  <a className="btn btn-secondary" href={`#/class/${classId}/boys`}>
+                    بيانات الأولاد
+                  </a>
+                </div>
               ) : null
             }
           />
@@ -450,12 +463,28 @@ export default function AttendancePage() {
 
           <div className="row" style={{ gap: 10 }}>
             {dirty && <Badge kind="gold" dot>فيه تعديلات لمتحفظش</Badge>}
+            {canAdd && (
+              <Button
+                variant="secondary"
+                icon={<Icon name="plus" size={16} />}
+                onClick={() => setAddOpen(true)}
+              >
+                إضافة ولد
+              </Button>
+            )}
             <Button variant="accent" loading={saving} disabled={!dirty} onClick={save} icon={<Icon name="check" size={16} />}>
               حفظ الحضور
             </Button>
           </div>
         </div>
       )}
+
+      <BoyForm
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        defaultClassId={classId}
+        onSaved={refetch}
+      />
     </>
   )
 }

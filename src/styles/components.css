@@ -460,6 +460,17 @@
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xs);
+  /* Pins under the topbar while the list scrolls, so the search and filters
+     never leave reach — handy on long sheets like attendance. */
+  position: sticky;
+  top: calc(var(--topbar-height) + env(safe-area-inset-top));
+  z-index: 15;
+}
+
+/* Secondary bars (e.g. the "history" filter below a list) stay in flow so two
+   pinned toolbars never stack on the same page. */
+.toolbar--static {
+  position: static;
 }
 
 .toolbar__spacer {

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
 import { DashboardAPI, TeacherAPI } from '../../lib/endpoints'
+import { normalizeSearch } from '../../lib/search'
 import { Select, SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer, Tabs } from '../../components/ui/Toolbar'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -76,11 +77,11 @@ export default function FollowUpPerformancePage() {
 
   const ranking = useMemo(() => {
     const rows = d?.ranking || []
-    const q = search.trim().toLowerCase()
+    const q = normalizeSearch(search)
     return rows.filter((r) => {
       if (tab === 'done' && !r.followed) return false
       if (tab === 'todo' && r.followed) return false
-      if (q && !r.boy_name.toLowerCase().includes(q)) return false
+      if (q && !normalizeSearch(r.boy_name).includes(q)) return false
       return true
     })
   }, [d, tab, search])

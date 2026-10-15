@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { BoyAPI } from '../../lib/endpoints'
+import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
@@ -47,15 +48,15 @@ export default function BoysPage() {
   )
 
   const rows = useMemo(() => {
-    const q = debounced.trim().toLowerCase()
+    const q = normalizeSearch(debounced)
     return (boys || []).filter((b) => {
       if (flag === 'flagged' && !b.issue_flag) return false
       if (!q) return true
       return (
-        b.boy_name.toLowerCase().includes(q) ||
-        (b.phone || '').includes(q) ||
-        (b.address || '').toLowerCase().includes(q) ||
-        (b.zone || '').toLowerCase().includes(q)
+        normalizeSearch(b.boy_name).includes(q) ||
+        normalizeSearch(b.phone).includes(q) ||
+        normalizeSearch(b.address).includes(q) ||
+        normalizeSearch(b.zone).includes(q)
       )
     })
   }, [boys, debounced, flag])

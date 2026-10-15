@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { TeacherAPI } from '../../lib/endpoints'
+import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { ContactActions } from '../../components/ui/ContactActions'
@@ -47,15 +48,15 @@ export default function TeachersPage() {
   )
 
   const rows = useMemo(() => {
-    const q = debounced.trim().toLowerCase()
+    const q = normalizeSearch(debounced)
     return (teachers || []).filter(
       (t) =>
         !q ||
-        t.teacher_name.toLowerCase().includes(q) ||
-        (t.phone || '').includes(q) ||
-        (t.phone_2 || '').includes(q) ||
-        (t.zone || '').toLowerCase().includes(q) ||
-        (t.address || '').toLowerCase().includes(q),
+        normalizeSearch(t.teacher_name).includes(q) ||
+        normalizeSearch(t.phone).includes(q) ||
+        normalizeSearch(t.phone_2).includes(q) ||
+        normalizeSearch(t.zone).includes(q) ||
+        normalizeSearch(t.address).includes(q),
     )
   }, [teachers, debounced])
 

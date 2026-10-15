@@ -7,6 +7,7 @@ import { usePageTitle } from '../../context/TitleContext'
 import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
 import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { CheckAPI, TeacherAPI } from '../../lib/endpoints'
+import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
@@ -93,8 +94,8 @@ export default function TeacherCheckPage() {
     setMarks((m) => ({ ...m, [id]: { ...getMark(id), [flag]: value } }))
 
   const rows = useMemo(() => {
-    const q = debounced.trim().toLowerCase()
-    return (data?.teachers || []).filter((t) => !q || t.teacher_name.toLowerCase().includes(q))
+    const q = normalizeSearch(debounced)
+    return (data?.teachers || []).filter((t) => !q || normalizeSearch(t.teacher_name).includes(q))
   }, [data, debounced])
 
   const dirty = useMemo(() => {

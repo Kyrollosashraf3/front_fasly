@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useDebounced, useQuery } from '../../hooks'
 import { GroupAPI } from '../../lib/endpoints'
+import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { SearchInput, Select } from '../../components/ui/Field'
@@ -62,18 +63,18 @@ export default function GroupsPage() {
   )
 
   const unassigned = useMemo(() => {
-    const q = debounced.trim().toLowerCase()
-    return (data?.unassigned || []).filter((b) => !q || b.boy_name.toLowerCase().includes(q))
+    const q = normalizeSearch(debounced)
+    return (data?.unassigned || []).filter((b) => !q || normalizeSearch(b.boy_name).includes(q))
   }, [data, debounced])
 
   const visibleGroups = useMemo(() => {
-    const q = debounced.trim().toLowerCase()
+    const q = normalizeSearch(debounced)
     return (data?.groups || []).filter((g) => {
       if (teacherFilter && String(g.teacher_id) !== teacherFilter) return false
       if (!q) return true
       return (
-        g.teacher_name.toLowerCase().includes(q) ||
-        g.boys.some((b) => b.boy_name.toLowerCase().includes(q))
+        normalizeSearch(g.teacher_name).includes(q) ||
+        g.boys.some((b) => normalizeSearch(b.boy_name).includes(q))
       )
     })
   }, [data, teacherFilter, debounced])

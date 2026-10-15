@@ -19,6 +19,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States
 import { BoyName } from '../boys/BoyName'
 import { followLabel } from '../boys/BoyProfile'
 import { formatDate, formatPercent, todayISO } from '../../lib/format'
+import { normalizeSearch } from '../../lib/search'
 
 const STATUS_OPTIONS = [
   { value: '', label: '—' },
@@ -119,9 +120,9 @@ export default function FollowUpPage() {
   )
 
   const rows = useMemo(() => {
-    const q = debounced.trim().toLowerCase()
+    const q = normalizeSearch(debounced)
     return roster.filter((b) => {
-      if (q && !b.boy_name.toLowerCase().includes(q) && !(b.phone || '').includes(q)) return false
+      if (q && !normalizeSearch(b.boy_name).includes(q) && !normalizeSearch(b.phone).includes(q)) return false
       if (status === 'done' && !draft[b.id]) return false
       if (status === 'todo' && draft[b.id]) return false
       return true
@@ -708,7 +709,7 @@ export default function FollowUpPage() {
       {!isBoy && (
         <>
           <div className="section-title">السجل السابق</div>
-          <Toolbar>
+          <Toolbar className="toolbar--static">
             <label className="row small bold" style={{ gap: 8 }}>
               <Icon name="filter" size={15} />
               <Input

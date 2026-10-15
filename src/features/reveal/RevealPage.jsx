@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { BoyAPI, TeacherAPI } from '../../lib/endpoints'
+import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
@@ -50,9 +51,9 @@ export default function RevealPage() {
 
   const rows = useMemo(() => {
     const all = data?.boys || []
-    const q = debounced.trim().toLowerCase()
+    const q = normalizeSearch(debounced)
     if (!q) return all
-    return all.filter((b) => b.boy_name.toLowerCase().includes(q))
+    return all.filter((b) => normalizeSearch(b.boy_name).includes(q))
   }, [data, debounced])
 
   const showPicker = can.seeServants(user)
