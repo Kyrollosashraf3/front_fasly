@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button'
 import { Field, Input } from '../../components/ui/Field'
 import { Icon } from '../../components/ui/Icon'
 import { ApiError } from '../../lib/api'
+import { AuthAPI } from '../../lib/endpoints'
 import { isPhone, normalisePhone } from '../../lib/constants'
 import { AuthBrand } from './AuthBrand'
 import { AuthSupport } from './AuthSupport'
@@ -51,11 +52,27 @@ export default function LoginPage() {
       navigate(location.state?.from || '/', { replace: true })
     } catch (err) {
       if (err instanceof ApiError) {
-        setFormError(
-          err.status === 429
-            ? 'طلبات كثيرة جدًا. انتظر قليلًا قبل ما تجرّب تاني.'
-            : err.message,
-        )
+        if (err.status === 401) {
+          // The API answers "wrong phone OR wrong password" with a single 401
+          // so it can't be used to probe which numbers exist. Ask the signup
+          // lookup which of the two it really was, to show a kinder message.
+          try {
+            const res = await AuthAPI.signupCheck(handle)
+            if (!res.exists) {
+              setFormError('الرقم ده مش مسجّل عندنا. كلّم أمين الفصل يضيف حسابك.')
+            } else if (res.needs_signup) {
+              setFormError('الحساب لسه محتاج تسجيل. اعمل «سجّل برقمك» وحدّد كلمة مرورك الأول.')
+            } else {
+              setFormError('رقم التليفون أو كلمة المرور مش صح.')
+            }
+          } catch {
+            setFormError('رقم التليفون أو كلمة المرور مش صح.')
+          }
+        } else if (err.status === 429) {
+          setFormError('طلبات كثيرة جدًا. انتظر قليلًا قبل ما تجرّب تاني.')
+        } else {
+          setFormError(err.message)
+        }
       } else {
         setFormError('حصل خطأ. حاول مرة أخرى.')
       }
