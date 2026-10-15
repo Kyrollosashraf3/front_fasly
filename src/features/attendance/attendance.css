@@ -107,25 +107,34 @@
     height: 26px;
   }
 
-  /* On the phone each row is one line: the name (with its red ✕) on the right
-     and the tick chips to its left, instead of the chips dropping underneath. */
-  .att-table.table--stack tr {
+  /* On the phone each row is one line: the name (with its ✎ and red ✕) on the
+     right and the tick chips to its left, instead of the chips dropping under
+     the name. Note `.att-table` sits on the wrapper, `.table--stack` on the
+     table inside it — hence the descendant selectors. */
+  .att-table .table--stack tr {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-3);
+    /* Tighter cards (~30%) so more names fit on a screen. */
+    padding: var(--sp-2) var(--sp-3);
+    margin-bottom: 6px;
   }
-  .att-table.table--stack td {
+  .att-table .table--stack td {
     display: block;
     padding: 0;
     border: 0;
   }
-  .att-table.table--stack td:first-child {
+  .att-table .table--stack td:first-child {
     flex: 1 1 auto;
     min-width: 0;
   }
-  .att-table.table--stack td:last-child {
+  .att-table .table--stack td + td {
     flex: none;
+  }
+  /* Keep name + edit marker + ✕ all on the one line. */
+  .att-table .table__name {
+    flex-wrap: nowrap;
   }
 
   /* Compact captions keep the two chips beside the name; the tick box itself
