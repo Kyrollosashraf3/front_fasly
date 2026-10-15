@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useDebounced, useQuery } from '../../hooks'
+import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { BoyAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
+import { ClassFilter } from '../../components/ui/ClassFilter'
 import { SearchInput } from '../../components/ui/Field'
 import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
@@ -21,12 +21,13 @@ import { calcAge } from '../../lib/format'
 import './boys.css'
 
 export default function BoysPage() {
-  const { classId } = useParams()
   const { classLabel, can, user } = useAuth()
+  const { classId, multi, classes, picked, setPicked } = useClassScope()
   const toast = useToast()
   const modal = useModal()
 
-  const label = classLabel(classId)
+  const allClasses = !classId
+  const label = allClasses ? 'كل الفصول' : classLabel(classId)
   usePageTitle(`الأولاد — ${label}`)
 
   const canWrite = can.writeDirectory(user)
@@ -41,7 +42,7 @@ export default function BoysPage() {
   const debounced = useDebounced(search, 220)
 
   const { data: boys, loading, error, refetch } = useQuery(
-    () => BoyAPI.list({ class_id: classId }),
+    () => BoyAPI.list({ class_id: classId || undefined }),
     [classId],
   )
 
@@ -94,6 +95,17 @@ export default function BoysPage() {
       mobile: 'الاسم',
       render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
     },
+    ...(multi
+      ? [
+          {
+            key: 'class',
+            label: 'الفصل',
+            width: 150,
+            mobile: 'الفصل',
+            render: (b) => <span className="small muted">{classLabel(b.class_id)}</span>,
+          },
+        ]
+      : []),
     { key: 'gender', label: 'النوع', width: 80, mobile: 'النوع', render: (b) => (b.gender === 'f' ? 'بنت' : 'ولد') },
     { key: 'age', label: 'السن', width: 70, mobile: 'السن', render: (b) => calcAge(b.birth_date) ?? '—' },
     {
@@ -141,15 +153,22 @@ export default function BoysPage() {
       <div className="page-head">
         <div>
           <nav className="page-head__crumb">
-            <a href="#/">الفصول</a>
+            <a href="#/">الرئيسية</a>
             <span aria-hidden="true">/</span>
-            <a href={`#/class/${classId}`}>{label}</a>
-            <span aria-hidden="true">/</span>
-            <span>الأولاد</span>
+            {allClasses ? (
+              <span>الأولاد</span>
+            ) : (
+              <>
+                <a href={`#/class/${classId}`}>{label}</a>
+                <span aria-hidden="true">/</span>
+                <span>الأولاد</span>
+              </>
+            )}
           </nav>
           <h1 className="page-head__title">بيانات الأولاد</h1>
           <div className="page-head__sub">
-            {boys?.length ?? 0} ولد {flaggedCount > 0 && `· ${flaggedCount} محتاجين متابعة`}
+            {boys?.length ?? 0} ولد {allClasses ? '' : `في ${label}`}{' '}
+            {flaggedCount > 0 && `· ${flaggedCount} محتاجين متابعة`}
           </div>
         </div>
 
@@ -161,6 +180,14 @@ export default function BoysPage() {
       </div>
 
       <Toolbar>
+        {multi && (
+          <ClassFilter
+            value={picked}
+            onChange={setPicked}
+            classes={classes}
+            allLabel="كل الفصول"
+          />
+        )}
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون..." />
         <Tabs
           value={flag}
@@ -183,7 +210,7 @@ export default function BoysPage() {
               key: 'export',
               label: 'تصدير البيانات',
               icon: 'download',
-              onClick: () => BoyAPI.export(classId),
+              onClick: () => BoyAPI.export(classId || undefined),
             },
             canWrite && {
               key: 'import',
@@ -202,7 +229,7 @@ export default function BoysPage() {
             },
           ].filter(Boolean)}
         />
-        <a className="btn btn-secondary" href={`#/class/${classId}/attendance`}>
+        <a className="btn btn-secondary" href={classId ? `#/class/${classId}/attendance` : '#/attendance'}>
           <Icon name="calendar" size={15} />
           الحضور
         </a>
@@ -241,7 +268,7 @@ export default function BoysPage() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         boy={editing}
-        defaultClassId={Number(classId)}
+        defaultClassId={classId ? Number(classId) : undefined}
         onSaved={refetch}
       />
 

@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { classIdFrom } from '../components/layout/navLinks'
 
 /**
  * useQuery — the app's tiny data layer (no external dependency).
@@ -81,6 +84,36 @@ export function useLastClassId(currentId) {
   }, [currentId])
 
   return last
+}
+
+/**
+ * useClassScope — which class is this module showing?
+ *
+ * On a class route (`/class/:id/boys`) the URL owns the answer and no picker is
+ * offered. On a global route (`/boys`, `/attendance`, …) a super admin gets an
+ * in-page picker and may sit on "all classes" (`''`); a single-class login
+ * quietly keeps his only class. `classId` is `''` only for the "all" choice.
+ */
+export function useClassScope() {
+  const { pathname } = useLocation()
+  const { classes, classReady } = useAuth()
+  const [picked, setPicked] = useState('')
+
+  const routeClassId = classIdFrom(pathname)
+  const multi = classes.length > 1
+  const firstClassId = classReady && classes.length ? String(classes[0].id) : ''
+
+  return {
+    routeClassId, // string | null
+    isGlobal: !routeClassId,
+    multi,
+    classes,
+    classReady,
+    firstClassId,
+    picked, // '' == "كل الفصول"
+    setPicked,
+    classId: routeClassId ?? picked, // '' == "كل الفصول"
+  }
 }
 
 /** Value debounced by `wait` ms — search boxes, filter knobs. */

@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
-import { useDebounced, useQuery } from '../../hooks'
+import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { AttendAPI, BoyAPI, FollowUpAPI, GroupAPI, TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { ContactActions } from '../../components/ui/ContactActions'
+import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput, Select } from '../../components/ui/Field'
 import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
@@ -37,13 +38,16 @@ const KIND = { call: 'blue', visit: 'green', whatsapp: 'green', no_answer: 'red'
  * Save walks only the rows that actually changed: POST for new, PATCH for edits.
  */
 export default function FollowUpPage() {
-  const { classId } = useParams()
   const { classLabel, can, user, isBoy, isServant } = useAuth()
+  const scope = useClassScope()
+  const { multi, classes, setPicked, firstClassId, isGlobal } = scope
+  // A follow-up sheet always needs one class: fall back to the first until picked.
+  const classId = scope.classId || firstClassId
   const toast = useToast()
   const modal = useModal()
 
-  const label = classLabel(classId)
-  usePageTitle(`الافتقاد — ${label}`)
+  const label = classId ? classLabel(classId) : ''
+  usePageTitle(isGlobal ? 'الافتقاد' : `الافتقاد — ${label}`)
 
   const canWrite = can.writeFollowUp(user)
   const myTeacherId = user?.teacher_id ?? null
@@ -76,6 +80,7 @@ export default function FollowUpPage() {
       return { boys, teachers, groups, existing, attends }
     },
     [classId, date, isBoy],
+    { enabled: Boolean(classId) },
   )
 
   useEffect(() => {
@@ -233,6 +238,23 @@ export default function FollowUpPage() {
     setDate(next)
   }
 
+  /** Switching the class reloads the sheet — confirm first, then drop the
+   *  selected servant (he belongs to the class we just left). */
+  const changeClass = async (next) => {
+    if (!next || next === classId) return
+    if (canWrite && dirty) {
+      const ok = await modal.confirm({
+        title: 'تغيير الفصل؟',
+        message: 'فيه تعديلات افتقاد لسه متحفظتش. لو غيّرت الفصل هتخسرها.',
+        confirmLabel: 'تغيير والتجاهل',
+        kind: 'danger',
+      })
+      if (!ok) return
+    }
+    setPicked(next)
+    setTeacherId('')
+  }
+
   /* ------------------------------------------------------------- history */
   const { data: history, loading: historyLoading, refetch: refetchHistory } = useQuery(
     () =>
@@ -242,7 +264,7 @@ export default function FollowUpPage() {
         ...(historyDate ? { action_date: historyDate } : {}),
       }),
     [classId, teacherId, historyDate],
-    { enabled: !isBoy },
+    { enabled: !isBoy && Boolean(classId) },
   )
 
   const historyRows = useMemo(() => (history || []).slice(0, 50), [history])
@@ -473,16 +495,25 @@ export default function FollowUpPage() {
     },
   ]
 
+  // No class resolved yet (classes still loading) — keep the skeleton up.
+  const busy = loading || !classId
+
   return (
     <>
       <div className="page-head">
         <div>
           <nav className="page-head__crumb">
-            <a href="#/">الفصول</a>
+            <a href="#/">الرئيسية</a>
             <span aria-hidden="true">/</span>
-            <a href={`#/class/${classId}`}>{label}</a>
-            <span aria-hidden="true">/</span>
-            <span>الافتقاد</span>
+            {isGlobal ? (
+              <span>الافتقاد</span>
+            ) : (
+              <>
+                <a href={`#/class/${classId}`}>{label}</a>
+                <span aria-hidden="true">/</span>
+                <span>الافتقاد</span>
+              </>
+            )}
           </nav>
           <h1 className="page-head__title">الافتقاد الأسبوعي</h1>
           <div className="page-head__sub">
@@ -496,6 +527,13 @@ export default function FollowUpPage() {
       </div>
 
       <Toolbar>
+        {multi && (
+          <ClassFilter
+            value={scope.classId || firstClassId}
+            onChange={changeClass}
+            classes={classes}
+          />
+        )}
         {showServantFilter && (
           <label className="row small bold" style={{ gap: 8 }}>
             <Icon name="servant" size={16} />
@@ -543,7 +581,7 @@ export default function FollowUpPage() {
       </Toolbar>
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
-        {loading ? (
+        {busy ? (
           <SkeletonRows rows={7} cols={6} />
         ) : error ? (
           <ErrorState error={error} onRetry={refetch} />

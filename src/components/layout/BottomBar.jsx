@@ -14,6 +14,7 @@ import {
   classIdFrom,
   classLinks,
   classModules,
+  globalModules,
   navClass,
   rootLinks,
 } from './navLinks'
@@ -88,7 +89,6 @@ function SheetLabel({ children }) {
 
 const TABS = [
   { key: 'home', icon: 'home', label: 'الرئيسية' },
-  { key: 'classes', icon: 'list', label: 'الفصول' },
   { key: 'menu', icon: 'menu', label: 'القائمة' },
   { key: 'me', icon: 'user', label: 'الحساب' },
 ]
@@ -117,23 +117,20 @@ export function BottomBar() {
 
   const classId = classIdFrom(pathname)
   const single = classReady && classes.length === 1
-  // On a global route the class links live on under the remembered class.
+  // A super admin works across every class, so his sheets carry global modules
+  // instead of a class-scoped menu he would have to re-pick on every screen.
+  const multi = classes.length > 1
+  // On a global route a single-class login keeps his class's links alive.
   const lastClass = useLastClassId(classId)
   const remembered = lastClass && classReady && canAccess(lastClass) ? lastClass : null
   const myClassId = single ? String(classes[0].id) : classId || remembered
-  const tabs = single
-    ? [
-        { key: 'home', icon: 'home', label: 'الرئيسية' },
-        { key: 'menu', icon: 'menu', label: 'القائمة' },
-        { key: 'me', icon: 'user', label: 'الحساب' },
-      ]
-    : TABS
   const routeTab =
     pathname === '/profile' ? 'me' : pathname === '/' ? 'home' : classId ? 'menu' : 'home'
   const active = sheet || routeTab
 
   const roots = rootLinks(auth)
   const mods = classModules(auth)
+  const gmods = globalModules(auth)
   const analytics = analyticsModules(auth)
 
   const handleLogout = async () => {
@@ -162,7 +159,7 @@ export function BottomBar() {
   return (
     <>
       <nav className="tabbar" aria-label="التنقل السريع">
-        {tabs.map((tab) => (
+        {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -179,20 +176,30 @@ export function BottomBar() {
       </nav>
 
       <Sheet open={sheet === 'home'} title="الرئيسية" onClose={close}>
-        {myClassId && mods.length > 0 && (
+        {multi ? (
           <>
-            <SheetLabel>وحدات الفصل</SheetLabel>
-            {mods.map((m) => (
-              <SheetLink
-                key={m.path || 'overview'}
-                to={classHref(myClassId, m.path)}
-                icon={m.icon}
-                label={m.label}
-                end={m.end}
-                onNavigate={close}
-              />
+            <SheetLabel>الوحدات</SheetLabel>
+            {gmods.map((m) => (
+              <SheetLink key={m.to} {...m} onNavigate={close} />
             ))}
           </>
+        ) : (
+          myClassId &&
+          mods.length > 0 && (
+            <>
+              <SheetLabel>وحدات الفصل</SheetLabel>
+              {mods.map((m) => (
+                <SheetLink
+                  key={m.path || 'overview'}
+                  to={classHref(myClassId, m.path)}
+                  icon={m.icon}
+                  label={m.label}
+                  end={m.end}
+                  onNavigate={close}
+                />
+              ))}
+            </>
+          )
         )}
         {analytics.length > 0 && (
           <>
@@ -209,23 +216,19 @@ export function BottomBar() {
         {accountSection}
       </Sheet>
 
-      <Sheet open={sheet === 'classes'} title="الفصول" onClose={close}>
-        <SheetLabel>الفصول</SheetLabel>
-        {!single && <SheetLink to="/" end icon="list" label="كل الفصول" onNavigate={close} />}
-        {!classReady ? (
-          <p className="muted small sheet__note">جاري تحميل الفصول...</p>
-        ) : classes.length === 0 ? (
-          <p className="muted small sheet__note">لسه مفيش فصول.</p>
-        ) : (
-          classes.map((c) => (
-            <SheetLink key={c.id} to={`/class/${c.id}`} icon="list" label={c.name} onNavigate={close} />
-          ))
-        )}
-        {accountSection}
-      </Sheet>
-
-      <Sheet open={sheet === 'menu' || sheet === 'class'} title="القائمة" onClose={close}>
-        {myClassId ? (
+      <Sheet open={sheet === 'menu'} title="القائمة" onClose={close}>
+        {multi ? (
+          <>
+            <SheetLabel>الوحدات</SheetLabel>
+            {gmods.map((m) => (
+              <SheetLink key={m.to} {...m} onNavigate={close} />
+            ))}
+            <SheetLabel>أقسام ثابتة</SheetLabel>
+            {roots.map((l) => (
+              <SheetLink key={l.to} {...l} onNavigate={close} />
+            ))}
+          </>
+        ) : myClassId ? (
           <>
             {!single && (
               <SheetLink to="/" end icon="chevronStart" label="كل الفصول" onNavigate={close} />

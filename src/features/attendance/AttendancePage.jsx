@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
-import { useDebounced, useQuery } from '../../hooks'
+import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { AttendAPI, BoyAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
+import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput } from '../../components/ui/Field'
 import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
@@ -58,13 +58,16 @@ function AttMark({ type, checked, onToggle, disabled }) {
 }
 
 export default function AttendancePage() {
-  const { classId } = useParams()
   const { classLabel, can, user, isBoy } = useAuth()
+  const scope = useClassScope()
+  const { multi, classes, setPicked, firstClassId, isGlobal } = scope
+  // A sheet always needs one class: fall back to the first until one is picked.
+  const classId = scope.classId || firstClassId
   const toast = useToast()
   const modal = useModal()
 
-  const label = classLabel(classId)
-  usePageTitle(`الحضور — ${label}`)
+  const label = classId ? classLabel(classId) : ''
+  usePageTitle(isGlobal ? 'الحضور' : `الحضور — ${label}`)
 
   const canWrite = can.writeAttendance(user) && !isBoy
 
@@ -86,13 +89,18 @@ export default function AttendancePage() {
       return { boys, attends }
     },
     [classId, date],
+    { enabled: Boolean(classId) },
   )
 
   /**
    * The whole Friday history of the class, once, regardless of the date being
    * edited — all it needs from it is "was he there the Friday before?".
    */
-  const { data: history } = useQuery(() => AttendAPI.list({ class_id: classId }), [classId])
+  const { data: history } = useQuery(
+    () => AttendAPI.list({ class_id: classId }),
+    [classId],
+    { enabled: Boolean(classId) },
+  )
 
   // Seed the working copy whenever the source data changes.
   useEffect(() => {
@@ -220,6 +228,21 @@ export default function AttendancePage() {
     setDate(next)
   }
 
+  /** Switching the class (global mode) reloads the sheet — confirm first. */
+  const changeClass = async (next) => {
+    if (!next || next === classId) return
+    if (canWrite && dirty) {
+      const ok = await modal.confirm({
+        title: 'تغيير الفصل؟',
+        message: 'فيه تعديلات حضور لسه متحفظتش. لو غيّرت الفصل هتخسرها.',
+        confirmLabel: 'تغيير والتجاهل',
+        kind: 'danger',
+      })
+      if (!ok) return
+    }
+    setPicked(next)
+  }
+
   /** boyId -> the row already stored on the server for this sheet, if any. */
   const savedRecords = useMemo(
     () => new Map((data?.attends || []).map((a) => [a.boy_id, a])),
@@ -285,29 +308,42 @@ export default function AttendancePage() {
       : []),
   ]
 
-  const noRecords = !loading && (data?.boys || []).length === 0
+  // `!classId` covers the moment before the super admin's classes arrive.
+  const busy = loading || !classId
+  const noRecords = !busy && (data?.boys || []).length === 0
 
   return (
     <>
       <div className="page-head">
         <div>
           <nav className="page-head__crumb">
-            <a href="#/">الفصول</a>
+            <a href="#/">الرئيسية</a>
             <span aria-hidden="true">/</span>
-            <a href={`#/class/${classId}`}>{label}</a>
-            <span aria-hidden="true">/</span>
-            <span>الحضور</span>
+            {isGlobal ? (
+              <span>الحضور</span>
+            ) : (
+              <>
+                <a href={`#/class/${classId}`}>{label}</a>
+                <span aria-hidden="true">/</span>
+                <span>الحضور</span>
+              </>
+            )}
           </nav>
           <h1 className="page-head__title">تسجيل الحضور</h1>
-          <div className="page-head__sub">{formatDate(date)}</div>
+          <div className="page-head__sub">
+            {formatDate(date)}{label ? ` · ${label}` : ''}
+          </div>
         </div>
-        <Link className="btn btn-secondary" to={`/class/${classId}`}>
-          <Icon name="chevronStart" size={15} />
-          رجوع للفصل
-        </Link>
+        <a className="btn btn-secondary" href={classId ? `#/class/${classId}/boys` : '#/boys'}>
+          <Icon name="boys" size={15} />
+          بيانات الأولاد
+        </a>
       </div>
 
       <Toolbar>
+        {multi && (
+          <ClassFilter value={classId} onChange={changeClass} classes={classes} ariaLabel="اختيار فصل الحضور" />
+        )}
         <label className="row small bold" style={{ gap: 8 }}>
           <Icon name="calendar" size={16} />
           <Input
@@ -362,7 +398,7 @@ export default function AttendancePage() {
       </div>
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
-        {loading ? (
+        {busy ? (
           <SkeletonRows rows={8} cols={4} />
         ) : error ? (
           <ErrorState error={error} onRetry={refetch} />

@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useDebounced, useQuery } from '../../hooks'
+import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { ContactActions } from '../../components/ui/ContactActions'
+import { ClassFilter } from '../../components/ui/ClassFilter'
 import { SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
@@ -22,12 +23,13 @@ import { formatDate } from '../../lib/format'
 import './teachers.css'
 
 export default function TeachersPage() {
-  const { classId } = useParams()
   const { classLabel, can, user, isServant } = useAuth()
+  const { classId, multi, classes, picked, setPicked } = useClassScope()
   const toast = useToast()
   const modal = useModal()
 
-  const label = classLabel(classId)
+  const allClasses = !classId
+  const label = allClasses ? 'كل الفصول' : classLabel(classId)
   usePageTitle(`الخدام — ${label}`)
 
   const canWrite = can.writeDirectory(user)
@@ -40,7 +42,7 @@ export default function TeachersPage() {
   const debounced = useDebounced(search, 220)
 
   const { data: teachers, loading, error, refetch } = useQuery(
-    () => TeacherAPI.list({ class_id: classId }),
+    () => TeacherAPI.list({ class_id: classId || undefined }),
     [classId],
   )
 
@@ -80,6 +82,17 @@ export default function TeachersPage() {
       mobile: 'الاسم',
       render: (t) => <span className="table__name">{t.teacher_name}</span>,
     },
+    ...(multi
+      ? [
+          {
+            key: 'class',
+            label: 'الفصل',
+            width: 150,
+            mobile: 'الفصل',
+            render: (t) => <span className="small muted">{classLabel(t.class_id)}</span>,
+          },
+        ]
+      : []),
     {
       key: 'phone',
       label: 'التليفون',
@@ -141,20 +154,26 @@ export default function TeachersPage() {
       <div className="page-head">
         <div>
           <nav className="page-head__crumb">
-            <a href="#/">الفصول</a>
+            <a href="#/">الرئيسية</a>
             <span aria-hidden="true">/</span>
-            <a href={`#/class/${classId}`}>{label}</a>
-            <span aria-hidden="true">/</span>
-            <span>الخدام</span>
+            {allClasses ? (
+              <span>الخدام</span>
+            ) : (
+              <>
+                <a href={`#/class/${classId}`}>{label}</a>
+                <span aria-hidden="true">/</span>
+                <span>الخدام</span>
+              </>
+            )}
           </nav>
           <h1 className="page-head__title">دليل الخدام</h1>
           <div className="page-head__sub">
-            {teachers?.length ?? 0} خادم مسند للفصل
+            {teachers?.length ?? 0} خادم {allClasses ? 'في كل الفصول' : `مسند لـ ${label}`}
           </div>
         </div>
 
         <div className="row" style={{ gap: 'var(--sp-2)' }}>
-          <Link className="btn btn-secondary" to={`/class/${classId}/checks`}>
+          <Link className="btn btn-secondary" to={classId ? `/class/${classId}/checks` : '/checks'}>
             <Icon name="clipboard" size={15} />
             متابعة الخدام
           </Link>
@@ -171,12 +190,20 @@ export default function TeachersPage() {
       </div>
 
       <Toolbar>
+        {multi && (
+          <ClassFilter
+            value={picked}
+            onChange={setPicked}
+            classes={classes}
+            allLabel="كل الفصول"
+          />
+        )}
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون أو العنوان..." />
         <ToolbarSpacer />
         <FileMenu
           items={[
             { key: 'template', label: 'تنزيل نموذج إكسل', icon: 'download', onClick: () => TeacherAPI.template() },
-            { key: 'export', label: 'تصدير البيانات', icon: 'download', onClick: () => TeacherAPI.export(classId) },
+            { key: 'export', label: 'تصدير البيانات', icon: 'download', onClick: () => TeacherAPI.export(classId || undefined) },
             canWrite && {
               key: 'import',
               label: 'استيراد من إكسل',
@@ -228,7 +255,7 @@ export default function TeachersPage() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         teacher={editing}
-        defaultClassId={Number(classId)}
+        defaultClassId={classId ? Number(classId) : undefined}
         onSaved={refetch}
       />
 

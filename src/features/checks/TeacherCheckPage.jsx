@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
-import { useDebounced, useQuery } from '../../hooks'
+import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { CheckAPI, TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
+import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
@@ -30,13 +31,16 @@ const FLAGS = [
  * Managers write; a servant (or boy) sees the sheet read-only (a boy: 403).
  */
 export default function TeacherCheckPage() {
-  const { classId } = useParams()
   const { classLabel, can, user } = useAuth()
+  const scope = useClassScope()
+  const { multi, classes, picked, setPicked, firstClassId, isGlobal } = scope
+  // A check sheet always needs one class: fall back to the first until picked.
+  const classId = scope.classId || firstClassId
   const toast = useToast()
   const modal = useModal()
 
-  const label = classLabel(classId)
-  usePageTitle(`متابعة الخدام — ${label}`)
+  const label = classId ? classLabel(classId) : ''
+  usePageTitle(isGlobal ? 'متابعة الخدام' : `متابعة الخدام — ${label}`)
 
   const canWrite = can.writeChecks(user)
 
@@ -56,6 +60,7 @@ export default function TeacherCheckPage() {
       return { teachers, checks }
     },
     [classId, date],
+    { enabled: Boolean(classId) },
   )
 
   useEffect(() => {
@@ -177,6 +182,24 @@ export default function TeacherCheckPage() {
     setDate(next)
   }
 
+  /** Switching the class reloads the sheet — confirm first when it is dirty. */
+  const changeClass = async (next) => {
+    if (!next || next === classId) return
+    if (canWrite && dirty) {
+      const ok = await modal.confirm({
+        title: 'تغيير الفصل؟',
+        message: 'فيه تعديلات متابعة لسه متحفظتش. لو غيّرت الفصل هتخسرها.',
+        confirmLabel: 'تغيير والتجاهل',
+        kind: 'danger',
+      })
+      if (!ok) return
+    }
+    setPicked(next)
+  }
+
+  // No class resolved yet (classes still loading) — keep the skeleton up.
+  const busy = loading || !classId
+
   const columns = [
     {
       key: 'teacher_name',
@@ -232,11 +255,17 @@ export default function TeacherCheckPage() {
       <div className="page-head">
         <div>
           <nav className="page-head__crumb">
-            <a href="#/">الفصول</a>
+            <a href="#/">الرئيسية</a>
             <span aria-hidden="true">/</span>
-            <a href={`#/class/${classId}`}>{label}</a>
-            <span aria-hidden="true">/</span>
-            <span>متابعة الخدام</span>
+            {isGlobal ? (
+              <span>متابعة الخدام</span>
+            ) : (
+              <>
+                <a href={`#/class/${classId}`}>{label}</a>
+                <span aria-hidden="true">/</span>
+                <span>متابعة الخدام</span>
+              </>
+            )}
           </nav>
           <h1 className="page-head__title">متابعة الخدام</h1>
           <div className="page-head__sub">{formatDate(date)}</div>
@@ -248,6 +277,13 @@ export default function TeacherCheckPage() {
       </div>
 
       <Toolbar>
+        {multi && (
+          <ClassFilter
+            value={picked || firstClassId}
+            onChange={changeClass}
+            classes={classes}
+          />
+        )}
         <label className="row small bold" style={{ gap: 8 }}>
           <Icon name="calendar" size={16} />
           <Input
@@ -276,7 +312,7 @@ export default function TeacherCheckPage() {
       </Toolbar>
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
-        {loading ? (
+        {busy ? (
           <SkeletonRows rows={6} cols={6} />
         ) : error ? (
           <ErrorState error={error} onRetry={refetch} />

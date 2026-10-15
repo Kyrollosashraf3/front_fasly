@@ -6,7 +6,7 @@ import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { ROLE_LABELS } from '../../lib/roles'
 import { userLabel } from '../../lib/constants'
-import { accountLinks, classHref, classIdFrom, classLinks, navClass, rootLinks } from './navLinks'
+import { accountLinks, classHref, classIdFrom, classLinks, globalModules, navClass, rootLinks } from './navLinks'
 
 function NavItem({ to, icon, label, end, onClick }) {
   return (
@@ -26,6 +26,22 @@ function RootNav({ onNavigate }) {
     <div className="sidebar__section">
       <div className="sidebar__label">القائمة</div>
       {rootLinks(auth).map((l) => (
+        <NavItem key={l.to} {...l} onClick={onNavigate} />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The super admin's modules — global routes, each with its own class filter.
+ * No class is picked here: that lives inside every page.
+ */
+function GlobalNav({ onNavigate }) {
+  const auth = useAuth()
+  return (
+    <div className="sidebar__section">
+      <div className="sidebar__label">الوحدات</div>
+      {globalModules(auth).map((l) => (
         <NavItem key={l.to} {...l} onClick={onNavigate} />
       ))}
     </div>
@@ -99,6 +115,9 @@ export function Sidebar({ onClose }) {
   const lastClass = useLastClassId(inClass)
   const remembered = lastClass && classReady && canAccess(lastClass) ? lastClass : null
   const classId = inClass || remembered || (classReady && classes.length === 1 ? String(classes[0].id) : null)
+  // A super admin works across every class, so he gets global modules instead
+  // of a class-scoped menu he would have to re-pick on every screen.
+  const multi = classes.length > 1
 
   const handleLogout = async () => {
     const ok = await modal.confirm({
@@ -125,7 +144,13 @@ export function Sidebar({ onClose }) {
 
       <div className="sidebar__body">
         <RootNav onNavigate={onClose} />
-        {classId ? <ClassNav classId={classId} onNavigate={onClose} /> : <ClassesList onNavigate={onClose} />}
+        {multi ? (
+          <GlobalNav onNavigate={onClose} />
+        ) : classId ? (
+          <ClassNav classId={classId} onNavigate={onClose} />
+        ) : (
+          <ClassesList onNavigate={onClose} />
+        )}
       </div>
 
       <div className="sidebar__footer">

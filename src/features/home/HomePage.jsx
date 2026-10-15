@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { Icon } from '../../components/ui/Icon'
 import { SectionTitle } from '../../components/ui/Bits'
 import { Loading } from '../../components/ui/States'
-import { classHref, classModules, analyticsModules } from '../../components/layout/navLinks'
+import { classHref, classModules, globalModules, analyticsModules } from '../../components/layout/navLinks'
 import './home.css'
 
 /** One module tile — icon, title, one-line description. */
@@ -36,14 +36,10 @@ export default function HomePage() {
   usePageTitle('الرئيسية')
   const { user, classes, classReady, can, isBoy, classLabel } = useAuth()
 
-  // A super admin picks a class before the module grid appears; everyone else
-  // is pinned to their one class and sees the grid straight away.
-  const [picked, setPicked] = useState('')
-  const multi = classes.length > 1
-  const single = classReady && classes.length === 1
-  const activeClassId = single ? String(classes[0]?.id) : picked
+  const multi = classReady && classes.length > 1
 
   const mods = useMemo(() => classModules({ can, user }), [can, user])
+  const gmods = useMemo(() => globalModules({ can, user }), [can, user])
   const analytics = useMemo(() => analyticsModules({ can, user }), [can, user])
 
   if (isBoy) {
@@ -62,6 +58,8 @@ export default function HomePage() {
     )
   }
 
+  const single = classReady && classes.length === 1
+
   return (
     <>
       <div className="page-head">
@@ -69,8 +67,8 @@ export default function HomePage() {
           <h1 className="page-head__title">الرئيسية</h1>
           <div className="page-head__sub">
             {multi
-              ? 'اختار الفصل الأول عشان تظهر كل الوحدات'
-              : `${classLabel(activeClassId)} · كل الوحدات في مكان واحد`}
+              ? 'كل الوحدات في مكان واحد'
+              : `${classLabel(String(classes[0]?.id ?? ''))} · كل الوحدات في مكان واحد`}
           </div>
         </div>
       </div>
@@ -79,73 +77,64 @@ export default function HomePage() {
         <div className="home-loading">
           <Loading label="جارٍ تحميل الوحدات..." />
         </div>
-      ) : (
+      ) : multi ? (
         <>
-          {multi && (
+          <section className="home-section">
+            <SectionTitle>الوحدات</SectionTitle>
+            <div className="module-grid">
+              {gmods.map((m) => (
+                <ModuleCard key={m.to} to={m.to} icon={m.icon} label={m.label} desc={m.desc} />
+              ))}
+            </div>
+          </section>
+
+          {analytics.length > 0 && (
             <section className="home-section">
-              <SectionTitle>اختر الفصل أولاً</SectionTitle>
-              <div className="home-classes">
-                {classes.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={`choose-chip${String(c.id) === String(picked) ? ' is-on' : ''}`}
-                    onClick={() => setPicked(String(c.id))}
-                  >
-                    <span className="choose-chip__icon">
-                      <Icon name="list" size={16} />
-                    </span>
-                    <span className="truncate">{c.name}</span>
-                  </button>
+              <SectionTitle>تحليل</SectionTitle>
+              <div className="module-grid">
+                {analytics.map((m) => (
+                  <ModuleCard key={m.to} to={m.to} icon={m.icon} label={m.label} desc={m.desc} />
                 ))}
               </div>
             </section>
           )}
-
-          {activeClassId ? (
-            <>
-              <section className="home-section">
-                <SectionTitle>وحدات الفصل</SectionTitle>
-                <div className="module-grid">
-                  {mods.map((m) => (
-                    <ModuleCard
-                      key={m.path || 'overview'}
-                      to={classHref(activeClassId, m.path)}
-                      icon={m.icon}
-                      label={m.label}
-                      desc={m.desc}
-                    />
-                  ))}
-                </div>
-              </section>
-
-              {analytics.length > 0 && (
-                <section className="home-section">
-                  <SectionTitle>تحليل</SectionTitle>
-                  <div className="module-grid">
-                    {analytics.map((m) => (
-                      <ModuleCard
-                        key={m.to}
-                        to={m.to}
-                        icon={m.icon}
-                        label={m.label}
-                        desc={m.desc}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
-          ) : (
-            <div className="state-block state-block--inline">
-              <div className="state-block__icon">
-                <Icon name="list" size={28} />
-              </div>
-              <div className="state-block__title">اختار فصل الأول</div>
-              <div className="state-block__msg">بعد ما تختار الفصل هتظهر كل الوحدات هنا.</div>
+        </>
+      ) : single ? (
+        <>
+          <section className="home-section">
+            <SectionTitle>وحدات الفصل</SectionTitle>
+            <div className="module-grid">
+              {mods.map((m) => (
+                <ModuleCard
+                  key={m.path || 'overview'}
+                  to={classHref(classes[0].id, m.path)}
+                  icon={m.icon}
+                  label={m.label}
+                  desc={m.desc}
+                />
+              ))}
             </div>
+          </section>
+
+          {analytics.length > 0 && (
+            <section className="home-section">
+              <SectionTitle>تحليل</SectionTitle>
+              <div className="module-grid">
+                {analytics.map((m) => (
+                  <ModuleCard key={m.to} to={m.to} icon={m.icon} label={m.label} desc={m.desc} />
+                ))}
+              </div>
+            </section>
           )}
         </>
+      ) : (
+        <div className="state-block state-block--inline">
+          <div className="state-block__icon">
+            <Icon name="list" size={28} />
+          </div>
+          <div className="state-block__title">مفيش فصول</div>
+          <div className="state-block__msg">لسه مفيش فصول متاحة لحسابك.</div>
+        </div>
       )}
     </>
   )

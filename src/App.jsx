@@ -6,6 +6,7 @@ import { Toasts } from './components/ui/Toasts'
 import LoginPage from './features/auth/LoginPage'
 import SignUpPage from './features/auth/SignUpPage'
 import HomePage from './features/home/HomePage'
+import ClassesPage from './features/classes/ClassesPage'
 import ClassOverviewPage from './features/classes/ClassOverviewPage'
 import BoysPage from './features/boys/BoysPage'
 import AttendancePage from './features/attendance/AttendancePage'
@@ -110,6 +111,57 @@ export default function App() {
                     <TeacherCheckPage />
                   </RoleGuard>
                 </ClassRoute>
+              }
+            />
+
+            {/* Global modules — the super admin sees every class at once and
+                scopes each page with its own in-page class filter. */}
+            <Route
+              path="classes"
+              element={
+                <RoleGuard allow={(c, u) => c.manageClasses(u)}>
+                  <ClassesPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="boys"
+              element={
+                <RoleGuard allow={(c, u) => c.editBoys(u)}>
+                  <BoysPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="attendance"
+              element={
+                <RoleGuard allow={(c, u) => c.writeAttendance(u)}>
+                  <AttendancePage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="followup"
+              element={
+                <RoleGuard allow={(c, u) => c.writeFollowUp(u)}>
+                  <FollowUpPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="teachers"
+              element={
+                <RoleGuard allow={(c, u) => c.seeServants(u)}>
+                  <TeachersPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="checks"
+              element={
+                <RoleGuard allow={(c, u) => c.seeChecks(u)}>
+                  <TeacherCheckPage />
+                </RoleGuard>
               }
             />
 

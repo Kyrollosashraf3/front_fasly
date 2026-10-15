@@ -79,6 +79,22 @@ export function classModules({ can, user }) {
 }
 
 /**
+ * The class modules as global routes — for a super admin who sees every class
+ * at once. The class is picked inside the page (a filter), never in the nav.
+ * Single-class logins keep the class-scoped `classModules` above.
+ */
+export function globalModules({ can, user }) {
+  return [
+    can.manageClasses(user) && { to: '/classes', icon: 'list', label: 'الفصول', desc: 'إدارة الفصول الدراسية' },
+    { to: '/boys', icon: 'boys', label: 'بيانات الأولاد', desc: 'كل الأولاد في كل الفصول' },
+    { to: '/attendance', icon: 'calendar', label: 'الحضور', desc: 'حضور جمعة الأسبوع' },
+    { to: '/followup', icon: 'heart', label: 'الافتقاد', desc: 'متابعة الأولاد' },
+    can.seeServants(user) && { to: '/teachers', icon: 'servant', label: 'دليل الخدام', desc: 'كل الخدام' },
+    can.seeChecks(user) && { to: '/checks', icon: 'clipboard', label: 'متابعة الخدام', desc: 'تقييم الخدام أسبوعيًا' },
+  ].filter(Boolean)
+}
+
+/**
  * The "تحليل" (analytics) modules — global routes, no class in the URL.
  * Boys performance is open to any staff member; servants performance and the
  * reveal picker follow their own permission.
