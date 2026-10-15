@@ -171,36 +171,53 @@
   color: var(--gold-deep, var(--gold));
 }
 
-/* WhatsApp support link — a soft green pill under the form. */
+/* WhatsApp support — a hint line with a clear, tappable green button. */
 .login__support {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--surface-border);
+}
+
+.login__support-text {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.login__support-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--radius-md);
-  background: rgba(37, 211, 102, 0.1);
-  border: 1px solid rgba(37, 211, 102, 0.35);
-  color: #128c4a;
+  background: #25d366;
+  border: 1px solid #1eb85a;
+  color: #fff;
   font-size: var(--text-sm);
-  text-align: center;
-  text-decoration: none;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-
-.login__support svg {
-  flex: none;
-  color: #25d366;
-}
-
-.login__support b {
-  margin-inline-start: 5px;
   font-weight: var(--weight-bold);
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.35);
+  transition: background var(--dur) var(--ease), transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
-.login__support:hover {
-  background: rgba(37, 211, 102, 0.18);
-  border-color: rgba(37, 211, 102, 0.55);
+.login__support-btn svg {
+  flex: none;
+}
+
+.login__support-btn:hover {
+  background: #1eb85a;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.45);
+}
+
+.login__support-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(37, 211, 102, 0.35);
 }
 
 /* Two-step signup: the phone number sits on its own line above the box. */
