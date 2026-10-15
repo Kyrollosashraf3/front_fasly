@@ -18,7 +18,7 @@ import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { BoyName } from '../boys/BoyName'
 import { followLabel } from '../boys/BoyProfile'
-import { formatDate, formatPercent, lastFridayISO, todayISO } from '../../lib/format'
+import { formatDate, formatPercent, todayISO } from '../../lib/format'
 
 const STATUS_OPTIONS = [
   { value: '', label: '—' },
@@ -57,7 +57,7 @@ export default function FollowUpPage() {
   // stays the whole class and the picker is hidden from him.
   const showServantFilter = can.manageClasses(user)
 
-  const [date, setDate] = useState(lastFridayISO())
+  const [date, setDate] = useState(todayISO())
   const [teacherId, setTeacherId] = useState(isServant ? String(myTeacherId || '') : '')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
@@ -103,6 +103,21 @@ export default function FollowUpPage() {
     return all.filter((b) => ids.has(b.id))
   }, [data, teacherId, isServant])
 
+  /** boy_id -> the servant responsible for him (his group owner). */
+  const groupOwnerByBoy = useMemo(() => {
+    const map = new Map()
+    for (const g of data?.groups?.groups || []) {
+      for (const b of g.boys) map.set(b.boy_id, g.teacher_id)
+    }
+    return map
+  }, [data])
+
+  /** Boys who already have a follow-up row on this sheet (not a new entry). */
+  const loggedBoyIds = useMemo(
+    () => new Set((data?.existing || []).map((r) => r.boy_id)),
+    [data],
+  )
+
   const rows = useMemo(() => {
     const q = debounced.trim().toLowerCase()
     return roster.filter((b) => {
@@ -121,6 +136,19 @@ export default function FollowUpPage() {
 
   const setNoteFor = (boyId, value) =>
     setDraft((d) => ({ ...d, [boyId]: { ...(d[boyId] || {}), note: value } }))
+
+  /** The servant credited for a boy's follow-up: the chosen one, else his
+      group owner, else the toolbar's current servant pick. */
+  const mentorOf = (boyId) =>
+    draft[boyId]?.teacher_id ??
+    groupOwnerByBoy.get(boyId) ??
+    (teacherId ? Number(teacherId) : '')
+
+  const setMentorFor = (boyId, value) =>
+    setDraft((d) => ({
+      ...d,
+      [boyId]: { ...(d[boyId] || {}), teacher_id: value ? Number(value) : null },
+    }))
 
   const counts = useMemo(
     () => ({
@@ -176,31 +204,40 @@ export default function FollowUpPage() {
   }
 
   const save = async () => {
-    const targetTeacher = Number(teacherId) || myTeacherId || data?.teachers?.[0]?.id
-    if (!targetTeacher) {
-      toast.error('اختر الخادم الأول.')
-      return false
-    }
+    const fallback = Number(teacherId) || myTeacherId || data?.teachers?.[0]?.id
 
     const serverByBoy = new Map((data?.existing || []).map((r) => [r.boy_id, r]))
     const ops = []
+    let missingMentor = null
     for (const boy of roster) {
       const value = draft[boy.id]?.status
       if (!value) continue
       const note = draft[boy.id]?.note || null
       const remote = serverByBoy.get(boy.id)
       if (remote && remote.status === value && (remote.note || '') === note) continue
+      // A new row is credited to the boy's responsible servant (or the picked
+      // one); an edit keeps the servant that logged it.
+      const mentor = mentorOf(boy.id) || fallback
+      if (!remote && !mentor) {
+        missingMentor = boy
+        break
+      }
       ops.push(
         remote
           ? FollowUpAPI.update(remote.id, { status: value, note })
           : FollowUpAPI.create({
-              teacher_id: targetTeacher,
+              teacher_id: mentor,
               boy_id: boy.id,
               status: value,
               action_date: date,
               note,
             }),
       )
+    }
+
+    if (missingMentor) {
+      toast.error(`حدد الخادم المسؤول عن ${missingMentor.boy_name}.`)
+      return false
     }
 
     if (!ops.length) {
@@ -310,6 +347,37 @@ export default function FollowUpPage() {
       mobile: 'الولد',
       render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
     },
+    ...(showServantFilter
+      ? [
+          {
+            key: 'teacher_id',
+            label: 'الخادم',
+            width: 168,
+            mobile: 'الخادم',
+            render: (b) => {
+              // An existing row keeps the servant who logged it; a new row
+              // defaults to the boy's responsible servant and can be changed.
+              if (loggedBoyIds.has(b.id)) {
+                return <span className="small">{nameOfTeacher(mentorOf(b.id))}</span>
+              }
+              return (
+                <Select
+                  value={String(mentorOf(b.id) || '')}
+                  onChange={(e) => setMentorFor(b.id, e.target.value)}
+                  aria-label={`الخادم المسؤول عن ${b.boy_name}`}
+                >
+                  <option value="">—</option>
+                  {(data?.teachers || []).map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.teacher_name}
+                    </option>
+                  ))}
+                </Select>
+              )
+            },
+          },
+        ]
+      : []),
     {
       key: 'contact',
       label: 'تواصل',

@@ -17,6 +17,7 @@ import GroupsPage from './features/groups/GroupsPage'
 import RevealPage from './features/reveal/RevealPage'
 import ProfilePage from './features/profile/ProfilePage'
 import BoysDashboard from './features/dashboard/BoysDashboard'
+import FollowUpPerformancePage from './features/followup/FollowUpPerformancePage'
 import TeachersDashboard from './features/dashboard/TeachersDashboard'
 import BirthdaysPage from './features/birthdays/BirthdaysPage'
 import NotFound from './router/NotFound'
@@ -66,6 +67,14 @@ export default function App() {
               element={
                 <RoleGuard allow={(c, u) => c.seeBoysDashboard(u)}>
                   <BoysDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="dashboard/follow-up"
+              element={
+                <RoleGuard allow={(c, u) => c.seeFollowUpPerformance(u)}>
+                  <FollowUpPerformancePage />
                 </RoleGuard>
               }
             />

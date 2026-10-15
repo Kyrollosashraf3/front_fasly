@@ -29,6 +29,9 @@ export function rootLinks({ user, isBoy, can, classes = [] }) {
   if (can.seeBoysDashboard(user)) {
     links.push({ to: '/dashboard/boys', icon: 'chart', label: 'أداء الأولاد' })
   }
+  if (can.seeFollowUpPerformance(user)) {
+    links.push({ to: '/dashboard/follow-up', icon: 'heart', label: 'أداء الافتقاد' })
+  }
   if (can.seeTeachersDashboard(user)) {
     links.push({ to: '/dashboard/teachers', icon: 'star', label: 'أداء الخدام' })
   }
@@ -103,6 +106,9 @@ export function analyticsModules({ can, user }) {
   const out = [
     { to: '/dashboard/boys', icon: 'chart', label: 'أداء الأولاد', desc: 'مؤشرات الحضور والمواظبة' },
   ]
+  if (can.seeFollowUpPerformance(user)) {
+    out.push({ to: '/dashboard/follow-up', icon: 'heart', label: 'أداء الافتقاد', desc: 'نسب الافتقاد وأداء الخدام' })
+  }
   if (can.seeTeachersDashboard(user)) {
     out.push({ to: '/dashboard/teachers', icon: 'star', label: 'أداء الخدام', desc: 'متابعة أداء الخدام' })
   }

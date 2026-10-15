@@ -93,4 +93,5 @@ export const DashboardAPI = {
   summary: (params) => api.get('/dashboard/summary', params),
   boyProfile: (boyId) => api.get(`/dashboard/boys/${boyId}`),
   birthdays: (params) => api.get('/dashboard/birthdays', params),
+  followUpPerformance: (params) => api.get('/dashboard/follow-up', params),
 }

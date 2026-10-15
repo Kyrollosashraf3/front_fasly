@@ -84,6 +84,9 @@ export const can = {
   /** Servants performance dashboard — managers only. */
   seeTeachersDashboard: (user) => isManager(user),
 
+  /** Follow-up performance dashboard — any staff member (a servant: his own). */
+  seeFollowUpPerformance: (user) => roleOf(user) !== ROLES.USER,
+
   /** Both performance dashboards (kept for the sidebar/shortcuts). */
   seeDashboards: (user) => isManager(user),
 
