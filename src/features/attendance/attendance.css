@@ -12,33 +12,32 @@
 
 /* ---------------------------------------------- named attendance marks
    Two bare checkboxes gave no hint which one was «حضور» and which was «قداس».
-   Each fact is now a labelled chip with its own colour: green for the
-   Sunday-school attendance, gold for the mass. */
+   Each is now a plain word: dimmed until tapped, then it lights up green. */
 .att-marks {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
 }
 
 .att-mark {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px 6px 7px;
+  padding: 8px 9px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-border);
-  background: var(--surface-sunken);
-  color: var(--text-secondary);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-muted);
   font-family: inherit;
   font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-semibold);
   line-height: 1;
   cursor: pointer;
-  transition: all var(--dur-fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
 .att-mark:hover {
-  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
 }
 
 .att-mark:disabled {
@@ -46,41 +45,10 @@
   opacity: 0.6;
 }
 
-.att-mark__box {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  border: 1.5px solid var(--border-strong);
-  color: transparent;
-  transition: all var(--dur-fast) var(--ease);
-}
-
-.att-mark--present.is-on {
+/* Tapped: the word alone lights green — no box, nothing else. */
+.att-mark.is-on {
+  color: #16a34a;
   background: #e8f7ee;
-  border-color: #b9e6cb;
-  color: #146c43;
-}
-
-.att-mark--present.is-on .att-mark__box {
-  background: #16a34a;
-  border-color: #16a34a;
-  color: #fff;
-}
-
-.att-mark--liturgy.is-on {
-  background: var(--gold-soft);
-  border-color: var(--gold-border);
-  color: var(--gold-ink);
-}
-
-.att-mark--liturgy.is-on .att-mark__box {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: var(--navy-dark);
 }
 
 /* A boy who missed the Friday before this sheet — a small red ✕ beside the
@@ -133,25 +101,37 @@
     flex: none;
   }
   /* Keep name + edit marker + ✕ all on the one line. */
+  /* The name yields space first and truncates, so the ✎ / ✕ marks and the
+     two words never get squeezed off the row. */
   .att-table .table__name {
     flex-wrap: nowrap;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .att-table .table__name .boy-name {
+    min-width: 0;
   }
 
-  /* Compact captions keep the two chips beside the name; the tick box itself
-     stays big and clear. */
+  /* Keep the two words beside the name instead of dropping under it. */
   .att-marks {
-    gap: 8px;
+    gap: 2px;
   }
   .att-mark {
-    padding: 5px 9px;
-    gap: 5px;
-    font-size: 11px;
+    padding: 7px 7px;
+    font-size: var(--text-sm);
   }
-  .att-mark__label {
-    font-size: 11px;
+
+  /* The sheet fills the screen width on a phone — no sideways panning. */
+  .att-table {
+    overflow-x: hidden;
   }
-  .att-mark__box {
-    width: 22px;
-    height: 22px;
+  .att-table .table {
+    width: 100%;
+  }
+
+  /* A fifth smaller (≈20%) so both actions sit on one line. */
+  .att-savebar--compact .btn {
+    font-size: calc(var(--text-base) * 0.8);
+    padding: 7px 13px;
   }
 }

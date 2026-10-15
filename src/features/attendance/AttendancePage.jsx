@@ -52,7 +52,6 @@ function AttMark({ type, checked, onToggle, disabled }) {
       disabled={disabled}
       onClick={() => onToggle(!checked)}
     >
-      <span className="att-mark__box">{checked && <Icon name="check" size={14} />}</span>
       <span className="att-mark__label">{conf.label}</span>
     </button>
   )
@@ -426,19 +425,12 @@ export default function AttendancePage() {
 
       {canWrite && counts.total > 0 && (
         <>
-        <div className="att-savebar">
-          <div className="summary-bar__stats">
-            <span className="summary-bar__stat">
-              حاضر <span className="summary-bar__num">{counts.present}</span>
-            </span>
-            <span className="summary-bar__stat">
-              غائب <span className="summary-bar__num">{counts.absent}</span>
-            </span>
-            <span className="summary-bar__stat small" style={{ opacity: 0.8 }}>
-              من {counts.total}
-            </span>
-            {allDone && <span className="badge badge--gold">خلصت — الكل اتعلّم</span>}
-          </div>
+        <div className="att-savebar att-savebar--compact">
+          {allDone && (
+            <div className="summary-bar__stats">
+              <span className="badge badge--gold">خلصت — الكل اتعلّم</span>
+            </div>
+          )}
 
           <div className="row" style={{ gap: 10 }}>
             {dirty && <Badge kind="gold" dot>فيه تعديلات لمتحفظش</Badge>}
