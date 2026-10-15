@@ -5,7 +5,7 @@ import { useQuery } from '../../hooks'
 import { DashboardAPI, TeacherAPI } from '../../lib/endpoints'
 import { normalizeSearch } from '../../lib/search'
 import { Select, SearchInput } from '../../components/ui/Field'
-import { Toolbar, ToolbarSpacer, Tabs } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSearch, ToolbarSpacer, Tabs } from '../../components/ui/Toolbar'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
@@ -263,7 +263,7 @@ export default function FollowUpPerformancePage() {
         </div>
       </div>
 
-      <Toolbar>
+      <Toolbar className="toolbar--scroll">
         {classes.length > 1 && (
           <Select
             value={classId}
@@ -318,6 +318,8 @@ export default function FollowUpPerformancePage() {
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث باسم الولد..." />
         <ToolbarSpacer />
       </Toolbar>
+
+      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث باسم الولد..." />
 
       {loading && !d ? (
         <div style={{ marginTop: 'var(--sp-4)' }}>

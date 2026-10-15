@@ -9,7 +9,7 @@ import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { SearchInput, Select } from '../../components/ui/Field'
-import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -222,7 +222,7 @@ export default function GroupsPage() {
         />
       </div>
 
-      <Toolbar>
+      <Toolbar className="toolbar--scroll">
         {showServantFilter ? (
           <Select
             value={teacherFilter}
@@ -249,6 +249,8 @@ export default function GroupsPage() {
         <ToolbarSpacer />
         {isSuperAdmin && <Badge kind="gold">أدمن عام</Badge>}
       </Toolbar>
+
+      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
 
       {loading ? (
         <div style={{ marginTop: 'var(--sp-4)' }}>

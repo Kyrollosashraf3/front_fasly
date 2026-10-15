@@ -10,7 +10,7 @@ import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { SearchInput } from '../../components/ui/Field'
-import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Tabs, Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { FileMenu } from '../../components/ui/FileMenu'
@@ -182,7 +182,7 @@ export default function BoysPage() {
         )}
       </div>
 
-      <Toolbar>
+      <Toolbar className="toolbar--scroll">
         {multi && (
           <ClassFilter
             value={picked}
@@ -237,6 +237,8 @@ export default function BoysPage() {
           الحضور
         </a>
       </Toolbar>
+
+      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون..." />
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {loading ? (

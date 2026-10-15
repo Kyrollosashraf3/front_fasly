@@ -485,6 +485,14 @@
   flex-wrap: wrap;
 }
 
+/* ---------------------------------------------- toolbar search (mobile)
+   On the phone a `toolbar--scroll` toolbar scrolls away with the page, and a
+   second copy of the search (<ToolbarSearch>) pins under the topbar instead,
+   so only the search stays in reach while the tabs and filters move off. */
+.toolbar-search-sticky {
+  display: none;
+}
+
 /* -------------------------------------------------------------- page head */
 .page-head {
   display: flex;
@@ -753,7 +761,7 @@
   color: var(--gold-ink);
 }
 
-/* the sticky save bar under both weekly sheets */
+/* the save bar under the weekly sheets */
 .att-savebar {
   position: sticky;
   bottom: var(--sp-4);
@@ -773,10 +781,27 @@
   box-shadow: var(--shadow-md);
 }
 
-/* clear of the mobile bottom tab bar */
+/* On the phone the save bar pins to the bottom of the screen (clear of the
+   bottom tab bar) instead of scrolling away with the sheet. */
+.att-savebar-space {
+  height: 0;
+}
+
 @media (max-width: 768px) {
   .att-savebar {
+    position: fixed;
+    inset-inline: 0;
     bottom: calc(62px + env(safe-area-inset-bottom));
+    z-index: 16;
+    margin: 0;
+    border-inline: 0;
+    border-radius: 0;
+    padding: var(--sp-3) var(--sp-4);
+  }
+
+  /* Room so the last sheet rows clear the pinned bar. */
+  .att-savebar-space {
+    height: 84px;
   }
 }
 
@@ -1537,6 +1562,34 @@
   .page-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* Only the search follows the thumb on a phone: the toolbar itself scrolls
+     away and its own search hides in favour of the sticky copy below it. */
+  .toolbar--scroll {
+    position: static;
+  }
+
+  .toolbar--scroll .search-input {
+    display: none;
+  }
+
+  .toolbar-search-sticky {
+    display: block;
+    position: sticky;
+    top: calc(var(--topbar-height) + env(safe-area-inset-top));
+    z-index: 18;
+    margin-top: var(--sp-3);
+    padding: var(--sp-2) 0;
+    background: var(--bg);
+  }
+
+  .toolbar-search-sticky .search-input {
+    width: 100%;
+  }
+
+  .toolbar-search-sticky .input {
+    box-shadow: var(--shadow-sm);
   }
 
   /* A stretched toolbar made the dropdown anchor to the wrong edge. */

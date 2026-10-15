@@ -12,7 +12,7 @@ import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput } from '../../components/ui/Field'
-import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -277,7 +277,7 @@ export default function TeacherCheckPage() {
         </Link>
       </div>
 
-      <Toolbar>
+      <Toolbar className="toolbar--scroll">
         {multi && (
           <ClassFilter
             value={picked || firstClassId}
@@ -312,6 +312,8 @@ export default function TeacherCheckPage() {
         )}
       </Toolbar>
 
+      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {busy ? (
           <SkeletonRows rows={6} cols={6} />
@@ -336,6 +338,7 @@ export default function TeacherCheckPage() {
       </div>
 
       {canWrite && stats.total > 0 && (
+        <>
         <div className="att-savebar">
           <div className="summary-bar__stats">
             <span className="summary-bar__stat">
@@ -352,6 +355,8 @@ export default function TeacherCheckPage() {
             </Button>
           </div>
         </div>
+        <div className="att-savebar-space" aria-hidden="true" />
+        </>
       )}
     </>
   )

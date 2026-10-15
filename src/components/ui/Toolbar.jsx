@@ -8,8 +8,25 @@
  *     <Button ... />
  *   </Toolbar>
  */
+import { SearchInput } from './Field'
+
 export function Toolbar({ children, className = '' }) {
   return <div className={`toolbar ${className}`}>{children}</div>
+}
+
+/**
+ * Mobile-only sticky copy of the toolbar search.
+ *
+ * On the phone a `toolbar--scroll` toolbar (with its tabs and filters) scrolls
+ * away with the page, so this second copy pins under the topbar instead and
+ * stays reachable while the list scrolls. Render it right after the toolbar.
+ */
+export function ToolbarSearch({ value, onChange, placeholder }) {
+  return (
+    <div className="toolbar-search-sticky">
+      <SearchInput value={value} onChange={onChange} placeholder={placeholder} />
+    </div>
+  )
 }
 
 export function ToolbarSpacer() {

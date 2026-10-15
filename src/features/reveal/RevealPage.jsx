@@ -8,7 +8,7 @@ import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { SearchInput } from '../../components/ui/Field'
-import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { Badge } from '../../components/ui/Badge'
 import { Avatar } from '../../components/ui/Avatar'
@@ -72,7 +72,7 @@ export default function RevealPage() {
         </div>
       </div>
 
-      <Toolbar>
+      <Toolbar className="toolbar--scroll">
         {multi && (
           <ClassFilter value={classId} onChange={changeClass} classes={classes} />
         )}
@@ -90,6 +90,8 @@ export default function RevealPage() {
           {picked ? `اكشفلي — ${picked.boy_name}` : 'اكشفلي'}
         </Button>
       </Toolbar>
+
+      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {loading || !classId ? (

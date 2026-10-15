@@ -12,7 +12,7 @@ import { Button, IconButton } from '../../components/ui/Button'
 import { ContactActions } from '../../components/ui/ContactActions'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput, Select } from '../../components/ui/Field'
-import { Tabs, Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Tabs, Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -598,10 +598,10 @@ export default function FollowUpPage() {
         </Link>
       </div>
 
-      <Toolbar>
+      <Toolbar className="toolbar--scroll">
         {multi && (
           <ClassFilter
-            value={scope.classId || firstClassId}
+            value={scope.classId}
             onChange={changeClass}
             classes={classes}
           />
@@ -652,6 +652,8 @@ export default function FollowUpPage() {
         <ToolbarSpacer />
       </Toolbar>
 
+      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {busy ? (
           <SkeletonRows rows={7} cols={6} />
@@ -689,6 +691,7 @@ export default function FollowUpPage() {
       </div>
 
       {canWrite && roster.length > 0 && (
+        <>
         <div className="att-savebar">
           <div className="summary-bar__stats">
             <span className="summary-bar__stat">
@@ -704,6 +707,8 @@ export default function FollowUpPage() {
             </Button>
           </div>
         </div>
+        <div className="att-savebar-space" aria-hidden="true" />
+        </>
       )}
 
       {!isBoy && (

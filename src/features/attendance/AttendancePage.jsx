@@ -11,7 +11,7 @@ import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput } from '../../components/ui/Field'
-import { Tabs, Toolbar } from '../../components/ui/Toolbar'
+import { Tabs, Toolbar, ToolbarSearch } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -265,8 +265,12 @@ export default function AttendancePage() {
         <span className="table__name">
           <BoyName boy={b} classId={classId} onSaved={refetch} />
           {previousAbsent.has(b.id) && (
-            <span className="att-hint att-hint--absent" title="غاب الجمعة اللي فاتت">
-              غاب الجمعة اللي فاتت
+            <span
+              className="att-absent-x"
+              title="غاب الجمعة اللي فاتت"
+              aria-label="غاب الجمعة اللي فاتت"
+            >
+              ✕
             </span>
           )}
         </span>
@@ -336,7 +340,7 @@ export default function AttendancePage() {
         </a>
       </div>
 
-      <Toolbar className="att-toolbar">
+      <Toolbar className="toolbar--scroll">
         {multi && (
           <ClassFilter value={classId} onChange={changeClass} classes={classes} ariaLabel="اختيار فصل الحضور" />
         )}
@@ -351,7 +355,7 @@ export default function AttendancePage() {
           />
         </label>
 
-        <SearchInput className="att-search-inline" value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
 
         <Tabs
           value={gender}
@@ -376,9 +380,7 @@ export default function AttendancePage() {
 
       {/* on the phone the toolbar scrolls away, so the search gets its own
           sticky bar that stays reachable while the list scrolls */}
-      <div className="att-search-sticky">
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
-      </div>
+      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {busy ? (
@@ -417,11 +419,13 @@ export default function AttendancePage() {
             rowKey={(b) => b.id}
             rowClassName={(b) => (getMark(b.id).present ? 'is-present' : '')}
             stackOnMobile
+            className="att-table"
           />
         )}
       </div>
 
       {canWrite && counts.total > 0 && (
+        <>
         <div className="att-savebar">
           <div className="summary-bar__stats">
             <span className="summary-bar__stat">
@@ -452,6 +456,9 @@ export default function AttendancePage() {
             </Button>
           </div>
         </div>
+        {/* reserves room for the fixed save bar on the phone */}
+        <div className="att-savebar-space" aria-hidden="true" />
+        </>
       )}
 
       <BoyForm
