@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
+import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
 import { Button } from '../../components/ui/Button'
 import { ChipSelect, Field, Input, Select, Textarea } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
@@ -33,15 +35,17 @@ const compact = (obj) =>
 export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved }) {
   const { classes } = useAuth()
   const toast = useToast()
+  const modal = useModal()
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
+  // The pristine form, so we can tell an edited form from a visited one.
+  const [initial, setInitial] = useState('')
 
   useEffect(() => {
     if (!open) return
     setErrors({})
-    setForm(
-      teacher
+    const next = teacher
         ? {
             teacher_name: teacher.teacher_name,
             phone: teacher.phone || '',
@@ -61,18 +65,19 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
             last_visit_date: teacher.last_visit_date || '',
             note: teacher.note || '',
           }
-        : { ...EMPTY, class_id: String(defaultClassId ?? classes[0]?.id ?? '') },
-    )
+        : { ...EMPTY, class_id: String(defaultClassId ?? classes[0]?.id ?? '') }
+    setInitial(JSON.stringify(next))
+    setForm(next)
   }, [open, teacher, defaultClassId, classes])
 
   const isEdit = Boolean(teacher)
+  const dirty = open && JSON.stringify(form) !== initial
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
-  const submit = async (e) => {
-    e.preventDefault()
+  const performSave = async () => {
     if (!form.teacher_name.trim()) {
       setErrors({ teacher_name: 'اسم الخادم مطلوب.' })
-      return
+      return false
     }
     setBusy(true)
     const { custom, ...rest } = form
@@ -104,26 +109,52 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
       if (isEdit) await TeacherAPI.update(teacher.id, payload)
       else await TeacherAPI.create(payload)
       toast.success(isEdit ? 'تم تعديل بيانات الخادم.' : 'تمت إضافة الخادم.')
+      setInitial(JSON.stringify(form))
       onClose()
       onSaved?.()
+      return true
     } catch (err) {
       if (err instanceof ApiError && err.fields && Object.keys(err.fields).length)
         setErrors(err.fields)
       else toast.error(err.message)
+      return false
     } finally {
       setBusy(false)
     }
   }
 
+  const submit = (e) => {
+    e.preventDefault()
+    performSave()
+  }
+
+  /** Close, asking first when the form carries unsaved edits. */
+  const requestClose = async () => {
+    if (!dirty) {
+      onClose()
+      return
+    }
+    const ok = await modal.confirm({
+      title: 'تجاهل التعديلات؟',
+      message: 'لو قفلت دلوقتي هتخسر أي تعديلات لسه متحفظتش.',
+      confirmLabel: 'تجاهل وخروج',
+      kind: 'danger',
+    })
+    if (ok) onClose()
+  }
+
+  // Block navigation / refresh while the form has unsaved edits.
+  useUnsavedGuard(open && dirty, performSave, 'فيه تعديلات على بيانات الخادم لسه متحفظتش.')
+
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={requestClose}
       title={isEdit ? 'تعديل بيانات الخادم' : 'إضافة خادم جديد'}
       sub={isEdit ? teacher.teacher_name : 'الخدمات المسندة للفصل'}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={requestClose}>
             إلغاء
           </Button>
           <Button variant="primary" loading={busy} onClick={submit}>

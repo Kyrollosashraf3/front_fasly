@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
+import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
 import { useDebounced, useQuery } from '../../hooks'
 import { AttendAPI, BoyAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
@@ -59,6 +61,7 @@ export default function AttendancePage() {
   const { classId } = useParams()
   const { classLabel, can, user, isBoy } = useAuth()
   const toast = useToast()
+  const modal = useModal()
 
   const label = classLabel(classId)
   usePageTitle(`الحضور — ${label}`)
@@ -190,11 +193,31 @@ export default function AttendancePage() {
       })
       toast.success(`تم حفظ حضور ${formatDate(date)}.`)
       await refetch()
+      return true
     } catch (err) {
       toast.error(err.message)
+      return false
     } finally {
       setSaving(false)
     }
+  }
+
+  // Warn before leaving with a Friday sheet that still has unsaved ticks.
+  useUnsavedGuard(canWrite && dirty, save, `فيه تعديلات حضور لسه متحفظتش ليوم ${formatDate(date)}.`)
+
+  /** Switching the date reloads the sheet — confirm first when it is dirty. */
+  const changeDate = async (next) => {
+    if (next === date) return
+    if (canWrite && dirty) {
+      const ok = await modal.confirm({
+        title: 'تغيير التاريخ؟',
+        message: 'فيه تعديلات حضور لسه متحفظتش. لو غيّرت التاريخ هتخسرها.',
+        confirmLabel: 'تغيير والتجاهل',
+        kind: 'danger',
+      })
+      if (!ok) return
+    }
+    setDate(next)
   }
 
   /** boyId -> the row already stored on the server for this sheet, if any. */
@@ -291,7 +314,7 @@ export default function AttendancePage() {
             type="date"
             value={date}
             max={todayISO()}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => changeDate(e.target.value)}
             style={{ width: 160 }}
           />
         </label>

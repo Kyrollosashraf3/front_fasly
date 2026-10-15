@@ -53,6 +53,36 @@ export function useQuery(fetcher, deps = [], { enabled = true, initial = null } 
   return { ...state, loading: enabled ? state.loading : false, refetch, setData }
 }
 
+/**
+ * useLastClassId — remembers the last class the user opened in this session.
+ *
+ * The sidebar and the phone bar keep showing a class's links even on global
+ * routes (`/groups`, `/dashboard/...`) that carry no class in the URL, by
+ * falling back to the class most recently visited.
+ */
+export function useLastClassId(currentId) {
+  const [last, setLast] = useState(() => {
+    try {
+      return sessionStorage.getItem('fasly:lastClass') || ''
+    } catch {
+      return ''
+    }
+  })
+
+  useEffect(() => {
+    if (!currentId) return
+    const value = String(currentId)
+    try {
+      sessionStorage.setItem('fasly:lastClass', value)
+    } catch {
+      /* private mode / storage disabled — fall back to in-memory only */
+    }
+    setLast(value)
+  }, [currentId])
+
+  return last
+}
+
 /** Value debounced by `wait` ms — search boxes, filter knobs. */
 export function useDebounced(value, wait = 250) {
   const [debounced, setDebounced] = useState(value)

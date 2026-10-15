@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useModal } from '../../context/ModalContext'
+import { useLastClassId } from '../../hooks'
 import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { ROLE_LABELS } from '../../lib/roles'
@@ -100,9 +102,10 @@ const TABS = [
  */
 export function BottomBar() {
   const auth = useAuth()
-  const { user, logout, classes, classReady, isManager } = auth
+  const { user, logout, classes, classReady, isManager, canAccess } = auth
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const modal = useModal()
   const [sheet, setSheet] = useState(null)
 
   const close = useCallback(() => setSheet(null), [])
@@ -114,7 +117,10 @@ export function BottomBar() {
 
   const classId = classIdFrom(pathname)
   const single = classReady && classes.length === 1
-  const myClassId = single ? String(classes[0].id) : classId
+  // On a global route the class links live on under the remembered class.
+  const lastClass = useLastClassId(classId)
+  const remembered = lastClass && classReady && canAccess(lastClass) ? lastClass : null
+  const myClassId = single ? String(classes[0].id) : classId || remembered
   const tabs = single
     ? [
         { key: 'home', icon: 'home', label: 'الرئيسية' },
@@ -130,7 +136,14 @@ export function BottomBar() {
   const mods = classModules(auth)
   const analytics = analyticsModules(auth)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const ok = await modal.confirm({
+      title: 'تسجيل الخروج؟',
+      message: 'هتخرج من حسابك على الجهاز ده.',
+      confirmLabel: 'تسجيل الخروج',
+      kind: 'danger',
+    })
+    if (!ok) return
     close()
     logout()
     navigate('/login', { replace: true })

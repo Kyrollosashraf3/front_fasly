@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
+import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
 import { useQuery } from '../../hooks'
 import { Button } from '../../components/ui/Button'
 import { Checkbox, ChipSelect, Field, Input, Select, Textarea } from '../../components/ui/Field'
@@ -44,35 +46,39 @@ const compact = (obj) =>
 export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
   const { classes } = useAuth()
   const toast = useToast()
+  const modal = useModal()
 
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
+  // The pristine form, so we can tell an edited form from a visited one.
+  const [initial, setInitial] = useState('')
 
   useEffect(() => {
     if (!open) return
     setErrors({})
-    setForm(
-      boy
-        ? {
-            ...EMPTY,
-            ...Object.fromEntries(
-              Object.keys(EMPTY).map((k) => [k, boy[k] ?? EMPTY[k]]),
-            ),
-            class_id: String(boy.class_id),
-            birth_date: boy.birth_date || '',
-            skills: Array.isArray(boy.skills)
-              ? boy.skills.filter((s) => SKILLS.includes(s))
-              : [],
-            custom: Array.isArray(boy.skills)
-              ? boy.skills.filter((s) => !SKILLS.includes(s)).join('، ')
-              : '',
-          }
-        : { ...EMPTY, class_id: String(defaultClassId ?? classes[0]?.id ?? '') },
-    )
+    const next = boy
+      ? {
+          ...EMPTY,
+          ...Object.fromEntries(
+            Object.keys(EMPTY).map((k) => [k, boy[k] ?? EMPTY[k]]),
+          ),
+          class_id: String(boy.class_id),
+          birth_date: boy.birth_date || '',
+          skills: Array.isArray(boy.skills)
+            ? boy.skills.filter((s) => SKILLS.includes(s))
+            : [],
+          custom: Array.isArray(boy.skills)
+            ? boy.skills.filter((s) => !SKILLS.includes(s)).join('، ')
+            : '',
+        }
+      : { ...EMPTY, class_id: String(defaultClassId ?? classes[0]?.id ?? '') }
+    setInitial(JSON.stringify(next))
+    setForm(next)
   }, [open, boy, defaultClassId, classes])
 
   const isEdit = Boolean(boy)
+  const dirty = open && JSON.stringify(form) !== initial
   const set = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
@@ -101,9 +107,8 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
     return Object.keys(next).length === 0
   }
 
-  const submit = async (e) => {
-    e.preventDefault()
-    if (!validate()) return
+  const performSave = async () => {
+    if (!validate()) return false
     setBusy(true)
 
     const { custom, ...rest } = form
@@ -141,29 +146,55 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
       if (isEdit) await BoyAPI.update(boy.id, payload)
       else await BoyAPI.create(payload)
       toast.success(isEdit ? 'تم تعديل بيانات الولد.' : 'تمت إضافة الولد.')
+      setInitial(JSON.stringify(form))
       onClose()
       onSaved?.()
+      return true
     } catch (err) {
       if (err instanceof ApiError && err.fields && Object.keys(err.fields).length)
         setErrors(err.fields)
       else toast.error(err.message)
+      return false
     } finally {
       setBusy(false)
     }
   }
+
+  const submit = (e) => {
+    e.preventDefault()
+    performSave()
+  }
+
+  /** Close, asking first when the form carries unsaved edits. */
+  const requestClose = async () => {
+    if (!dirty) {
+      onClose()
+      return
+    }
+    const ok = await modal.confirm({
+      title: 'تجاهل التعديلات؟',
+      message: 'لو قفلت دلوقتي هتخسر أي تعديلات لسه متحفظتش.',
+      confirmLabel: 'تجاهل وخروج',
+      kind: 'danger',
+    })
+    if (ok) onClose()
+  }
+
+  // Block navigation / refresh while the form has unsaved edits.
+  useUnsavedGuard(open && dirty, performSave, 'فيه تعديلات على بيانات الولد لسه متحفظتش.')
 
   const age = calcAge(form.birth_date)
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={requestClose}
       size="lg"
       title={isEdit ? 'تعديل بيانات الولد' : 'إضافة ولد جديد'}
       sub={isEdit ? boy.boy_name : 'البيانات الأساسية للولد'}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={requestClose}>
             إلغاء
           </Button>
           <Button variant="primary" loading={busy} onClick={submit}>

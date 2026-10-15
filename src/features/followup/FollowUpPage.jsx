@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
+import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
 import { useDebounced, useQuery } from '../../hooks'
 import { AttendAPI, BoyAPI, FollowUpAPI, GroupAPI, TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
@@ -121,6 +122,20 @@ export default function FollowUpPage() {
     [roster, draft],
   )
 
+  /** Server rows vs the draft — drives the unsaved-changes guard. */
+  const dirty = useMemo(() => {
+    if (!data) return false
+    const server = new Map((data.existing || []).map((r) => [r.boy_id, r]))
+    for (const [boyId, val] of Object.entries(draft)) {
+      if (!val?.status) continue
+      const remote = server.get(Number(boyId))
+      if (!remote) return true
+      if (remote.status !== val.status) return true
+      if ((remote.note || '') !== (val.note || '')) return true
+    }
+    return false
+  }, [data, draft])
+
   /** boyId -> every Friday recorded BEFORE the sheet on screen, newest first. */
   const fridaysByBoy = useMemo(() => {
     const map = new Map()
@@ -156,7 +171,7 @@ export default function FollowUpPage() {
     const targetTeacher = Number(teacherId) || myTeacherId || data?.teachers?.[0]?.id
     if (!targetTeacher) {
       toast.error('اختر الخادم الأول.')
-      return
+      return false
     }
 
     const serverByBoy = new Map((data?.existing || []).map((r) => [r.boy_id, r]))
@@ -182,7 +197,7 @@ export default function FollowUpPage() {
 
     if (!ops.length) {
       toast.info('مفيش تعديلات جديدة.')
-      return
+      return true
     }
 
     setSaving(true)
@@ -190,12 +205,32 @@ export default function FollowUpPage() {
       await Promise.all(ops)
       toast.success(`تم حفظ ${ops.length} افتقاد.`)
       await refetch()
+      return true
     } catch (err) {
       toast.error(err.message)
       refetch()
+      return false
     } finally {
       setSaving(false)
     }
+  }
+
+  // Warn before leaving with follow-up rows that still have unsaved changes.
+  useUnsavedGuard(canWrite && dirty, save, `فيه تعديلات افتقاد لسه متحفظتش ليوم ${formatDate(date)}.`)
+
+  /** Switching the date reloads the sheet — confirm first when it is dirty. */
+  const changeDate = async (next) => {
+    if (next === date) return
+    if (canWrite && dirty) {
+      const ok = await modal.confirm({
+        title: 'تغيير التاريخ؟',
+        message: 'فيه تعديلات افتقاد لسه متحفظتش. لو غيّرت التاريخ هتخسرها.',
+        confirmLabel: 'تغيير والتجاهل',
+        kind: 'danger',
+      })
+      if (!ok) return
+    }
+    setDate(next)
   }
 
   /* ------------------------------------------------------------- history */
@@ -487,7 +522,7 @@ export default function FollowUpPage() {
             type="date"
             value={date}
             max={todayISO()}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => changeDate(e.target.value)}
             style={{ width: 160 }}
           />
         </label>

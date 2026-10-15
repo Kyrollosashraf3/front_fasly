@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
+import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
 import { useDebounced, useQuery } from '../../hooks'
 import { CheckAPI, TeacherAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
@@ -149,11 +150,31 @@ export default function TeacherCheckPage() {
       })
       toast.success(`تم حفظ متابعة ${formatDate(date)}.`)
       await refetch()
+      return true
     } catch (err) {
       toast.error(err.message)
+      return false
     } finally {
       setSaving(false)
     }
+  }
+
+  // Warn before leaving with a check sheet that still has unsaved ticks.
+  useUnsavedGuard(canWrite && dirty, save, `فيه تعديلات متابعة لسه متحفظتش ليوم ${formatDate(date)}.`)
+
+  /** Switching the date reloads the sheet — confirm first when it is dirty. */
+  const changeDate = async (next) => {
+    if (next === date) return
+    if (canWrite && dirty) {
+      const ok = await modal.confirm({
+        title: 'تغيير التاريخ؟',
+        message: 'فيه تعديلات متابعة لسه متحفظتش. لو غيّرت التاريخ هتخسرها.',
+        confirmLabel: 'تغيير والتجاهل',
+        kind: 'danger',
+      })
+      if (!ok) return
+    }
+    setDate(next)
   }
 
   const columns = [
@@ -234,7 +255,7 @@ export default function TeacherCheckPage() {
             value={date}
             max={todayISO()}
             disabled={!canWrite}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => changeDate(e.target.value)}
             style={{ width: 160 }}
           />
         </label>

@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { BottomBar } from './BottomBar'
 import { TitleProvider } from '../../context/TitleContext'
+import { UnsavedChangesProvider } from '../../context/UnsavedChangesContext'
 
 /** Closes the mobile drawer whenever the route changes. */
 function useDrawerSync(open, setOpen) {
@@ -29,23 +30,25 @@ export function AppShell() {
 
   return (
     <TitleProvider>
-      <div className="shell">
-        <Sidebar onClose={() => setDrawer(false)} />
-        <button
-          type="button"
-          className="sidebar-backdrop"
-          aria-label="إغلاق القائمة"
-          onClick={() => setDrawer(false)}
-        />
-        <div className="main-col">
-          <Topbar onMenu={() => setDrawer((o) => !o)} />
-          <main className="view" id="view">
-            <Outlet />
-          </main>
-        </div>
+      <UnsavedChangesProvider>
+        <div className="shell">
+          <Sidebar onClose={() => setDrawer(false)} />
+          <button
+            type="button"
+            className="sidebar-backdrop"
+            aria-label="إغلاق القائمة"
+            onClick={() => setDrawer(false)}
+          />
+          <div className="main-col">
+            <Topbar onMenu={() => setDrawer((o) => !o)} />
+            <main className="view" id="view">
+              <Outlet />
+            </main>
+          </div>
 
-        <BottomBar />
-      </div>
+          <BottomBar />
+        </div>
+      </UnsavedChangesProvider>
     </TitleProvider>
   )
 }

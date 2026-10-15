@@ -1,5 +1,7 @@
 ﻿import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useModal } from '../../context/ModalContext'
+import { useLastClassId } from '../../hooks'
 import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { ROLE_LABELS } from '../../lib/roles'
@@ -86,13 +88,26 @@ function ClassesList({ onNavigate }) {
 }
 
 export function Sidebar({ onClose }) {
-  const { user, logout } = useAuth()
+  const { user, logout, classes, classReady, canAccess } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const modal = useModal()
 
-  const classId = classIdFrom(pathname)
+  // Keep the class links visible on global routes by remembering the last
+  // class the user opened (a single-class login uses his only class).
+  const inClass = classIdFrom(pathname)
+  const lastClass = useLastClassId(inClass)
+  const remembered = lastClass && classReady && canAccess(lastClass) ? lastClass : null
+  const classId = inClass || remembered || (classReady && classes.length === 1 ? String(classes[0].id) : null)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const ok = await modal.confirm({
+      title: 'تسجيل الخروج؟',
+      message: 'هتخرج من حسابك على الجهاز ده.',
+      confirmLabel: 'تسجيل الخروج',
+      kind: 'danger',
+    })
+    if (!ok) return
     logout()
     onClose?.()
     navigate('/login', { replace: true })

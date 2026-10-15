@@ -15,9 +15,10 @@ import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States
 import { FileMenu } from '../../components/ui/FileMenu'
 import { ImportResult } from '../../components/ui/ImportResult'
 import { BoyProfileModal, followLabel } from '../boys/BoyProfile'
-import { BoyName, BoyNameEdit } from '../boys/BoyName'
+import { BoyName } from '../boys/BoyName'
 import { Avatar } from '../../components/ui/Avatar'
 import { formatShort } from '../../lib/format'
+import { AssignGame } from './AssignGame'
 import './groups.css'
 
 /**
@@ -42,8 +43,6 @@ export default function GroupsPage() {
   const [classId, setClassId] = useState('')
   const [teacherFilter, setTeacherFilter] = useState('')
   const [search, setSearch] = useState('')
-  const [selectedTeacher, setSelectedTeacher] = useState('')
-  const [picked, setPicked] = useState(new Set())
   const [assigning, setAssigning] = useState(false)
   const [viewing, setViewing] = useState(null)
   const [importResult, setImportResult] = useState(null)
@@ -79,24 +78,24 @@ export default function GroupsPage() {
     })
   }, [data, teacherFilter, debounced])
 
-  const togglePick = (boyId) =>
-    setPicked((prev) => {
-      const next = new Set(prev)
-      next.has(boyId) ? next.delete(boyId) : next.add(boyId)
-      return next
-    })
-
-  const assign = async () => {
-    if (!selectedTeacher) return toast.error('اختر الخادم الأول.')
-    if (!picked.size) return toast.error('اختار أولاد على الأقل.')
+  const assign = async (teacherId, boyIds) => {
+    if (!teacherId) {
+      toast.error('اختر الخادم الأول.')
+      return false
+    }
+    if (!boyIds.length) {
+      toast.error('اختار أولاد على الأقل.')
+      return false
+    }
     setAssigning(true)
     try {
-      const res = await GroupAPI.assign(Number(selectedTeacher), [...picked])
+      const res = await GroupAPI.assign(teacherId, boyIds)
       toast.success(`اتوزع ${res.assigned} على ${res.teacher_name}.`)
-      setPicked(new Set())
       refetch()
+      return true
     } catch (err) {
       toast.error(err.message)
+      return false
     } finally {
       setAssigning(false)
     }
@@ -223,22 +222,6 @@ export default function GroupsPage() {
       </div>
 
       <Toolbar>
-        {showClassPicker && (
-          <Select
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className="select--plain"
-            style={{ minWidth: 180 }}
-          >
-            <option value="">كل الفصول</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        )}
-
         {showServantFilter ? (
           <Select
             value={teacherFilter}
@@ -274,63 +257,20 @@ export default function GroupsPage() {
         <ErrorState error={error} onRetry={refetch} />
       ) : (
         <>
-          {/* ---------------------------------------------------- assign panel */}
+          {/* ----------------------------------------------------- assign game */}
           {canWrite && (
-            <section className="assign-panel card">
-              <div className="card__head">
-                <span className="card__title">توزيع المجموعات</span>
-                <span className="small muted">
-                  {picked.size > 0 ? `تم اختيار ${picked.size}` : 'اختار الخادم والأولاد'}
-                </span>
-              </div>
-              <div className="card__body stack">
-                <div className="row" style={{ flexWrap: 'wrap' }}>
-                  <Select
-                    value={selectedTeacher}
-                    onChange={(e) => setSelectedTeacher(e.target.value)}
-                    style={{ minWidth: 220 }}
-                  >
-                    <option value="">— اختر الخادم —</option>
-                    {teachers.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </Select>
-                  <ToolbarSpacer />
-                  <Button variant="ghost" size="sm" onClick={() => setPicked(new Set(unassigned.map((b) => b.boy_id)))}>
-                    اختيار الكل
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setPicked(new Set())}>
-                    مسح الاختيار
-                  </Button>
-                  <Button variant="primary" loading={assigning} disabled={!picked.size} onClick={assign} icon={<Icon name="check" size={16} />}>
-                    حفظ التوزيع
-                  </Button>
-                </div>
-
-                {unassigned.length === 0 ? (
-                  <p className="small muted">
-                    <Icon name="check" size={15} /> كل الأولاد متوزعين.
-                  </p>
-                ) : (
-                  <div className="assign-grid">
-                    {unassigned.map((b) => (
-                      <label key={b.boy_id} className={`assign-chip ${picked.has(b.boy_id) ? 'is-picked' : ''}`}>
-                        <input
-                          type="checkbox"
-                          checked={picked.has(b.boy_id)}
-                          onChange={() => togglePick(b.boy_id)}
-                        />
-                        {/* the ✎ stops the click, so it never ticks the chip */}
-                        <span className="truncate">{b.boy_name}</span>
-                        <BoyNameEdit boy={b} classId={effectiveClassId} onSaved={refetch} />
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
+            <AssignGame
+              classes={classes}
+              classId={effectiveClassId}
+              classIdForEdit={effectiveClassId}
+              showClassPicker={showClassPicker}
+              onClassChange={setClassId}
+              groups={data?.groups || []}
+              boys={data?.unassigned || []}
+              assigning={assigning}
+              onAssign={assign}
+              onSaved={refetch}
+            />
           )}
 
           {/* --------------------------------------------------- group cards */}
