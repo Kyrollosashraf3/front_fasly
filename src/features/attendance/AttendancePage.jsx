@@ -25,9 +25,11 @@ import './attendance.css'
  * tick, and a small red flag when the boy missed the previous Friday. The full
  * history, the percentage and the boy's file live in the follow-up sheet.
  *
- * Local `marks` holds the working copy (boyId -> {present, note}); the save
- * bar only appears when something actually changed, and everything is written
- * in ONE POST /attendance/bulk (the API upserts per boy+date).
+ * Local `marks` holds the working copy (boyId -> {present, liturgy, note}); the
+ * save bar only appears when something actually changed. Only the boys who are
+ * ticked present are written, in ONE POST /attendance/bulk (the API upserts per
+ * boy+date) — a boy with no tick has no row at all, so his absence is the
+ * default and is never stored as false.
  */
 
 /**
@@ -179,15 +181,22 @@ export default function AttendancePage() {
   const save = async () => {
     setSaving(true)
     try {
-      await AttendAPI.saveBulk({
-        date,
-        items: (data?.boys || []).map((b) => ({
+      // Only the ticked (present) boys are sent. A boy with no tick simply has
+      // no row in the sheet — his absence is the default and is never written
+      // as false, so he is left exactly as he already was.
+      const items = (data?.boys || [])
+        .filter((b) => getMark(b.id).present)
+        .map((b) => ({
           boy_id: b.id,
-          present: Boolean(getMark(b.id).present),
+          present: true,
           liturgy: Boolean(getMark(b.id).liturgy),
           note: getMark(b.id).note || null,
-        })),
-      })
+        }))
+
+      // An empty sheet is valid (nobody showed up) — nothing to write, and the
+      // API rejects an empty bulk, so the call is skipped.
+      if (items.length) await AttendAPI.saveBulk({ date, items })
+
       toast.success(`تم حفظ حضور ${formatDate(date)}.`)
       await refetch()
       return true
