@@ -53,10 +53,7 @@ export default function FollowUpPage() {
 
   const canWrite = can.writeFollowUp(user)
   const myTeacherId = user?.teacher_id ?? null
-  // "كل الخدام" is an admin/super-admin tool: a servant only ever writes his
-  // own follow-ups, but he can log one for any boy in his class — so the roster
-  // stays the whole class and the picker is hidden from him.
-  const showServantFilter = can.manageClasses(user)
+  const showServantFilter = true
 
   const [date, setDate] = useState(todayISO())
   const [teacherId, setTeacherId] = useState(isServant ? String(myTeacherId || '') : '')
@@ -97,7 +94,7 @@ export default function FollowUpPage() {
   const roster = useMemo(() => {
     const all = data?.boys || []
     // A servant sees the whole class; a manager can narrow to one group.
-    if (isServant || !teacherId) return all
+    if (!teacherId) return all
     const group = data?.groups?.groups?.find((g) => String(g.teacher_id) === String(teacherId))
     if (!group) return []
     const ids = new Set(group.boys.map((b) => b.boy_id))
@@ -394,13 +391,18 @@ export default function FollowUpPage() {
       mobile: 'الجمعة الماضية',
       render: (b) => {
         const row = lastFridayOf(b.id)
-        if (!row) return <span className="muted xsmall">لا يوجد تسجيل</span>
+        if (!row) return <span className="muted xsmall">لا يوجد سجل حضور</span>
         return (
-          <span className="att-last">
+          <span className="att-last" style={{ gap: 6 }}>
             {row.present ? (
               <span className="badge badge--green">حاضر</span>
             ) : (
               <span className="badge badge--red">غائب</span>
+            )}
+            {row.liturgy ? (
+              <span className="badge badge--gold">قداس</span>
+            ) : (
+              <span className="badge badge--red">لا قداس</span>
             )}
             <span className="xsmall muted">{formatDate(row.date)}</span>
           </span>
@@ -518,27 +520,67 @@ export default function FollowUpPage() {
           </span>
         </div>
 
+        {boy.issue_flag && (
+          <div className="att-history__section">
+            <div className="att-history__subtitle">
+              <Icon name="flag" size={14} />
+              ملاحظات عامة / Red Flag
+            </div>
+            <div className="muted small">{boy.note || '—'}</div>
+          </div>
+        )}
+
         {list.length > 0 && (
-          <ul className="att-history__list">
-            {list.map((r) => (
-              <li key={r.id ?? r.date} className={r.present ? 'is-present' : 'is-absent'}>
-                <span className="att-history__date">{formatDate(r.date)}</span>
-                {r.present ? (
-                  <span className="badge badge--green">حاضر</span>
-                ) : (
-                  <span className="badge badge--red">غائب</span>
-                )}
-                {r.note && <span className="att-history__note">{r.note}</span>}
-              </li>
-            ))}
-          </ul>
+          <div className="att-history__section">
+            <div className="att-history__subtitle">
+              <Icon name="history" size={14} />
+              تاريخ الافتقاد
+            </div>
+            <ul className="att-history__list">
+              {list.map((r) => (
+                <li key={r.id ?? r.date} className={r.present ? 'is-present' : 'is-absent'}>
+                  <span className="att-history__date">{formatDate(r.date)}</span>
+                  {r.present ? (
+                    <span className="badge badge--green">حاضر</span>
+                  ) : (
+                    <span className="badge badge--red">غائب</span>
+                  )}
+                  {r.liturgy ? (
+                    <span className="badge badge--gold">قداس</span>
+                  ) : !r.present ? null : (
+                    <span className="badge badge--red">لا قداس</span>
+                  )}
+                  {r.note && <span className="att-history__note">{r.note}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {(boy.followups || []).length > 0 && (
+          <div className="att-history__section">
+            <div className="att-history__subtitle">
+              <Icon name="heart" size={14} />
+              سجل الافتقاد الأسبوعي
+            </div>
+            <ul className="att-history__list">
+              {(boy.followups || []).slice(0, 20).map((f, i) => (
+                <li key={i}>
+                  <span className="att-history__date">{formatDate(f.action_date)}</span>
+                  <Badge kind={KIND[f.status] || 'blue'}>{followLabel(f.status)}</Badge>
+                  {f.teacher_name && <span className="muted small">{f.teacher_name}</span>}
+                  {f.note && <span className="att-history__note">{f.note}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     )
   }
 
   const historyColumns = [
-    { key: 'action_date', label: 'التاريخ', width: 130, mobile: 'التاريخ', render: (r) => formatDate(r.action_date, { withDay: false }) },
+    { key: 'action_date', label: 'تاريخ الافتقاد', width: 130, mobile: 'تاريخ الافتقاد', render: (r) => formatDate(r.action_date, { withDay: false }) },
     { key: 'teacher_id', label: 'الخادم', width: 150, mobile: 'الخادم', render: (r) => nameOfTeacher(r.teacher_id) },
     { key: 'boy_id', label: 'الولد', mobile: 'الولد', render: (r) => <BoyName boy={boyOf(r.boy_id)} classId={classId} onSaved={refetchHistory} /> },
     {
@@ -548,7 +590,7 @@ export default function FollowUpPage() {
       mobile: 'الطريقة',
       render: (r) => <Badge kind={KIND[r.status] || 'neutral'}>{followLabel(r.status)}</Badge>,
     },
-    { key: 'note', label: 'ملاحظة', mobile: 'ملاحظة', render: (r) => r.note || <span className="muted xsmall">—</span> },
+    { key: 'note', label: 'الملاحظات', mobile: 'الملاحظات', render: (r) => r.note || <span className="muted xsmall">—</span> },
     {
       key: 'actions',
       label: '',
