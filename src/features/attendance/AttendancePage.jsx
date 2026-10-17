@@ -8,7 +8,7 @@ import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { AttendAPI, BoyAPI } from '../../lib/endpoints'
 import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
-import { Button } from '../../components/ui/Button'
+import { Button, IconButton } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { Input, SearchInput } from '../../components/ui/Field'
 import { Tabs, Toolbar, ToolbarSearch } from '../../components/ui/Toolbar'
@@ -30,6 +30,10 @@ import './attendance.css'
  * ticked present are written, in ONE POST /attendance/bulk (the API upserts per
  * boy+date) — a boy with no tick has no row at all, so his absence is the
  * default and is never stored as false.
+ *
+ * Once a boy is saved his chips lock: changing him is a deliberate «تعديل» on
+ * that one row, saved on its own (PATCH while present, DELETE when unticked so
+ * he again keeps no row), never a full-sheet rewrite.
  */
 
 /**
@@ -81,6 +85,9 @@ export default function AttendancePage() {
   const [view, setView] = useState('all')
   const [marks, setMarks] = useState({})
   const [saving, setSaving] = useState(false)
+  // Boy ids whose already-saved row is unlocked for a correction.
+  const [editing, setEditing] = useState(() => new Set())
+  const [rowSaving, setRowSaving] = useState(null)
   const [addOpen, setAddOpen] = useState(false)
 
   const debounced = useDebounced(search, 200)
@@ -123,21 +130,54 @@ export default function AttendancePage() {
   const setMark = (boyId, patch) =>
     setMarks((m) => ({ ...m, [boyId]: { ...getMark(boyId), ...patch } }))
 
-  /** Server state vs local state �?" drives the "unsaved" pill. */
+  /** The saved row of each boy for this date, keyed by boy id. */
+  const serverById = useMemo(
+    () => new Map((data?.attends || []).map((a) => [a.boy_id, a])),
+    [data],
+  )
+
+  /** A boy with a saved «حاضر» row for this date (a legacy false row is not). */
+  const isSaved = (boyId) => {
+    const record = serverById.get(boyId)
+    return Boolean(record && (record.present || record.liturgy))
+  }
+
+  /** A saved boy is locked (his chips disabled) until he is opened to edit. */
+  const isLocked = (boyId) => isSaved(boyId) && !editing.has(boyId)
+
+  /** Does this boy's saved row differ from the working copy? */
+  const rowChanged = (boyId) => {
+    const remote = serverById.get(boyId)
+    if (!remote) return false
+    const local = getMark(boyId)
+    return (
+      Boolean(remote.present) !== Boolean(local.present) ||
+      Boolean(remote.liturgy) !== Boolean(local.liturgy) ||
+      (remote.note || '') !== (local.note || '')
+    )
+  }
+
+  /**
+   * Only brand-new ticks (boys with no saved present row) drive the global
+   * save — a saved boy is changed on his own row through «تعديل» instead.
+   */
   const dirty = useMemo(() => {
-    if (!data) return false
-    const server = new Map((data.attends || []).map((a) => [a.boy_id, a]))
-    for (const boy of data.boys || []) {
-      const local = marks[boy.id]
-      // No row on the server yet == the default (absent, no note).
-      const remote = server.get(boy.id) ?? { present: false, liturgy: false, note: '' }
-      const present = local?.present ?? false
-      const liturgy = local?.liturgy ?? false
-      const note = local?.note ?? ''
-      if (remote.present !== present || (remote.liturgy ?? false) !== liturgy || (remote.note || '') !== note) return true
+    for (const boy of data?.boys || []) {
+      if (isSaved(boy.id)) continue
+      if (getMark(boy.id).present) return true
     }
     return false
-  }, [data, marks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, marks, serverById])
+
+  /** A saved boy opened for edit whose row has changed but is not saved yet. */
+  const editingDirty = useMemo(() => {
+    for (const id of editing) if (rowChanged(id)) return true
+    return false
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, marks, serverById])
+
+  const unsaved = dirty || editingDirty
 
   const rows = useMemo(() => {
     const q = normalizeSearch(debounced)
@@ -178,6 +218,62 @@ export default function AttendancePage() {
     return map
   }, [history, date])
 
+  /**
+   * Persist one already-saved boy: refresh his row while present, remove it
+   * when he is unticked — so an absent boy keeps no row at all.
+   */
+  const persistRow = async (boyId) => {
+    const record = serverById.get(boyId)
+    if (!record) return
+    const mark = getMark(boyId)
+    if (mark.present) {
+      await AttendAPI.update(record.id, {
+        present: true,
+        liturgy: Boolean(mark.liturgy),
+        note: mark.note || null,
+      })
+    } else {
+      await AttendAPI.remove(record.id)
+    }
+  }
+
+  /** Save one opened boy on his own row, without touching anyone else. */
+  const saveRow = async (boyId) => {
+    setRowSaving(boyId)
+    try {
+      await persistRow(boyId)
+      toast.success('تم تعديل الحضور.')
+      setEditing((s) => {
+        const next = new Set(s)
+        next.delete(boyId)
+        return next
+      })
+      await refetch()
+      return true
+    } catch (err) {
+      toast.error(err.message)
+      return false
+    } finally {
+      setRowSaving(null)
+    }
+  }
+
+  /** Leave edit mode, throwing the row's local change away. */
+  const cancelRow = (boyId) => {
+    const record = serverById.get(boyId)
+    if (record) {
+      setMarks((m) => ({
+        ...m,
+        [boyId]: { present: record.present, liturgy: record.liturgy ?? false, note: record.note || '' },
+      }))
+    }
+    setEditing((s) => {
+      const next = new Set(s)
+      next.delete(boyId)
+      return next
+    })
+  }
+
   const save = async () => {
     setSaving(true)
     try {
@@ -185,7 +281,7 @@ export default function AttendancePage() {
       // no row in the sheet — his absence is the default and is never written
       // as false, so he is left exactly as he already was.
       const items = (data?.boys || [])
-        .filter((b) => getMark(b.id).present)
+        .filter((b) => !isSaved(b.id) && getMark(b.id).present)
         .map((b) => ({
           boy_id: b.id,
           present: true,
@@ -196,6 +292,10 @@ export default function AttendancePage() {
       // An empty sheet is valid (nobody showed up) — nothing to write, and the
       // API rejects an empty bulk, so the call is skipped.
       if (items.length) await AttendAPI.saveBulk({ date, items })
+
+      // Any saved boy left open in edit mode is flushed alongside the new ticks.
+      for (const id of editing) if (rowChanged(id)) await persistRow(id)
+      setEditing(new Set())
 
       toast.success(`تم حفظ حضور ${formatDate(date)}.`)
       await refetch()
@@ -209,14 +309,14 @@ export default function AttendancePage() {
   }
 
   // Warn before leaving with a Friday sheet that still has unsaved ticks.
-  useUnsavedGuard(canWrite && dirty, save, `فيه تعديلات حضور لسه متحفظتش ليوم ${formatDate(date)}.`)
+  useUnsavedGuard(canWrite && unsaved, save, `فيه تعديلات حضور لسه متحفظتش ليوم ${formatDate(date)}.`)
 
   /**
    * Opening the quick "add boy" form reloads the sheet, which would wipe any
    * ticks not saved yet — so offer to save them first.
    */
   const openAddBoy = async () => {
-    if (canWrite && dirty) {
+    if (canWrite && unsaved) {
       const ok = await modal.confirm({
         title: 'تحفظ الحضور الأول؟',
         message: 'فيه تعديلات حضور لسه متحفظتش. الأفضل تحفظها قبل ما تضيف ولد جديد عشان متضيعش.',
@@ -233,7 +333,7 @@ export default function AttendancePage() {
   /** Switching the date reloads the sheet — confirm first when it is dirty. */
   const changeDate = async (next) => {
     if (next === date) return
-    if (canWrite && dirty) {
+    if (canWrite && unsaved) {
       const ok = await modal.confirm({
         title: 'تغيير التاريخ؟',
         message: 'فيه تعديلات حضور لسه متحفظتش. لو غيّرت التاريخ هتخسرها.',
@@ -248,7 +348,7 @@ export default function AttendancePage() {
   /** Switching the class (global mode) reloads the sheet — confirm first. */
   const changeClass = async (next) => {
     if (!next || next === classId) return
-    if (canWrite && dirty) {
+    if (canWrite && unsaved) {
       const ok = await modal.confirm({
         title: 'تغيير الفصل؟',
         message: 'فيه تعديلات حضور لسه متحفظتش. لو غيّرت الفصل هتخسرها.',
@@ -291,26 +391,62 @@ export default function AttendancePage() {
             label: '',
             align: 'start',
             mobile: '',
-            render: (b) => (
-              <div className="att-marks">
-                <AttMark
-                  type="present"
-                  checked={getMark(b.id).present}
-                  // un-ticking presence also un-ticks the mass (mass implies presence)
-                  onToggle={(v) =>
-                    setMark(b.id, v ? { present: true } : { present: false, liturgy: false })
-                  }
-                />
-                <AttMark
-                  type="liturgy"
-                  checked={Boolean(getMark(b.id).liturgy)}
-                  // ticking the mass ticks presence too — you can't attend mass and be absent
-                  onToggle={(v) =>
-                    setMark(b.id, v ? { liturgy: true, present: true } : { liturgy: false })
-                  }
-                />
-              </div>
-            ),
+            render: (b) => {
+              const locked = isLocked(b.id)
+              const rowEdit = editing.has(b.id)
+              return (
+                <div className="att-marks">
+                  <AttMark
+                    type="present"
+                    checked={getMark(b.id).present}
+                    disabled={locked}
+                    // un-ticking presence also un-ticks the mass (mass implies presence)
+                    onToggle={(v) =>
+                      setMark(b.id, v ? { present: true } : { present: false, liturgy: false })
+                    }
+                  />
+                  <AttMark
+                    type="liturgy"
+                    checked={Boolean(getMark(b.id).liturgy)}
+                    disabled={locked}
+                    // ticking the mass ticks presence too — you can't attend mass and be absent
+                    onToggle={(v) =>
+                      setMark(b.id, v ? { liturgy: true, present: true } : { liturgy: false })
+                    }
+                  />
+
+                  {locked && (
+                    <IconButton
+                      icon={<Icon name="edit" size={15} />}
+                      label="تعديل"
+                      onClick={() =>
+                        setEditing((s) => {
+                          const next = new Set(s)
+                          next.add(b.id)
+                          return next
+                        })
+                      }
+                    />
+                  )}
+
+                  {rowEdit && (
+                    <>
+                      <IconButton
+                        icon={<Icon name="check" size={16} />}
+                        label="حفظ تعديل الولد"
+                        disabled={rowSaving === b.id || !rowChanged(b.id)}
+                        onClick={() => saveRow(b.id)}
+                      />
+                      <IconButton
+                        icon={<Icon name="close" size={15} />}
+                        label="إلغاء التعديل"
+                        onClick={() => cancelRow(b.id)}
+                      />
+                    </>
+                  )}
+                </div>
+              )
+            },
           },
         ]
       : []),
@@ -442,7 +578,7 @@ export default function AttendancePage() {
           )}
 
           <div className="row" style={{ gap: 10 }}>
-            {dirty && <Badge kind="gold" dot>فيه تعديلات لمتحفظش</Badge>}
+            {unsaved && <Badge kind="gold" dot>فيه تعديلات لمتحفظش</Badge>}
             {canAdd && (
               <Button
                 variant="secondary"
@@ -452,7 +588,7 @@ export default function AttendancePage() {
                 إضافة ولد
               </Button>
             )}
-            <Button variant="accent" loading={saving} disabled={!dirty} onClick={save} icon={<Icon name="check" size={16} />}>
+            <Button variant="accent" loading={saving} disabled={!unsaved} onClick={save} icon={<Icon name="check" size={16} />}>
               حفظ الحضور
             </Button>
           </div>
