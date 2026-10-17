@@ -56,7 +56,7 @@ export default function FollowUpPage() {
   const showServantFilter = true
 
   const [date, setDate] = useState(todayISO())
-  const [teacherId, setTeacherId] = useState(isServant ? String(myTeacherId || '') : '')
+  const [teacherId, setTeacherId] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [draft, setDraft] = useState({})
@@ -93,10 +93,9 @@ export default function FollowUpPage() {
   /** Which boys are on this sheet? */
   const roster = useMemo(() => {
     const all = data?.boys || []
-    // A servant sees the whole class; a manager can narrow to one group.
     if (!teacherId) return all
     const group = data?.groups?.groups?.find((g) => String(g.teacher_id) === String(teacherId))
-    if (!group) return []
+    if (!group) return all
     const ids = new Set(group.boys.map((b) => b.boy_id))
     return all.filter((b) => ids.has(b.id))
   }, [data, teacherId, isServant])
