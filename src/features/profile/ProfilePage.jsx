@@ -3,15 +3,16 @@ import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useQuery } from '../../hooks'
+import { useDebounced, useQuery } from '../../hooks'
 import { AuthAPI, BoyAPI, TeacherAPI } from '../../lib/endpoints'
 import { ROLE_LABELS, ROLE_OPTIONS } from '../../lib/roles'
 import { isPhone, normalisePhone } from '../../lib/constants'
+import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
-import { Field, Input, Select } from '../../components/ui/Field'
+import { Field, Input, SearchInput, Select } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
-import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge, RoleBadge } from '../../components/ui/Badge'
 import { DetailRow, SectionTitle } from '../../components/ui/Bits'
@@ -39,6 +40,16 @@ const attachedBoy = (boys, u) =>
   u?.boy_id ? boys.find((b) => b.id === u.boy_id) || null : null
 
 /**
+ * The name of an account, resolved from the loaded servants/boys lists. Kept at
+ * module scope so the search/sort memo can lean on it without re-creating it.
+ */
+const accountName = (teachers, boys, u) => {
+  const t = attachedTeacher(teachers, u)
+  const b = attachedBoy(boys, u)
+  return u?.display_name || t?.teacher_name || b?.boy_name || ''
+}
+
+/**
  * ProfilePage — who am I, my password, and (for managers) every login.
  */
 export default function ProfilePage() {
@@ -53,6 +64,12 @@ export default function ProfilePage() {
   const [importResult, setImportResult] = useState(null)
   const [roleFilter, setRoleFilter] = useState('')
   const [classFilter, setClassFilter] = useState('')
+  // '' | 'active' (مفعل) | 'pending' (بانتظار التسجيل)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [nameQuery, setNameQuery] = useState('')
+  // '' (بدون ترتيب) | 'asc' (أ - ي) | 'desc' (ي - أ)
+  const [nameSort, setNameSort] = useState('')
+  const debouncedName = useDebounced(nameQuery)
 
   const isMgr = can.manageAccounts(user)
 
@@ -96,11 +113,7 @@ export default function ProfilePage() {
   }
 
   /** The name shown for an account — a super admin may borrow a servant's. */
-  const nameOf = (u) => {
-    const t = attachedTeacher(teachers, u)
-    const b = attachedBoy(boys, u)
-    return u?.display_name || t?.teacher_name || b?.boy_name || '—'
-  }
+  const nameOf = (u) => accountName(teachers, boys, u) || '—'
 
   /** The class an account belongs to ("كل الفصول" for the global admin). */
   const classOf = (u) => {
@@ -111,19 +124,21 @@ export default function ProfilePage() {
     return cid ? classLabel(cid) : '—'
   }
 
-  const filteredUsers = useMemo(
-    () =>
-      (users || []).filter((u) => {
-        if (roleFilter && u.role !== roleFilter) return false
-        if (classFilter) {
-          const t = attachedTeacher(teachers, u)
-          const b = attachedBoy(boys, u)
-          if (String(t?.class_id ?? b?.class_id ?? '') !== String(classFilter)) return false
-        }
-        return true
-      }),
-    [users, roleFilter, classFilter, teachers, boys],
-  )
+  const filteredUsers = useMemo(() => {
+    const q = normalizeSearch(debouncedName)
+    return (users || []).filter((u) => {
+      if (roleFilter && u.role !== roleFilter) return false
+      if (statusFilter === 'active' && u.pending_signup) return false
+      if (statusFilter === 'pending' && !u.pending_signup) return false
+      if (classFilter) {
+        const t = attachedTeacher(teachers, u)
+        const b = attachedBoy(boys, u)
+        if (String(t?.class_id ?? b?.class_id ?? '') !== String(classFilter)) return false
+      }
+      if (q && !normalizeSearch(accountName(teachers, boys, u)).includes(q)) return false
+      return true
+    })
+  }, [users, roleFilter, statusFilter, classFilter, debouncedName, teachers, boys])
 
   const changePassword = async (e) => {
     e.preventDefault()
@@ -212,7 +227,13 @@ export default function ProfilePage() {
             <EmptyState icon="lock" title="لا توجد حسابات" message="لا توجد حسابات مسجلة بعد." />
           ) : (
             <>
-              <Toolbar>
+              <Toolbar className="toolbar--scroll">
+                <SearchInput
+                  value={nameQuery}
+                  onChange={setNameQuery}
+                  placeholder="ابحث بالاسم..."
+                />
+
                 <label className="row small bold" style={{ gap: 8 }}>
                   <Icon name="shield" size={16} />
                   <Select
@@ -251,9 +272,45 @@ export default function ProfilePage() {
                   </label>
                 )}
 
+                <label className="row small bold" style={{ gap: 8 }}>
+                  <Icon name="check" size={16} />
+                  <Select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="select--plain"
+                    style={{ minWidth: 170 }}
+                    aria-label="فلتر حالة الحساب"
+                  >
+                    <option value="">كل الحالات</option>
+                    <option value="active">مفعل</option>
+                    <option value="pending">بانتظار التسجيل</option>
+                  </Select>
+                </label>
+
+                <label className="row small bold" style={{ gap: 8 }}>
+                  <Icon name="list" size={16} />
+                  <Select
+                    value={nameSort}
+                    onChange={(e) => setNameSort(e.target.value)}
+                    className="select--plain"
+                    style={{ minWidth: 170 }}
+                    aria-label="ترتيب الاسم"
+                  >
+                    <option value="">بدون ترتيب</option>
+                    <option value="asc">الاسم: أ ← ي</option>
+                    <option value="desc">الاسم: ي ← أ</option>
+                  </Select>
+                </label>
+
                 <ToolbarSpacer />
                 <span className="small muted">{filteredUsers.length} حساب</span>
               </Toolbar>
+
+              <ToolbarSearch
+                value={nameQuery}
+                onChange={setNameQuery}
+                placeholder="ابحث بالاسم..."
+              />
 
               {!filteredUsers.length ? (
                 <EmptyState
@@ -263,7 +320,9 @@ export default function ProfilePage() {
                 />
               ) : (
                 <Table
+                  key={`accounts-${nameSort}`}
                   sortable
+                  initialSort={nameSort ? { key: 'name', dir: nameSort } : null}
                   compact
                   stackOnMobile
                   rows={filteredUsers}
@@ -295,11 +354,23 @@ export default function ProfilePage() {
                       mobile: 'رقم التليفون',
                       sortValue: (u) => u?.phone || '',
                       render: (u) => (
-                        <span className="table__name">
-                          <span dir="ltr">{handleOf(u)}</span>
-                          {u.pending_signup && <Badge kind="gold">بانتظار التسجيل</Badge>}
+                        <span className="table__name" dir="ltr">
+                          {handleOf(u)}
                         </span>
                       ),
+                    },
+                    {
+                      key: 'status',
+                      label: 'حالة الحساب',
+                      width: 150,
+                      mobile: 'حالة الحساب',
+                      sortValue: (u) => (u?.pending_signup ? 1 : 0),
+                      render: (u) =>
+                        u?.pending_signup ? (
+                          <Badge kind="gold">بانتظار التسجيل</Badge>
+                        ) : (
+                          <Badge kind="green">مفعل</Badge>
+                        ),
                     },
                     {
                       key: 'role',

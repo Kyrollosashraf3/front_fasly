@@ -171,6 +171,81 @@
   color: var(--gold-deep, var(--gold));
 }
 
+/* ------------------------------------------------------- mode switcher */
+/* Two buttons pinned at the top of both auth screens. */
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--surface-alt, rgba(15, 33, 63, 0.04));
+  border: 1px solid var(--surface-border);
+}
+
+.auth-tabs__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px var(--sp-3);
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.auth-tabs__btn:hover {
+  color: var(--navy);
+}
+
+.auth-tabs__btn.is-active {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Prominent callout under the login form pointing to account activation. */
+.login__cta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  color: var(--gold-ink);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.login__cta:hover {
+  border-color: var(--gold);
+}
+
+.login__cta:active {
+  transform: translateY(1px);
+}
+
+.login__cta > svg {
+  flex: none;
+}
+
+.login__cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.login__cta-text b {
+  color: var(--navy);
+  font-weight: var(--weight-bold);
+}
+
 /* Soft callout: the number is on file but still needs a password. */
 .login__note {
   display: flex;

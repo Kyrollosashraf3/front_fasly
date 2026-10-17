@@ -11,6 +11,7 @@ import { AuthAPI } from '../../lib/endpoints'
 import { isPhone, normalisePhone } from '../../lib/constants'
 import { AuthBrand } from './AuthBrand'
 import { AuthSupport } from './AuthSupport'
+import { AuthTabs } from './AuthTabs'
 import './login.css'
 
 export default function LoginPage() {
@@ -94,6 +95,7 @@ export default function LoginPage() {
       {/* Form panel */}
       <main className="login__panel">
         <div className="login__box">
+          <AuthTabs />
           <div className="login__box-head">
             <span className="login__mobile-mark">ف</span>
             <h2>مرحبًا بعودتك</h2>
@@ -155,6 +157,16 @@ export default function LoginPage() {
               {busy ? 'جارٍ الدخول...' : 'دخول'}
             </Button>
           </form>
+
+          {/* Below the form: a clear box that moves the person to activation. */}
+          <Link to="/signup" className="login__cta">
+            <Icon name="sparkles" size={18} />
+            <span className="login__cta-text">
+              <b>فعل حسابك أولاً</b>
+              <span>سجّل برقمك</span>
+            </span>
+            <Icon name="chevronStart" size={16} />
+          </Link>
 
           <div className="login__hint">
             <Icon name="lock" size={14} />

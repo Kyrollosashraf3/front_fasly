@@ -11,6 +11,7 @@ import { AuthAPI } from '../../lib/endpoints'
 import { isPhone, normalisePhone } from '../../lib/constants'
 import { AuthBrand } from './AuthBrand'
 import { AuthSupport } from './AuthSupport'
+import { AuthTabs } from './AuthTabs'
 import './login.css'
 
 /**
@@ -120,6 +121,7 @@ export default function SignUpPage() {
 
       <main className="login__panel">
         <div className="login__box">
+          <AuthTabs />
           <div className="login__box-head">
             <span className="login__mobile-mark">ف</span>
             <h2>سجّل برقمك</h2>

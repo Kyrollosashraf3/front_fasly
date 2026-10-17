@@ -4,8 +4,12 @@ import { Loading } from './ui/States'
 
 /**
  * RequireAuth — blocks everything until the session is restored, then either
- * renders the routes below it or bounces to /login (remembering where we were
- * headed). Used as a layout route, so it falls back to `<Outlet />`.
+ * renders the routes below it or bounces to the activation screen (remembering
+ * where we were headed). Used as a layout route, so it falls back to `<Outlet />`.
+ *
+ * The default landing screen is /signup ("تفعيل الحساب") — people arriving from
+ * the link activate their account first, and reach the sign-in form from the
+ * switcher at the top.
  *
  *   <Route element={<RequireAuth />}> ...protected routes... </Route>
  */
@@ -22,7 +26,7 @@ export function RequireAuth({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
+    return <Navigate to="/signup" replace state={{ from: location.pathname + location.search }} />
   }
 
   return children ?? <Outlet />
