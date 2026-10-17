@@ -46,3 +46,18 @@
   white-space: nowrap;
   max-width: 320px;
 }
+
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.icon-link:hover {
+  color: var(--navy);
+  background: var(--surface-sunken);
+}

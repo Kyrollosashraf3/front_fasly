@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
@@ -11,6 +11,8 @@ import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Progress } from '../../components/ui/Avatar'
+import { Icon } from '../../components/ui/Icon'
+import { Modal } from '../../components/ui/Modal'
 import { BoyName } from '../boys/BoyName'
 import { BoyProfileModal, followLabel } from '../boys/BoyProfile'
 import {
@@ -52,6 +54,16 @@ export default function FollowUpPerformancePage() {
   const [tab, setTab] = useState('todo')
   const [expanded, setExpanded] = useState(null)
   const [boy, openBoy, closeBoy] = useBoyDrawer()
+  const [showUnvisitedOnly, setShowUnvisitedOnly] = useState(false)
+  const [historyBoy, setHistoryBoy] = useState(null)
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (!initialized && user?.teacher_id && !teacherId) {
+      setTeacherId(String(user.teacher_id))
+      setInitialized(true)
+    }
+  }, [user, initialized, teacherId])
 
   const showServantFilter = can.seeTeachersDashboard(user)
   const showAll = can.manageClasses(user) && classes.length > 1
@@ -79,12 +91,16 @@ export default function FollowUpPerformancePage() {
     const rows = d?.ranking || []
     const q = normalizeSearch(search)
     return rows.filter((r) => {
-      if (tab === 'done' && !r.followed) return false
-      if (tab === 'todo' && r.followed) return false
+      if (showUnvisitedOnly && r.followed) return false
+      if (!showUnvisitedOnly) {
+        if (tab === 'done' && !r.followed) return false
+        if (tab === 'todo' && r.followed) return false
+      }
+      if (teacherId && String(r.servant_id || r.teacher_id || '') !== String(teacherId)) return false
       if (q && !normalizeSearch(r.boy_name).includes(q)) return false
       return true
     })
-  }, [d, tab, search])
+  }, [d, tab, search, teacherId, showUnvisitedOnly])
 
   /* --------------------------------------------------------------- columns */
   const boyColumns = [
@@ -95,12 +111,30 @@ export default function FollowUpPerformancePage() {
       sortValue: (r) => r.boy_name,
       render: (r) => (
         <span className="name-list__main">
-          <BoyName
-            boy={{ id: r.boy_id, boy_name: r.boy_name, class_id: r.class_id }}
-            className="table__name"
-            classId={r.class_id}
-            onSaved={refetch}
-          />
+          <span className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <BoyName
+              boy={{ id: r.boy_id, boy_name: r.boy_name, class_id: r.class_id }}
+              className="table__name"
+              classId={r.class_id}
+              onSaved={refetch}
+            />
+            {r.boy_phone && (
+              <>
+                <a href={`tel:${r.boy_phone}`} aria-label="اتصل بالولد" className="icon-link">
+                  <Icon name="phone" size={14} />
+                </a>
+                <a
+                  href={`https://wa.me/${String(r.boy_phone).replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="واتساب الولد"
+                  className="icon-link"
+                >
+                  <Icon name="whatsapp" size={14} />
+                </a>
+              </>
+            )}
+          </span>
           {!d?.scope?.single_class && <span className="muted xsmall">{r.class_name}</span>}
         </span>
       ),
@@ -108,10 +142,30 @@ export default function FollowUpPerformancePage() {
     {
       key: 'servant_name',
       label: 'الخادم المسؤول',
-      width: 150,
+      width: 170,
       mobile: 'الخادم المسؤول',
       sortValue: (r) => r.servant_name || '',
-      render: (r) => r.servant_name || <span className="muted xsmall">بدون مجموعة</span>,
+      render: (r) => (
+        <span className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span>{r.servant_name || <span className="muted xsmall">بدون مجموعة</span>}</span>
+          {r.servant_phone && (
+            <>
+              <a href={`tel:${r.servant_phone}`} aria-label="اتصل" className="icon-link">
+                <Icon name="phone" size={14} />
+              </a>
+              <a
+                href={`https://wa.me/${String(r.servant_phone).replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="واتساب"
+                className="icon-link"
+              >
+                <Icon name="whatsapp" size={14} />
+              </a>
+            </>
+          )}
+        </span>
+      ),
     },
     {
       key: 'count',
@@ -138,6 +192,13 @@ export default function FollowUpPerformancePage() {
       render: (r) => (r.last_status ? <Badge kind="navy">{followLabel(r.last_status)}</Badge> : <span className="muted xsmall">—</span>),
     },
     {
+      key: 'last_note',
+      label: 'ملاحظات',
+      width: 160,
+      mobile: 'ملاحظات',
+      render: (r) => (r.last_note || r.note) || <span className="muted xsmall">—</span>,
+    },
+    {
       key: 'last_by_name',
       label: 'سجّله',
       width: 150,
@@ -147,20 +208,26 @@ export default function FollowUpPerformancePage() {
     {
       key: 'details',
       label: '',
-      width: 104,
+      width: 150,
       align: 'end',
       mobile: '',
-      render: (r) =>
-        r.count ? (
-          <button
-            type="button"
-            className={`att-details${expanded === r.boy_id ? ' is-open' : ''}`}
-            aria-expanded={expanded === r.boy_id}
-            onClick={() => setExpanded(expanded === r.boy_id ? null : r.boy_id)}
-          >
-            السجل
-          </button>
-        ) : null,
+      render: (r) => (
+        <div className="row" style={{ gap: 6, justifyContent: 'flex-end' }}>
+          {r.count > 0 && (
+            <button
+              type="button"
+              className={`att-details${expanded === r.boy_id ? ' is-open' : ''}`}
+              aria-expanded={expanded === r.boy_id}
+              onClick={() => setExpanded(expanded === r.boy_id ? null : r.boy_id)}
+            >
+              السجل
+            </button>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => setHistoryBoy(r)}>
+            تاريخ الافتقاد
+          </Button>
+        </div>
+      ),
     },
   ]
 
@@ -170,7 +237,27 @@ export default function FollowUpPerformancePage() {
       label: 'الخادم',
       mobile: 'الخادم',
       sortValue: (s) => s.teacher_name,
-      render: (s) => <span className="table__name">{s.teacher_name}</span>,
+      render: (s) => (
+        <span className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span className="table__name">{s.teacher_name}</span>
+          {s.phone && (
+            <>
+              <a href={`tel:${s.phone}`} aria-label="اتصل" className="icon-link">
+                <Icon name="phone" size={14} />
+              </a>
+              <a
+                href={`https://wa.me/${String(s.phone).replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="واتساب"
+                className="icon-link"
+              >
+                <Icon name="whatsapp" size={14} />
+              </a>
+            </>
+          )}
+        </span>
+      ),
     },
     ...(d?.scope?.single_class
       ? []
@@ -295,27 +382,33 @@ export default function FollowUpPerformancePage() {
           </Select>
         </label>
 
-        {showServantFilter && (
-          <label className="n-field">
-            الخادم
-            <Select
-              value={teacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
-              className="select--plain"
-              style={{ minWidth: 180 }}
-              aria-label="اختيار الخادم"
-            >
-              <option value="">كل الخدام</option>
-              {(teachers || []).map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.teacher_name}
-                </option>
-              ))}
-            </Select>
-          </label>
-        )}
+        <label className="n-field">
+          الخادم
+          <Select
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value)}
+            className="select--plain"
+            style={{ minWidth: 180 }}
+            aria-label="اختيار الخادم"
+          >
+            <option value="">كل الخدام</option>
+            {(teachers || []).map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.teacher_name}
+              </option>
+            ))}
+          </Select>
+        </label>
 
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث باسم الولد..." />
+          <SearchInput value={search} onChange={setSearch} placeholder="ابحث باسم الولد..." />
+          <Button
+            variant={showUnvisitedOnly ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setShowUnvisitedOnly((v) => !v)}
+            style={{ marginInlineStart: 8 }}
+          >
+            لم يُفتقدوا بعد
+          </Button>
         <ToolbarSpacer />
       </Toolbar>
 
@@ -381,14 +474,51 @@ export default function FollowUpPerformancePage() {
               title="أداء الخدام"
               hint="تغطية المجموعة = عدد أولاد مجموعة الخادم الذين تم افتقادهم ÷ حجم مجموعته، وبجانبها عدد الافتقادات التي سجّلها بنفسه."
             >
-              <Table
-                columns={servantColumns}
-                rows={d.servants}
-                rowKey={(s) => s.teacher_id}
-                sortable
-                stackOnMobile
-                compact
-              />
+              <>
+                <div className="card" style={{ marginBottom: 'var(--sp-3)' }}>
+                  <svg className="chart" viewBox="0 0 640 200" role="img" aria-label="تغطية الخدام">
+                    <line x1="36" y1="170" x2="624" y2="170" className="chart-base" />
+                    <line x1="36" y1="26" x2="36" y2="170" className="chart-base" />
+                    {[0, 25, 50, 75, 100].map((v) => {
+                      const y = 170 - (v / 100) * 130
+                      return (
+                        <g key={v}>
+                          <line x1="36" y1={y} x2="624" y2={y} className="chart-grid" />
+                          <text x="30" y={y + 4} className="chart-ylabel">
+                            {v}%
+                          </text>
+                        </g>
+                      )
+                    })}
+                    {d.servants.map((s, i) => {
+                      const percent = Number(s.percent || 0)
+                      const w = Math.max(20, (560 / Math.max(1, d.servants.length)) * 0.6)
+                      const x = 36 + (i + 0.5) * (560 / Math.max(1, d.servants.length))
+                      const h = (percent / 100) * 130
+                      const y = 170 - h
+                      return (
+                        <g key={s.teacher_id}>
+                          <rect x={x - w / 2} y={y} width={w} height={h} rx="4" className="chart-bar" />
+                          <text x={x} y={170 + 14} className="chart-xlabel" style={{ fontSize: '10px' }}>
+                            {s.teacher_name}
+                          </text>
+                          <text x={x} y={y - 4} className="chart-val">
+                            {percent}%
+                          </text>
+                        </g>
+                      )
+                    })}
+                  </svg>
+                </div>
+                <Table
+                  columns={servantColumns}
+                  rows={d.servants}
+                  rowKey={(s) => s.teacher_id}
+                  sortable
+                  stackOnMobile
+                  compact
+                />
+              </>
             </DashSection>
           )}
 
@@ -435,6 +565,36 @@ export default function FollowUpPerformancePage() {
       ) : null}
 
       <BoyProfileModal open={Boolean(boy)} boy={boy} onClose={closeBoy} />
+
+      <Modal
+        open={Boolean(historyBoy)}
+        onClose={() => setHistoryBoy(null)}
+        size="md"
+        title={historyBoy ? `تاريخ افتقاد ${historyBoy.boy_name}` : 'تاريخ الافتقاد'}
+        footer={
+          <Button variant="secondary" onClick={() => setHistoryBoy(null)}>
+            إغلاق
+          </Button>
+        }
+      >
+        {historyBoy && (
+          <div className="fu-history">
+            <ul className="fu-history__list">
+              {(historyBoy.history || []).map((h, i) => (
+                <li key={`${h.date}-${i}`}>
+                  <span className="fu-history__date">{formatShort(h.date)}</span>
+                  <Badge kind="navy">{followLabel(h.status)}</Badge>
+                  {h.teacher_name && <span className="muted small">{h.teacher_name}</span>}
+                  {h.note && <span className="fu-history__note">{h.note}</span>}
+                </li>
+              ))}
+            </ul>
+            {(!historyBoy.history || historyBoy.history.length === 0) && (
+              <p className="muted small">لا يوجد سجل افتقاد.</p>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   )
 }

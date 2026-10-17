@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
@@ -37,19 +37,25 @@ export default function GroupsPage() {
 
   const canWrite = can.writeGroups(user)
   const showClassPicker = canWrite && classes.length > 1
-  // The servant filter is for the admin / super admin only — a servant browsing
-  // the groups page just wants his own group, and the cards are already that.
-  const showServantFilter = can.manageClasses(user)
 
   const [classId, setClassId] = useState('')
-  const [teacherFilter, setTeacherFilter] = useState('')
+  const [selectedTeacherId, setSelectedTeacherId] = useState('')
+  const [genderFilter, setGenderFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [viewing, setViewing] = useState(null)
   const [importResult, setImportResult] = useState(null)
+  const [initialized, setInitialized] = useState(false)
 
   const debounced = useDebounced(search, 200)
   const effectiveClassId = classId || classes[0]?.id || ''
+
+  useEffect(() => {
+    if (!initialized && user?.teacher_id && !selectedTeacherId) {
+      setSelectedTeacherId(String(user.teacher_id))
+      setInitialized(true)
+    }
+  }, [user, initialized, selectedTeacherId])
 
   const { data, loading, error, refetch } = useQuery(
     () => GroupAPI.list(effectiveClassId ? { class_id: effectiveClassId } : {}),
@@ -64,20 +70,42 @@ export default function GroupsPage() {
 
   const unassigned = useMemo(() => {
     const q = normalizeSearch(debounced)
-    return (data?.unassigned || []).filter((b) => !q || normalizeSearch(b.boy_name).includes(q))
-  }, [data, debounced])
+    return (data?.unassigned || []).filter((b) => {
+      if (genderFilter === 'm' && b.gender !== 'm') return false
+      if (genderFilter === 'f' && b.gender !== 'f') return false
+      if (q && !normalizeSearch(b.boy_name).includes(q)) return false
+      return true
+    })
+  }, [data, debounced, genderFilter])
 
   const visibleGroups = useMemo(() => {
     const q = normalizeSearch(debounced)
-    return (data?.groups || []).filter((g) => {
-      if (teacherFilter && String(g.teacher_id) !== teacherFilter) return false
-      if (!q) return true
-      return (
-        normalizeSearch(g.teacher_name).includes(q) ||
-        g.boys.some((b) => normalizeSearch(b.boy_name).includes(q))
-      )
-    })
-  }, [data, teacherFilter, debounced])
+    const sel = selectedTeacherId
+    return (data?.groups || [])
+      .filter((g) => {
+        if (sel && String(g.teacher_id) !== sel) return false
+        if (!q) return true
+        const hasBoyMatch = (g.boys || []).some((b) => {
+          const bg = normalizeSearch(b.boy_name)
+          const ok = !q || bg.includes(q)
+          const gk = genderFilter
+          if (gk === 'm' && b.gender !== 'm') return ok && false
+          if (gk === 'f' && b.gender !== 'f') return ok && false
+          return ok
+        })
+        const nameMatch = normalizeSearch(g.teacher_name).includes(q)
+        return nameMatch || hasBoyMatch
+      })
+      .map((g) => ({
+        ...g,
+        boys: (g.boys || []).filter((b) => {
+          if (genderFilter === 'm' && b.gender !== 'm') return false
+          if (genderFilter === 'f' && b.gender !== 'f') return false
+          if (q) return normalizeSearch(b.boy_name).includes(q)
+          return true
+        }),
+      }))
+  }, [data, selectedTeacherId, debounced, genderFilter])
 
   const assign = async (teacherId, boyIds) => {
     if (!teacherId) {
@@ -135,7 +163,7 @@ export default function GroupsPage() {
     }
   }
 
-  const boyRow = (b, withActions = true) => (
+  const boyRow = (b, withActions = true, showAssignTo = false) => (
     <tr key={b.boy_id}>
       <td>
         <BoyName boy={b} className="table__name" classId={effectiveClassId} onSaved={refetch} />
@@ -168,20 +196,43 @@ export default function GroupsPage() {
         )}
       </td>
       <td className="muted small">{b.note || '—'}</td>
-      {withActions && (
-        <td>
-          <div className="table__actions">
-            <IconButton icon={<Icon name="eye" size={16} />} label="عرض الملف" onClick={() => setViewing(b)} />
-            {canWrite && (
-              <IconButton icon={<Icon name="close" size={16} />} label="إلغاء التوزيع" danger onClick={() => unassign(b)} />
-            )}
-          </div>
-        </td>
-      )}
+       {withActions && (
+         <td>
+           <div className="table__actions">
+             <IconButton icon={<Icon name="eye" size={16} />} label="عرض الملف" onClick={() => setViewing(b)} />
+             {canWrite && !showAssignTo && (
+               <IconButton icon={<Icon name="close" size={16} />} label="إلغاء التوزيع" danger onClick={() => unassign(b)} />
+             )}
+           </div>
+         </td>
+       )}
+       {showAssignTo && canWrite && (
+         <td style={{ minWidth: 180 }}>
+           <Select
+             className="select--plain"
+             onChange={(e) => {
+               const tid = e.target.value
+               if (tid) {
+                 assign(Number(tid), [b.boy_id])
+                 e.target.value = ''
+               }
+             }}
+             style={{ width: '100%' }}
+           >
+             <option value="">إضافة إلى خادم: --</option>
+             {(data?.groups || []).map((g) => (
+               <option key={g.teacher_id} value={g.teacher_id}>
+                 {g.teacher_name}
+               </option>
+             ))}
+           </Select>
+         </td>
+       )}
     </tr>
   )
 
   const HEADERS = ['الاسم', 'التليفون', 'الحضور', 'آخر افتقاد', 'ملاحظات', '']
+  const UNASSIGNED_HEADERS = ['الاسم', 'التليفون', 'الحضور', 'آخر افتقاد', 'ملاحظات', '', 'إضافة إلى خادم']
 
   return (
     <>
@@ -223,27 +274,31 @@ export default function GroupsPage() {
       </div>
 
       <Toolbar className="toolbar--scroll">
-        {showServantFilter ? (
-          <Select
-            value={teacherFilter}
-            onChange={(e) => setTeacherFilter(e.target.value)}
-            className="select--plain"
-            style={{ minWidth: 170 }}
-            aria-label="اختيار الخادم"
-          >
-            <option value="">كل الخدام</option>
-            {teachers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </Select>
-        ) : (
-          <span className="small muted row" style={{ gap: 6 }}>
-            <Icon name="servant" size={15} />
-            {visibleGroups.length} مجموعة
-          </span>
-        )}
+        <Select
+          value={selectedTeacherId}
+          onChange={(e) => setSelectedTeacherId(e.target.value)}
+          className="select--plain"
+          style={{ minWidth: 200 }}
+          aria-label="اختيار الخادم"
+        >
+          <option value="">اختر الخادم...</option>
+          {teachers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={genderFilter}
+          onChange={(e) => setGenderFilter(e.target.value)}
+          className="select--plain"
+          style={{ minWidth: 110 }}
+          aria-label="فلتر النوع"
+        >
+          <option value="all">كل الأولاد</option>
+          <option value="m">ولد</option>
+          <option value="f">بنت</option>
+        </Select>
 
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
         <ToolbarSpacer />
@@ -317,14 +372,14 @@ export default function GroupsPage() {
                       <table className="table table--compact">
                         <thead>
                           <tr>
-                            {HEADERS.map((h, i) => (
-                              <th key={i} style={{ textAlign: 'start' }}>
-                                {h}
-                              </th>
-                            ))}
+                           {UNASSIGNED_HEADERS.map((h, i) => (
+                             <th key={i} style={{ textAlign: 'start' }}>
+                               {h}
+                             </th>
+                           ))}
                           </tr>
                         </thead>
-                        <tbody>{g.boys.map((b) => boyRow(b))}</tbody>
+                        <tbody>{g.boys.map((b) => boyRow(b, true, false))}</tbody>
                       </table>
                     </div>
                   )}
@@ -355,7 +410,9 @@ export default function GroupsPage() {
                           ))}
                         </tr>
                       </thead>
-                      <tbody>{unassigned.map((b) => boyRow(b))}</tbody>
+                       <tbody>
+                         {unassigned.map((b) => boyRow(b, true, true))}
+                       </tbody>
                     </table>
                   </div>
                 </section>
