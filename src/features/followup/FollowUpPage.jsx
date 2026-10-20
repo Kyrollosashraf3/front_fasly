@@ -20,6 +20,7 @@ import { BoyName } from '../boys/BoyName'
 import { followLabel } from '../boys/BoyProfile'
 import { formatDate, formatPercent, todayISO } from '../../lib/format'
 import { normalizeSearch } from '../../lib/search'
+import { Modal } from '../../components/ui/Modal'
 
 const STATUS_OPTIONS = [
   { value: '', label: '—' },
@@ -55,16 +56,16 @@ export default function FollowUpPage() {
   const myTeacherId = user?.teacher_id ?? null
   const showServantFilter = true
 
-  const [date, setDate] = useState(todayISO())
-  const [teacherId, setTeacherId] = useState('')
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('all')
-  const [draft, setDraft] = useState({})
-  const [saving, setSaving] = useState(false)
-  const [historyDate, setHistoryDate] = useState('')
-  const [expanded, setExpanded] = useState(null)
+  const [selectedBoy, setSelectedBoy] = useState(null)
+  const [showAllInfo, setShowAllInfo] = useState(false)
+  const [fuFormOpen, setFuFormOpen] = useState(false)
+  const [fuForm, setFuForm] = useState({ teacher_id: '', action_date: todayISO(), status: 'call', note: '' })
 
-  const debounced = useDebounced(search, 200)
+  useEffect(() => {
+    if (selectedBoy && user?.teacher_id) {
+      setFuForm((f) => ({ ...f, teacher_id: String(user.teacher_id) }))
+    }
+  }, [selectedBoy, user])
 
   const { data, loading, error, refetch } = useQuery(
     async () => {
@@ -342,7 +343,18 @@ export default function FollowUpPage() {
       key: 'boy_name',
       label: 'الولد',
       mobile: 'الولد',
-      render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
+      render: (b) => (
+        <span className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span className="table__name">{b.boy_name}</span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => setExpanded(expanded === b.id ? null : b.id)}
+          >
+            {expanded === b.id ? 'إخفاء التفاصيل' : 'تفاصيل'}
+          </button>
+        </span>
+      ),
     },
     ...(showServantFilter
       ? [
@@ -497,6 +509,7 @@ export default function FollowUpPage() {
   const fridayPanel = (boy) => {
     const list = fridaysByBoy.get(boy.id) || []
     const present = list.filter((r) => r.present).length
+    const liturgyCount = list.filter((r) => r.liturgy).length
     const rate = rateOf(boy.id)
 
     return (
@@ -504,28 +517,67 @@ export default function FollowUpPage() {
         <div className="att-history__head">
           <span className="att-history__title">
             <Icon name="history" size={16} />
-            حضور {boy.boy_name}
+            تاريخ حضور {boy.boy_name}
           </span>
           <span className="att-history__summary">
             {list.length ? (
               <>
                 <span className="badge badge--green">حاضر {present}</span>
                 <span className="badge badge--red">غائب {list.length - present}</span>
+                <span className="badge badge--gold">قداس {liturgyCount}</span>
                 <span className="badge badge--gold">{formatPercent(rate)} من {list.length} جمعة</span>
               </>
             ) : (
-              <span className="muted small">لسه مفيش حضور متسجل قبل {formatDate(date)}</span>
+              <span className="muted small">لا يوجد سجل حضور قبل {formatDate(date)}</span>
             )}
           </span>
         </div>
 
-        {boy.issue_flag && (
-          <div className="att-history__section">
-            <div className="att-history__subtitle">
-              <Icon name="flag" size={14} />
-              ملاحظات عامة / Red Flag
+        {expanded === boy.id && (
+          <div className="att-history__section" style={{ marginTop: 'var(--sp-2)' }}>
+            <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 'var(--sp-2)' }}>
+              <span className="muted small">{classLabel(boy.class_id)}</span>
+              {boy.teacher_name && <span className="muted small">• {boy.teacher_name}</span>}
+              {boy.phone && (
+                <>
+                  <a href={`tel:${boy.phone}`} className="icon-link">
+                    <Icon name="phone" size={14} />
+                  </a>
+                  <a
+                    href={`https://wa.me/${String(boy.phone).replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="icon-link"
+                  >
+                    <Icon name="whatsapp" size={14} />
+                  </a>
+                </>
+              )}
+              {boy.phone_2 && (
+                <>
+                  <a href={`tel:${boy.phone_2}`} className="icon-link">
+                    <Icon name="phone" size={14} />
+                  </a>
+                  <a
+                    href={`https://wa.me/${String(boy.phone_2).replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="icon-link"
+                  >
+                    <Icon name="whatsapp" size={14} />
+                  </a>
+                </>
+              )}
             </div>
-            <div className="muted small">{boy.note || '—'}</div>
+            {boy.issue_flag && (
+              <div className="att-history__section">
+                <div className="att-history__subtitle">
+                  <Icon name="flag" size={14} />
+                  ملاحظات عامة / Red Flag
+                </div>
+                <div className="muted small">{boy.note || '—'}</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -556,14 +608,14 @@ export default function FollowUpPage() {
           </div>
         )}
 
-        {(boy.followups || []).length > 0 && (
+        {(boy.followups || []).length > 0 && expanded === boy.id && (
           <div className="att-history__section">
             <div className="att-history__subtitle">
               <Icon name="heart" size={14} />
-              سجل الافتقاد الأسبوعي
+              سجل الافتقاد
             </div>
             <ul className="att-history__list">
-              {(boy.followups || []).slice(0, 20).map((f, i) => (
+              {(boy.followups || []).slice(0, 30).map((f, i) => (
                 <li key={i}>
                   <span className="att-history__date">{formatDate(f.action_date)}</span>
                   <Badge kind={KIND[f.status] || 'blue'}>{followLabel(f.status)}</Badge>

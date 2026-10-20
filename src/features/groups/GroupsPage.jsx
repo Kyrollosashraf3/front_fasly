@@ -40,11 +40,8 @@ export default function GroupsPage() {
 
   const [classId, setClassId] = useState('')
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
-  const [genderFilter, setGenderFilter] = useState('all')
-  const [search, setSearch] = useState('')
-  const [assigning, setAssigning] = useState(false)
-  const [viewing, setViewing] = useState(null)
-  const [importResult, setImportResult] = useState(null)
+  const [boySearch, setBoySearch] = useState('')
+  const [boyMove, setBoyMove] = useState(null)
   const [initialized, setInitialized] = useState(false)
 
   const debounced = useDebounced(search, 200)
@@ -146,18 +143,16 @@ export default function GroupsPage() {
     }
   }
 
-  const unassignMany = async (boys) => {
-    if (!boys.length) return
-    const ok = await modal.confirm({
-      title: `إلغاء توزيع ${boys.length} ولد؟`,
-      message: 'هيتحطوا في قائمة بدون مجموعة تاني.',
-      confirmLabel: 'إلغاء التوزيع',
-    })
-    if (!ok) return
+  const moveBoy = async (boy, toTeacherId) => {
+    if (!toTeacherId) return
     try {
-      await GroupAPI.unassign(boys.map((b) => b.boy_id))
-      toast.success(`اتلغى توزيع ${boys.length}.`)
+      if (boy.inGroup) {
+        await GroupAPI.unassign([boy.boy_id])
+      }
+      await GroupAPI.assign(Number(toTeacherId), [boy.boy_id])
+      toast.success('تم نقل الولد للمجموعة بنجاح.')
       refetch()
+      setBoyMove(null)
     } catch (err) {
       toast.error(err.message)
     }
@@ -301,6 +296,28 @@ export default function GroupsPage() {
         </Select>
 
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+        <div style={{ position: 'relative' }}>
+          <SearchInput value={boySearch} onChange={setBoySearch} placeholder="ابحث عن ولد لمعرفة مجموعته..." />
+          {boyResults.length > 0 && boySearch && (
+            <div className="card" style={{ position: 'absolute', zIndex: 20, width: 320, marginTop: 6, padding: 8 }}>
+              {boyResults.map((b) => (
+                <div key={b.boy_id} className="row" style={{ justifyContent: 'space-between', padding: 6 }}>
+                  <div>
+                    <div className="small bold">{b.boy_name}</div>
+                    <div className="xsmall muted">
+                      {b.inGroup ? `في مجموعة: ${b.group}` : 'بدون مجموعة'}
+                    </div>
+                  </div>
+                  {canWrite && (
+                    <Button size="sm" variant="ghost" onClick={() => { setBoyMove(b); setBoySearch('') }}>
+                      نقل
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <ToolbarSpacer />
         {isSuperAdmin && <Badge kind="gold">أدمن عام</Badge>}
       </Toolbar>
@@ -436,6 +453,39 @@ export default function GroupsPage() {
         onClose={() => setImportResult(null)}
         noun="التوزيع"
       />
+
+      {boyMove && (
+        <div className="modal-overlay" onClick={() => setBoyMove(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
+            <div className="modal__head">
+              <div>
+                <div className="modal__title">نقل {boyMove.boy_name}</div>
+                <div className="modal__sub">
+                  {boyMove.inGroup ? `حالياً في مجموعة: ${boyMove.group}` : 'حالياً بدون مجموعة'}
+                </div>
+              </div>
+              <button className="modal__close" onClick={() => setBoyMove(null)}>×</button>
+            </div>
+            <div className="modal__body">
+              <Select
+                onChange={(e) => {
+                  const tid = e.target.value
+                  if (tid) moveBoy(boyMove, tid)
+                }}
+              >
+                <option value="">اختر الخادم لنقله له...</option>
+                {teachers
+                  .filter((t) => !boyMove.inGroup || String(t.id) !== String(boyMove.teacher_id))
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
