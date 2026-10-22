@@ -87,7 +87,12 @@ export default function AttendancePage() {
         />
       </div>
 
-      <AttendanceSaveBar sheet={sheet} canAdd={canAdd} onAddBoy={openAddBoy} />
+      <AttendanceSaveBar
+        sheet={sheet}
+        canWrite={canWrite}
+        canAdd={canAdd}
+        onAddBoy={openAddBoy}
+      />
 
       <BoyForm
         open={sheet.addOpen}

@@ -10,6 +10,21 @@
   cursor: pointer;
 }
 
+/* Keep both sheet actions on one row, anchored to the right, with a compact size. */
+.att-savebar__actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-inline-end: auto;
+}
+
+.att-savebar__actions .btn {
+  justify-content: center;
+  padding: 4px 10px;
+  font-size: calc(var(--text-base) * 0.75);
+}
+
 /* ---------------------------------------------- named attendance marks
    Two bare checkboxes gave no hint which one was «حضور» and which was «قداس».
    Each is now a plain word: dimmed until tapped, then it lights up green. */
@@ -129,9 +144,21 @@
     width: 100%;
   }
 
-  /* A fifth smaller (≈20%) so both actions sit on one line. */
+  /* Keep both compact actions on one line. */
   .att-savebar--compact .btn {
-    font-size: calc(var(--text-base) * 0.8);
-    padding: 7px 13px;
+    font-size: calc(var(--text-base) * 0.75);
+    padding: 4px 10px;
+  }
+
+  /* The pinned bar spans the screen: keep the two actions aligned right
+     and never let their labels wrap or overflow. */
+  .att-savebar__actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-inline-end: 0;
+  }
+
+  .att-savebar__actions .btn {
+    white-space: nowrap;
   }
 }

@@ -55,6 +55,7 @@ export function BoysRankingSection({
           ]}
         />
       }
+    
     >
       {ranking.length === 0 ? (
         <EmptyState
