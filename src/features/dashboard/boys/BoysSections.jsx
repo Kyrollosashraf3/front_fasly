@@ -81,7 +81,7 @@ export function BoysSections({
             onChange={setCoverTab}
             options={[
               { value: 'todo', label: 'لم يُفتقدوا', count: cover?.todo_count },
-              { value: 'done', label: 'اتفتقدوا', count: cover?.done_count },
+              { value: 'done', label: 'افتقدوا', count: cover?.done_count },
             ]}
           />
         }

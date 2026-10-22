@@ -9,36 +9,44 @@ export function AttendanceSaveBar({ sheet, canAdd, onAddBoy }) {
 
   return (
     <>
-      <div className="att-savebar att-savebar--compact">
+      <div className="att-savebar att-savebar--floating att-savebar--compact">
         {allDone && (
           <div className="summary-bar__stats">
             <span className="badge badge--gold">خلصت — الكل اتعلّم</span>
           </div>
         )}
 
-        <div className="row" style={{ gap: 10 }}>
-          {unsaved && <Badge kind="gold" dot>فيه تعديلات لمتحفظش</Badge>}
+        <div className="att-savebar__actions">
           {canAdd && (
             <Button
               variant="secondary"
+              size="sm"
+              className="att-fab"
               icon={<Icon name="plus" size={16} />}
               onClick={onAddBoy}
+              title="إضافة ولد"
+              aria-label="إضافة ولد"
             >
-              إضافة ولد
+              <span className="att-fab__label">إضافة ولد</span>
             </Button>
           )}
           <Button
             variant="accent"
+            size="sm"
+            className="att-fab att-fab--save"
             loading={saving}
             disabled={!unsaved}
             onClick={save}
             icon={<Icon name="check" size={16} />}
+            title="حفظ الحضور"
+            aria-label="حفظ الحضور"
           >
-            حفظ الحضور
+            <span className="att-fab__label">حفظ الحضور</span>
           </Button>
+          {unsaved && !saving && <span className="att-fab__dot" aria-hidden="true" />}
         </div>
       </div>
-      {/* reserves room for the fixed save bar on the phone */}
+      {/* reserves room for the floating save bar */}
       <div className="att-savebar-space" aria-hidden="true" />
     </>
   )

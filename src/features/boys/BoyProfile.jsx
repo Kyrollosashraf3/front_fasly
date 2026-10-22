@@ -142,11 +142,6 @@ export function BoyProfileModal({ open, boy, onClose, nameOfTeacher }) {
       }
     >
       <div className="profile-body">
-        <section>
-          <h4 className="profile__h">البيانات</h4>
-          <BoyDetails boy={boy} classLabel={classLabel} />
-        </section>
-
         {error ? (
           <ErrorState error={error} onRetry={refetch} inline />
         ) : loading ? (
@@ -164,18 +159,12 @@ export function BoyProfileModal({ open, boy, onClose, nameOfTeacher }) {
                 <SeasonGrid fridays={profile.season?.fridays} />
               </section>
 
-              {profile.notes?.length > 0 && (
-                <section>
-                  <h4 className="profile__h">الملاحظات</h4>
-                  <ul className="profile__notes">
-                    {profile.notes.map((n, i) => (
-                      <li key={i}>{n}</li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
               <section>
+                <h4 className="profile__h">البيانات</h4>
+                <BoyDetails boy={boy} classLabel={classLabel} />
+              </section>
+
+                            <section>
                 <h4 className="profile__h">سجل الافتقاد</h4>
                 {profile.followups?.length ? (
                   <ul className="profile__timeline">
@@ -197,6 +186,19 @@ export function BoyProfileModal({ open, boy, onClose, nameOfTeacher }) {
                   </p>
                 )}
               </section>
+
+
+              {profile.notes?.length > 0 && (
+                <section>
+                  <h4 className="profile__h">الملاحظات</h4>
+                  <ul className="profile__notes">
+                    {profile.notes.map((n, i) => (
+                      <li key={i}>{n}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
             </>
           )
         )}

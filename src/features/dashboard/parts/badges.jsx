@@ -6,7 +6,7 @@ export const AbsentNowBadge = () => <Badge kind="red">غائب</Badge>
 export const LiturgyBadge = ({ percent }) => (
   <Badge kind="gold">{percent}% قداس</Badge>
 )
-export const FollowedBadge = ({ count }) => <Badge kind="green">اتفتقد {count}</Badge>
+export const FollowedBadge = ({ count }) => <Badge kind="green">افتقد {count}</Badge>
 export const TodoBadge = () => <Badge kind="red">لم يُفتقد</Badge>
 export const LateBadge = ({ days }) => (
   <Badge kind="red">{days == null ? 'مفيش اعتراف' : `متأخر ${days} يوم`}</Badge>

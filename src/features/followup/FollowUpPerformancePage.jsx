@@ -157,7 +157,7 @@ export default function FollowUpPerformancePage() {
               value={`${totals.percent}%`}
               label="نسبة الافتقاد"
               progress={totals.percent}
-              sub={`اتفتقد ${totals.followed} • لم يُفتقد ${totals.not_followed} • الكل ${totals.boys}`}
+              sub={`افتقد ${totals.followed} • لم يُفتقد ${totals.not_followed} • الكل ${totals.boys}`}
             />
             <Kpi
               value={totals.followups}

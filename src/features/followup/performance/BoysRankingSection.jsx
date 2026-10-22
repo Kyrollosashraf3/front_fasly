@@ -50,7 +50,7 @@ export function BoysRankingSection({
           onChange={setTab}
           options={[
             { value: 'todo', label: 'لم يُفتقدوا', count: totals.not_followed },
-            { value: 'done', label: 'اتفتقدوا', count: totals.followed },
+            { value: 'done', label: 'افتقدوا', count: totals.followed },
             { value: 'all', label: 'الكل', count: totals.boys },
           ]}
         />
