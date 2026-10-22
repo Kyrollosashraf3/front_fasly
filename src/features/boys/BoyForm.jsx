@@ -52,7 +52,10 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
 
   useEffect(() => {
     if (!open || !servants) return
-    if (form.teacher_id && !servants.some((t) => String(t.id) === form.teacher_id)) {
+    if (
+      form.teacher_id &&
+      !servants.some((t) => String(t.id) === String(form.teacher_id))
+    ) {
       setForm((f) => ({ ...f, teacher_id: '' }))
     }
   }, [open, servants, form.teacher_id])

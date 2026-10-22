@@ -35,8 +35,10 @@ export function BoyNameEdit({ boy, classId, onSaved, size = 14, label }) {
   const id = idOf(boy)
   if (!can.editBoys(user) || !id) return null
 
-  // A full row already carries everything BoyForm needs — no extra request.
-  const complete = Boolean(boy?.id && boy?.class_id)
+  // A full boy record already carries everything BoyForm needs — no extra
+  // request. Partial list rows (dashboard / groups) lack `teacher_id`, so they
+  // must be completed first or the form would submit it as null and unfile him.
+  const complete = Boolean(boy?.id && boy?.class_id && 'teacher_id' in boy)
 
   const start = async (e) => {
     e.preventDefault()

@@ -35,6 +35,10 @@ export function formStateFor(boy, defaultClassId, classes) {
     ...EMPTY,
     ...Object.fromEntries(Object.keys(EMPTY).map((k) => [k, boy[k] ?? EMPTY[k]])),
     class_id: String(boy.class_id),
+    // The select stores strings, so normalise the servant id too — otherwise
+    // the "is this servant still in the list?" check mistakes it for stale
+    // and silently sends teacher_id: null (which drops him from his group).
+    teacher_id: boy.teacher_id != null ? String(boy.teacher_id) : '',
     birth_date: boy.birth_date || '',
     skills: Array.isArray(boy.skills) ? boy.skills.filter((s) => SKILLS.includes(s)) : [],
     custom: Array.isArray(boy.skills)
