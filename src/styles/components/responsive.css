@@ -1,0 +1,154 @@
+@media (max-width: 768px) {
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toolbar__group {
+    width: 100%;
+  }
+  .search-input {
+    min-width: 0;
+    width: 100%;
+  }
+  .toolbar .search-input {
+    width: 100%;
+  }
+  .detail-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Only the search follows the thumb on a phone: the toolbar itself scrolls
+     away and its own search hides in favour of the sticky copy below it. */
+  .toolbar--scroll {
+    position: static;
+  }
+
+  .toolbar--scroll .search-input {
+    display: none;
+  }
+
+  .toolbar-search-sticky {
+    display: block;
+    position: sticky;
+    top: calc(var(--topbar-height) + env(safe-area-inset-top));
+    z-index: 18;
+    margin-top: var(--sp-3);
+    padding: var(--sp-2) 0;
+    background: var(--bg);
+  }
+
+  .toolbar-search-sticky .search-input {
+    width: 100%;
+  }
+
+  .toolbar-search-sticky .input {
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* A stretched toolbar made the dropdown anchor to the wrong edge. */
+  .file-menu__list {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (max-width: 560px) {
+  .page-head {
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+  .page-head__title {
+    font-size: var(--text-xl);
+  }
+
+  .toolbar {
+    padding: var(--sp-3);
+    gap: var(--sp-2);
+  }
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tabs__btn {
+    flex: none;
+  }
+
+  .table {
+    font-size: var(--text-sm);
+  }
+  .table th,
+  .table td {
+    padding: 9px var(--sp-3);
+  }
+
+  .modal__body {
+    padding: var(--sp-4);
+  }
+  .modal__head {
+    padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  }
+  .modal__foot {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  }
+  .modal__foot .btn {
+    width: 100%;
+  }
+
+  .card__body,
+  .stat-card {
+    padding: var(--sp-3);
+  }
+
+  .toast-root {
+    inset-inline: var(--sp-3);
+    max-width: none;
+  }
+}
+
+/* ------------------------------------------------- touch targets (phones)
+   A finger is not a mouse: on a touch screen every tappable control gets a
+   ~40px hit area, whatever its visual size. */
+@media (max-width: 768px) {
+  .btn-icon,
+  .btn-icon.btn-icon--danger {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tabs__btn {
+    padding: 10px 16px;
+    font-size: var(--text-base);
+  }
+
+  .btn-link {
+    padding: 10px 2px;
+  }
+
+  .note-btn {
+    padding: 11px 12px;
+  }
+}

@@ -1,0 +1,61 @@
+/* ------------------------------------------------------------------ kpis */
+
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--sp-3);
+}
+
+.dash-kpi {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-kpi.hero {
+  background: linear-gradient(140deg, var(--navy), var(--navy-dark));
+  border-color: var(--navy-dark);
+  color: #fff;
+}
+
+.dash-kpi .kpi-num {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--gold);
+  line-height: 1.1;
+  direction: ltr;
+  text-align: end;
+}
+
+.dash-kpi.hero .kpi-num {
+  color: var(--gold);
+}
+
+.dash-kpi .kpi-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+}
+
+.dash-kpi.hero .kpi-label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dash-kpi .kpi-sub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.dash-kpi.hero .kpi-sub {
+  color: rgba(255, 255, 255, 0.7);
+  direction: ltr;
+  text-align: end;
+}
+
+.dash-kpi.hero .progress {
+  margin-top: 6px;
+}

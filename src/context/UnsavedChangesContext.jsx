@@ -1,16 +1,8 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-import { Modal } from '../components/ui/Modal'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { UnsavedGuardDialog } from './UnsavedGuardDialog'
+import { UnsavedChangesContext } from './unsavedContext'
 
-const UnsavedChangesContext = createContext(null)
+export { useUnsavedGuard } from './useUnsavedGuard'
 
 /**
  * UnsavedChangesProvider — stops the user from silently losing edits.
@@ -217,86 +209,13 @@ export function UnsavedChangesProvider({ children }) {
   return (
     <UnsavedChangesContext.Provider value={value}>
       {children}
-      <Modal
-        open={Boolean(pending)}
-        size="sm"
-        title="فيه تعديلات لم تُحفظ"
-        onClose={() => !saving && setPending(null)}
-        footer={
-          <>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={saving}
-              onClick={() => setPending(null)}
-            >
-              رجوع
-            </button>
-            <button
-              type="button"
-              className="btn-link btn-link--danger"
-              disabled={saving}
-              onClick={finish}
-            >
-              تجاهل
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={saving}
-              onClick={handleSave}
-            >
-              {saving ? 'جاري الحفظ...' : 'حفظ والمتابعة'}
-            </button>
-          </>
-        }
-      >
-        <p className="muted">
-          {pending?.message || 'لسه فيه تعديلات لم تُحفظ. تحب تحفظها قبل ما تسيب الصفحة؟'}
-        </p>
-      </Modal>
+      <UnsavedGuardDialog
+        pending={pending}
+        saving={saving}
+        onStay={() => setPending(null)}
+        onDiscard={finish}
+        onSave={handleSave}
+      />
     </UnsavedChangesContext.Provider>
   )
-}
-
-/**
- * Register this screen as guarding unsaved work.
- *
- *   useUnsavedGuard(dirty, () => save())        // dirty is a boolean
- *   useUnsavedGuard(() => dirty, () => save())  // or a function
- *
- * `onSave` should resolve `true` (saved, continue) or `false` (failed, stay).
- */
-export function useUnsavedGuard(when, onSave, message) {
-  const ctx = useContext(UnsavedChangesContext)
-  // Latest closure kept in a ref so the guard registered once always calls
-  // the current `when` / `onSave` without re-registering on every render.
-  const ref = useRef({ when, onSave })
-  const id = useId()
-
-  useEffect(() => {
-    ref.current.when = when
-    ref.current.onSave = onSave
-  })
-
-  const readDirty = useCallback(() => {
-    const w = ref.current.when
-    return typeof w === 'function' ? Boolean(w()) : Boolean(w)
-  }, [])
-
-  // Let the provider know, every render, so it can arm the back-button trap.
-  useEffect(() => {
-    if (!ctx) return
-    ctx.reportDirty(id, readDirty())
-  })
-
-  useEffect(() => {
-    if (!ctx) return undefined
-    return ctx.register({
-      id,
-      isDirty: readDirty,
-      onSave: () => ref.current.onSave?.(),
-      message,
-    })
-  }, [ctx, id, message, readDirty])
 }

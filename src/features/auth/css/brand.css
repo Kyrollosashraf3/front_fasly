@@ -1,0 +1,65 @@
+/* ------------------------------------------------------------- brand side */
+.login__brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-9) var(--sp-8);
+  background: linear-gradient(150deg, var(--navy-deep) 0%, var(--navy-dark) 45%, var(--navy) 100%);
+  color: #fff;
+}
+
+/* Subtle gold glow bleeding from the corner. */
+.login__brand::before {
+  content: '';
+  position: absolute;
+  inset-block-start: -140px;
+  inset-inline-end: -140px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 196, 48, 0.28), transparent 68%);
+  pointer-events: none;
+}
+
+/* Faint grid texture. */
+.login__brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at 30% 40%, #000, transparent 75%);
+  pointer-events: none;
+}
+
+.login__brand > * {
+  position: relative;
+  z-index: 1;
+}
+
+.login__mark,
+.login__mobile-mark {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: var(--radius-lg);
+  background: var(--gold);
+  color: var(--navy-dark);
+  font-size: 32px;
+  font-weight: var(--weight-extrabold);
+  box-shadow: var(--shadow-gold);
+}
+
+.login__wordmark {
+  font-size: 60px;
+  font-weight: var(--weight-extrabold);
+  color: var(--gold);
+  line-height: 1;
+  letter-spacing: 1px;
+}

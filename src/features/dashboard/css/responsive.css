@@ -1,0 +1,11 @@
+/* ------------------------------------------------------------- responsive */
+
+@media (max-width: 640px) {
+  .dash-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-val {
+    display: none;
+  }
+}

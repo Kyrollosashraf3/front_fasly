@@ -1,0 +1,16 @@
+/* The tab bar / sheets are a phone layout only. */
+@media (max-width: 768px) {
+  .tabbar {
+    display: flex;
+  }
+
+  .view {
+    padding-bottom: calc(78px + var(--sp-6) + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 769px) {
+  .sheet-backdrop {
+    display: none;
+  }
+}

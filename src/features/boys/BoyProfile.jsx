@@ -3,6 +3,7 @@ import { useQuery } from '../../hooks'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { Badge } from '../../components/ui/Badge'
+import { ContactActions } from '../../components/ui/ContactActions'
 import { DetailRow, ScorePill } from '../../components/ui/Bits'
 import { ErrorState, Loading } from '../../components/ui/States'
 import { Icon } from '../../components/ui/Icon'
@@ -74,16 +75,21 @@ function SeasonGrid({ fridays = [] }) {
   if (!fridays.length) return <p className="small muted">لسه مفيش حضور مسجّل.</p>
   return (
     <div className="friday-grid">
-      {fridays.map((f) => (
-        <div
-          key={f.date}
-          className={`friday-cell ${f.present ? 'is-present' : 'is-absent'}`}
-          title={`${formatDate(f.date)} — ${f.present ? 'حاضر' : 'غائب'}${f.note ? `\n${f.note}` : ''}`}
-        >
-          <span className="friday-cell__date">{formatDate(f.date, { withDay: false }).split(' ')[0]}</span>
-          <span className="friday-cell__mark">{f.present ? '✓' : '✕'}</span>
-        </div>
-      ))}
+      {fridays.map((f) => {
+        const pending = f.present === null || f.present === undefined
+        const state = pending ? 'is-pending' : f.present ? 'is-present' : 'is-absent'
+        const label = pending ? 'لسه ماتاخدش' : f.present ? 'حاضر' : 'غائب'
+        return (
+          <div
+            key={f.date}
+            className={`friday-cell ${state}`}
+            title={`${formatDate(f.date)} — ${label}${f.note ? `\n${f.note}` : ''}`}
+          >
+            <span className="friday-cell__date">{formatDate(f.date, { withDay: false }).split(' ')[0]}</span>
+            <span className="friday-cell__mark">{pending ? '—' : f.present ? '✓' : '✕'}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -93,7 +99,7 @@ function SeasonGrid({ fridays = [] }) {
  * Used from Boys, Groups and both dashboards so it exists exactly once.
  * Loads GET /dashboard/boys/{id} for the history.
  */
-export function BoyProfileModal({ open, boy, onClose }) {
+export function BoyProfileModal({ open, boy, onClose, nameOfTeacher }) {
   const { classLabel, isBoy } = useAuth()
 
   const { data, loading, error, refetch } = useQuery(
@@ -125,6 +131,7 @@ export function BoyProfileModal({ open, boy, onClose }) {
               <ScorePill value={pct} />
             </span>
           )}
+          <ContactActions phone={boy.phone} phone2={boy.phone_2} />
           <BoyNameEdit boy={boy} label={`تعديل بيانات ${boy.boy_name}`} />
         </div>
       }
@@ -177,6 +184,9 @@ export function BoyProfileModal({ open, boy, onClose }) {
                         <span className="profile__dot" />
                         <span className="bold">{formatDate(f.action_date)}</span>
                         <Badge kind="blue">{followLabel(f.status)}</Badge>
+                        {nameOfTeacher && f.teacher_id && (
+                          <span className="xsmall muted">{nameOfTeacher(f.teacher_id)}</span>
+                        )}
                         {f.note && <span className="small muted">{f.note}</span>}
                       </li>
                     ))}

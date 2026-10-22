@@ -54,6 +54,11 @@
   color: var(--danger);
 }
 
+.friday-cell.is-pending {
+  border-style: dashed;
+  color: var(--text-secondary);
+}
+
 .friday-cell__date {
   font-weight: var(--weight-bold);
   font-size: 11px;

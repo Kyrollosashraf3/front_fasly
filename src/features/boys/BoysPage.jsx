@@ -1,155 +1,65 @@
-import { useMemo, useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
-import { useModal } from '../../context/ModalContext'
-import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useClassScope, useDebounced, useQuery } from '../../hooks'
-import { BoyAPI } from '../../lib/endpoints'
-import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
-import { Button, IconButton } from '../../components/ui/Button'
-import { ClassFilter } from '../../components/ui/ClassFilter'
-import { SearchInput } from '../../components/ui/Field'
-import { Tabs, Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Button } from '../../components/ui/Button'
 import { Table } from '../../components/ui/Table'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
-import { FileMenu } from '../../components/ui/FileMenu'
 import { ImportResult } from '../../components/ui/ImportResult'
-import { BoyForm, NoteCell } from './BoyForm'
-import { BoyName } from './BoyName'
+import { BoyForm } from './BoyForm'
 import { BoyProfileModal } from './BoyProfile'
-import { calcAge } from '../../lib/format'
+import { BoysToolbar } from './BoysToolbar'
+import { boysColumns } from './boysColumns'
+import { useBoysList } from './useBoysList'
 import './boys.css'
 
 export default function BoysPage() {
-  const { classLabel, can, user } = useAuth()
-  const { classId, multi, classes, picked, setPicked } = useClassScope()
-  const toast = useToast()
-  const modal = useModal()
+  const list = useBoysList()
+  const {
+    classLabel,
+    classId,
+    multi,
+    classes,
+    picked,
+    setPicked,
+    toast,
+    allClasses,
+    label,
+    canManageBoys,
+    canWrite,
+    search,
+    setSearch,
+    flag,
+    setFlag,
+    formOpen,
+    setFormOpen,
+    editing,
+    viewing,
+    setViewing,
+    importResult,
+    setImportResult,
+    boys,
+    loading,
+    error,
+    refetch,
+    rows,
+    flaggedCount,
+    openCreate,
+    openEdit,
+    remove,
+  } = list
 
-  const allClasses = !classId
-  const label = allClasses ? 'كل الفصول' : classLabel(classId)
   usePageTitle(`الأولاد — ${label}`)
 
-  // Staff may add/edit boys; only managers may delete or bulk-import them.
-  const canManageBoys = can.writeBoys(user)
-  const canWrite = can.writeDirectory(user)
-
-  const [search, setSearch] = useState('')
-  const [flag, setFlag] = useState('all')
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const [viewing, setViewing] = useState(null)
-  const [importResult, setImportResult] = useState(null)
-
-  const debounced = useDebounced(search, 220)
-
-  const { data: boys, loading, error, refetch } = useQuery(
-    () => BoyAPI.list({ class_id: classId || undefined }),
-    [classId],
-  )
-
-  const rows = useMemo(() => {
-    const q = normalizeSearch(debounced)
-    return (boys || []).filter((b) => {
-      if (flag === 'flagged' && !b.issue_flag) return false
-      if (!q) return true
-      return (
-        normalizeSearch(b.boy_name).includes(q) ||
-        normalizeSearch(b.phone).includes(q) ||
-        normalizeSearch(b.address).includes(q) ||
-        normalizeSearch(b.zone).includes(q)
-      )
-    })
-  }, [boys, debounced, flag])
-
-  const flaggedCount = (boys || []).filter((b) => b.issue_flag).length
-
-  const openCreate = () => {
-    setEditing(null)
-    setFormOpen(true)
-  }
-
-  const openEdit = (boy) => {
-    setEditing(boy)
-    setFormOpen(true)
-  }
-
-  const remove = async (boy) => {
-    const ok = await modal.confirm({
-      title: `حذف "${boy.boy_name}"؟`,
-      message: 'لو للولد حضور أو افتقاد مسجّل، السيرفر هيرفض الحذف.',
-      confirmLabel: 'حذف',
-    })
-    if (!ok) return
-    try {
-      await BoyAPI.remove(boy.id)
-      toast.success('تم حذف الولد.')
-      refetch()
-    } catch (err) {
-      toast.error(err.message)
-    }
-  }
-
-  const columns = [
-    {
-      key: 'boy_name',
-      label: 'الاسم',
-      mobile: 'الاسم',
-      render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
-    },
-    ...(multi
-      ? [
-          {
-            key: 'class',
-            label: 'الفصل',
-            width: 150,
-            mobile: 'الفصل',
-            render: (b) => <span className="small muted">{classLabel(b.class_id)}</span>,
-          },
-        ]
-      : []),
-    { key: 'gender', label: 'النوع', width: 80, mobile: 'النوع', render: (b) => (b.gender === 'f' ? 'بنت' : 'ولد') },
-    { key: 'age', label: 'السن', width: 70, mobile: 'السن', render: (b) => calcAge(b.birth_date) ?? '—' },
-    {
-      key: 'phone',
-      label: 'التليفون',
-      width: 140,
-      mobile: 'التليفون',
-      render: (b) =>
-        b.phone ? (
-          <a className="ltr" style={{ display: 'block', textAlign: 'center' }} href={`tel:${b.phone}`}>
-            {b.phone}
-          </a>
-        ) : (
-          '—'
-        ),
-    },
-    { key: 'note', label: 'ملاحظة', mobile: 'ملاحظة', render: (b) => <NoteCell note={b.note} /> },
-    {
-      key: 'actions',
-      label: '',
-      width: 130,
-      align: 'end',
-      mobile: '',
-      render: (b) => (
-        <div className="table__actions">
-          <IconButton icon={<Icon name="eye" size={16} />} label="عرض" onClick={() => setViewing(b)} />
-          {canManageBoys && (
-            <IconButton icon={<Icon name="edit" size={16} />} label="تعديل" onClick={() => openEdit(b)} />
-          )}
-          {canWrite && (
-            <IconButton
-              icon={<Icon name="trash" size={16} />}
-              label="حذف"
-              danger
-              onClick={() => remove(b)}
-            />
-          )}
-        </div>
-      ),
-    },
-  ]
+  const columns = boysColumns({
+    classId,
+    multi,
+    classLabel,
+    canManageBoys,
+    canWrite,
+    setViewing,
+    openEdit,
+    remove,
+    refetch,
+  })
 
   return (
     <>
@@ -182,63 +92,23 @@ export default function BoysPage() {
         )}
       </div>
 
-      <Toolbar className="toolbar--scroll">
-        {multi && (
-          <ClassFilter
-            value={picked}
-            onChange={setPicked}
-            classes={classes}
-            allLabel="كل الفصول"
-          />
-        )}
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون..." />
-        <Tabs
-          value={flag}
-          onChange={setFlag}
-          options={[
-            { value: 'all', label: 'الكل', count: boys?.length ?? 0 },
-            { value: 'flagged', label: 'محتاج متابعة', count: flaggedCount },
-          ]}
-        />
-        <ToolbarSpacer />
-        <FileMenu
-          items={[
-            {
-              key: 'template',
-              label: 'تنزيل نموذج إكسل',
-              icon: 'download',
-              onClick: () => BoyAPI.template(),
-            },
-            {
-              key: 'export',
-              label: 'تصدير البيانات',
-              icon: 'download',
-              onClick: () => BoyAPI.export(classId || undefined),
-            },
-            canWrite && {
-              key: 'import',
-              label: 'استيراد من إكسل',
-              icon: 'upload',
-              fileInput: true,
-              onFile: async (file) => {
-                try {
-                  const result = await BoyAPI.import(file)
-                  setImportResult(result)
-                  refetch()
-                } catch (err) {
-                  toast.error(err.message)
-                }
-              },
-            },
-          ].filter(Boolean)}
-        />
-        <a className="btn btn-secondary" href={classId ? `#/class/${classId}/attendance` : '#/attendance'}>
-          <Icon name="calendar" size={15} />
-          الحضور
-        </a>
-      </Toolbar>
-
-      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون..." />
+      <BoysToolbar
+        classId={classId}
+        multi={multi}
+        classes={classes}
+        picked={picked}
+        setPicked={setPicked}
+        search={search}
+        setSearch={setSearch}
+        flag={flag}
+        setFlag={setFlag}
+        boys={boys}
+        flaggedCount={flaggedCount}
+        canWrite={canWrite}
+        setImportResult={setImportResult}
+        refetch={refetch}
+        toast={toast}
+      />
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {loading ? (

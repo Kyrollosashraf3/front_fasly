@@ -1,29 +1,12 @@
-import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useQuery } from '../../hooks'
-import { DashboardAPI } from '../../lib/endpoints'
 import { Select } from '../../components/ui/Field'
-import { Toolbar, ToolbarSpacer, Tabs } from '../../components/ui/Toolbar'
+import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
-import { Badge } from '../../components/ui/Badge'
 import { BoyProfileModal } from '../boys/BoyProfile'
-import {
-  AbsentNowBadge,
-  ClassGroups,
-  DashSection,
-  DateModeField,
-  FollowedBadge,
-  Kpi,
-  KpiRow,
-  LateBadge,
-  NField,
-  StreakBadge,
-  TodoBadge,
-  TrendChart,
-  useBoyDrawer,
-} from './parts'
-import { formatShort } from '../../lib/format'
+import { DateModeField, Kpi, KpiRow } from './parts'
+import { BoysSections } from './boys/BoysSections'
+import { useBoysDashboard } from './boys/useBoysDashboard'
 import './dashboard.css'
 
 /**
@@ -35,39 +18,37 @@ import './dashboard.css'
  */
 export default function BoysDashboard() {
   usePageTitle('أداء الأولاد')
-  const { user, classes, can, classLabel } = useAuth()
+  const { classLabel } = useAuth()
 
-  const [classId, setClassId] = useState('')
-  const [dateMode, setDateMode] = useState('last_friday')
-  const [streakN, setStreakN] = useState(4)
-  const [absentN, setAbsentN] = useState(4)
-  const [trendN, setTrendN] = useState(8)
-  const [coverTab, setCoverTab] = useState('todo')
-  const [boy, openBoy, closeBoy] = useBoyDrawer()
-
-  const { data, loading, error, refetch } = useQuery(
-    () =>
-      DashboardAPI.summary({
-        ...(classId ? { class_id: classId } : {}),
-        date_mode: dateMode,
-        streak_n: streakN,
-        absent_n: absentN,
-        trend_n: trendN,
-      }),
-    [classId, dateMode, streakN, absentN, trendN],
-  )
-
-  const d = data
-  const a = d?.attendance
-  const showAll = can.manageClasses(user) && classes.length > 1
-
-  const byClass = (a?.by_class ? Object.entries(a.by_class) : [])
-    .filter(([, v]) => v.total > 0)
-    .sort((x, y) => y[1].percent - x[1].percent)
-
-  const cover = d?.follow?.boys
-  const late = d?.confession?.boys
-  const coverGroups = coverTab === 'done' ? cover?.done : cover?.todo
+  const dash = useBoysDashboard()
+  const {
+    classes,
+    classId,
+    setClassId,
+    dateMode,
+    setDateMode,
+    coverTab,
+    setCoverTab,
+    trendN,
+    setTrendN,
+    streakN,
+    setStreakN,
+    absentN,
+    setAbsentN,
+    showAll,
+    data: d,
+    attendance: a,
+    loading,
+    error,
+    refetch,
+    byClass,
+    cover,
+    late,
+    coverGroups,
+    boy,
+    openBoy,
+    closeBoy,
+  } = dash
 
   return (
     <>
@@ -129,160 +110,23 @@ export default function BoysDashboard() {
             <Kpi value={d.counts.fridays} label="جمع مسجلة" />
           </KpiRow>
 
-          {!d.scope.single_class && byClass.length > 0 && (
-            <DashSection title="نسبة الحضور لكل فصل">
-              <div className="card class-bars">
-                {byClass.map(([cid, v]) => (
-                  <div key={cid}>
-                    <div className="class-bars__row">
-                      <strong>{classLabel(Number(cid))}</strong>
-                      <span>
-                        {v.percent}% حضور · {v.liturgy_percent}% قداس ({v.present}/{v.total})
-                      </span>
-                    </div>
-                    <div className="progress">
-                      <div className="progress__fill" style={{ width: `${v.percent}%` }} />
-                    </div>
-                    <div className="progress progress--liturgy">
-                      <div className="progress__fill" style={{ width: `${v.liturgy_percent}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </DashSection>
-          )}
-
-          <DashSection
-            title="منحنى حضور الأولاد"
-            hint="عدد الحاضرين وحضور القداس في كل جمعة (من الأقدم للأحدث)."
-            control={
-              <NField label="عدد الجمع" value={trendN} onChange={setTrendN} from={1} to={12} />
-            }
-          >
-            <div className="card">
-              {d.boys_trend.length ? (
-                <TrendChart points={d.boys_trend} />
-              ) : (
-                <p className="muted small">لا توجد جمعات مسجلة بعد.</p>
-              )}
-            </div>
-          </DashSection>
-
-          <DashSection
-            title="افتقاد الأولاد"
-            hint={`الأولاد الذين تم افتقادهم خلال الفترة مقابل من لم يُفتقد بعد (من ${formatShort(d.scope.period_start)}).`}
-            control={
-              <Tabs
-                value={coverTab}
-                onChange={setCoverTab}
-                options={[
-                  { value: 'todo', label: 'لم يُفتقدوا', count: cover?.todo_count },
-                  { value: 'done', label: 'اتفتقدوا', count: cover?.done_count },
-                ]}
-              />
-            }
-          >
-            <ClassGroups
-              groups={coverGroups || {}}
-              singleClass={d.scope.single_class}
-              emptyTitle={coverTab === 'done' ? 'لا يوجد افتقاد' : 'تم افتقاد الكل'}
-              emptyMsg={
-                coverTab === 'done'
-                  ? 'لم يتم افتقاد أي ولد خلال الفترة المختارة.'
-                  : 'كل الأولاد تم افتقادهم خلال الفترة.'
-              }
-              badge={(b) =>
-                coverTab === 'done' ? <FollowedBadge count={b.count} /> : <TodoBadge />
-              }
-              onBoy={openBoy}
-            />
-          </DashSection>
-
-          <DashSection
-            title="متأخرون عن الاعتراف"
-            hint={
-              late?.late_count
-                ? `${late.late_count} ولد لم يعترفوا من ${formatShort(d.scope.period_start)}.`
-                : 'الكل اعترفوا خلال الفترة المختارة.'
-            }
-          >
-            <ClassGroups
-              groups={late?.late || {}}
-              singleClass={d.scope.single_class}
-              emptyTitle="لا يوجد متأخرون"
-              emptyMsg="كل الأولاد اعترفوا خلال الفترة المختارة."
-              badge={(b) => <LateBadge days={b.days} />}
-              onBoy={openBoy}
-            />
-          </DashSection>
-
-          <DashSection
-            title="المواظبون على الحضور"
-            hint={`حاضرون جمعات متواصلة حتى آخر جمعة مسجلة (${d.last_friday.date ? d.last_friday.date : '—'}).`}
-            control={
-              <NField
-                label="عدد الجمع المتواصلة"
-                value={streakN}
-                onChange={setStreakN}
-                from={1}
-                to={12}
-              />
-            }
-          >
-            <ClassGroups
-              groups={d.streaks}
-              singleClass={d.scope.single_class}
-              emptyTitle="لا يوجد مواظبون"
-              emptyMsg={`لا أحد وصل ${streakN} جمعات متواصلة. جرّب رقمًا أصغر.`}
-              badge={(b) => <StreakBadge streak={b.streak} />}
-              onBoy={openBoy}
-            />
-          </DashSection>
-
-          <DashSection
-            title="غياب آخر جمعة مسجلة"
-            hint={
-              d.last_friday.date
-                ? `${d.last_friday.date} — حاضر ${d.last_friday.present_count} • غائب ${d.last_friday.absent_count}`
-                : 'لم يتم تسجيل أي حضور حتى الآن.'
-            }
-          >
-            {d.last_friday.date ? (
-              <ClassGroups
-                groups={d.last_friday.by_class}
-                singleClass={d.scope.single_class}
-                emptyTitle="لا يوجد غياب"
-                emptyMsg="الكل كان حاضرًا في آخر جمعة مسجلة."
-                badge={() => <AbsentNowBadge />}
-                onBoy={openBoy}
-              />
-            ) : (
-              <p className="muted small">لا يوجد تسجيل بعد.</p>
-            )}
-          </DashSection>
-
-          <DashSection
-            title="الغياب المتكرر"
-            hint="الأولاد الذين غابوا أكثر من العدد المحدد من الجمع."
-            control={
-              <NField
-                label="أكثر من كام جمعة غياب"
-                value={absentN}
-                onChange={setAbsentN}
-                from={0}
-                to={12}
-              />
-            }
-          >
-            <ClassGroups
-              groups={d.frequent_absent}
-              singleClass={d.scope.single_class}
-              emptyTitle="لا يوجد غياب متكرر"
-              emptyMsg={`لا أحد غاب أكثر من ${absentN} جمعات.`}
-              badge={(b) => <Badge kind="red">غياب {b.absent_count}</Badge>}
-              onBoy={openBoy}
-            />
-          </DashSection>
+          <BoysSections
+            data={d}
+            byClass={byClass}
+            cover={cover}
+            late={late}
+            coverGroups={coverGroups}
+            coverTab={coverTab}
+            setCoverTab={setCoverTab}
+            trendN={trendN}
+            setTrendN={setTrendN}
+            streakN={streakN}
+            setStreakN={setStreakN}
+            absentN={absentN}
+            setAbsentN={setAbsentN}
+            openBoy={openBoy}
+            classLabel={classLabel}
+          />
         </div>
       ) : null}
 

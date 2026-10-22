@@ -1,4 +1,4 @@
-﻿import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+﻿import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useLastClassId } from '../../hooks'
@@ -6,102 +6,8 @@ import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { ROLE_LABELS } from '../../lib/roles'
 import { userLabel } from '../../lib/constants'
-import { accountLinks, classHref, classIdFrom, classLinks, globalModules, navClass, rootLinks } from './navLinks'
-
-function NavItem({ to, icon, label, end, onClick }) {
-  return (
-    <NavLink to={to} end={end} className={navClass()} onClick={onClick}>
-      <span className="nav-link__icon">
-        <Icon name={icon} size={17} />
-      </span>
-      <span className="truncate">{label}</span>
-    </NavLink>
-  )
-}
-
-/** Global links — shown on every screen. */
-function RootNav({ onNavigate }) {
-  const auth = useAuth()
-  return (
-    <div className="sidebar__section">
-      <div className="sidebar__label">القائمة</div>
-      {rootLinks(auth).map((l) => (
-        <NavItem key={l.to} {...l} onClick={onNavigate} />
-      ))}
-    </div>
-  )
-}
-
-/**
- * The super admin's modules — global routes, each with its own class filter.
- * No class is picked here: that lives inside every page.
- */
-function GlobalNav({ onNavigate }) {
-  const auth = useAuth()
-  return (
-    <div className="sidebar__section">
-      <div className="sidebar__label">الوحدات</div>
-      {globalModules(auth).map((l) => (
-        <NavItem key={l.to} {...l} onClick={onNavigate} />
-      ))}
-    </div>
-  )
-}
-
-/** The class-scoped group: overview / boys / attendance / servants / follow-up. */
-function ClassNav({ classId, onNavigate }) {
-  const { isManager, classLabel, classOf, classes } = useAuth()
-  const cls = classOf(classId)
-  const multi = classes.length > 1
-
-  return (
-    <>
-      {multi && (
-        <NavLink to="/" className={navClass('nav-link nav-link--back')} end onClick={onNavigate}>
-          <span className="nav-link__icon">
-            <Icon name="chevronStart" size={15} />
-          </span>
-          كل الفصول
-        </NavLink>
-      )}
-
-      <div className="sidebar__class">
-        <div className="sidebar__class-name">{classLabel(classId)}</div>
-        {cls?.academic_year && <div className="sidebar__class-year">{cls.academic_year}</div>}
-      </div>
-
-      <div className="sidebar__section">
-        <div className="sidebar__label">إدارة الفصل</div>
-        {classLinks({ isManager }).map((l) => (
-          <NavItem
-            key={l.path}
-            to={classHref(classId, l.path)}
-            icon={l.icon}
-            label={l.label}
-            end={l.end}
-            onClick={onNavigate}
-          />
-        ))}
-      </div>
-    </>
-  )
-}
-
-/** Quick jump list, shown on the home screen. */
-function ClassesList({ onNavigate }) {
-  const { classes, classReady } = useAuth()
-  // One class = the jump list would be a single copy of the link above it.
-  if (!classReady || classes.length < 2) return null
-
-  return (
-    <div className="sidebar__section">
-      <div className="sidebar__label">الفصول</div>
-      {classes.map((c) => (
-        <NavItem key={c.id} to={`/class/${c.id}`} icon="list" label={c.name} onClick={onNavigate} />
-      ))}
-    </div>
-  )
-}
+import { accountLinks, classIdFrom } from './navLinks'
+import { ClassesList, ClassNav, GlobalNav, NavItem, RootNav } from './SidebarNav'
 
 export function Sidebar({ onClose }) {
   const { user, logout, classes, classReady, canAccess } = useAuth()

@@ -1,0 +1,70 @@
+/* ------------------------------------------------------------- group cards */
+
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  margin-top: var(--sp-5);
+}
+
+.group-card {
+  overflow: hidden;
+}
+
+.group-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.group-card__name {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: var(--text-base);
+}
+
+.group-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--border-strong);
+  color: var(--text-muted);
+}
+
+.group-card--empty {
+  border-style: dashed;
+}
+
+.group-table {
+  padding: 0 var(--sp-4) var(--sp-3);
+  background: transparent;
+}
+
+.group-att {
+  display: inline-block;
+  width: 90px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  overflow: hidden;
+  flex: none;
+}
+
+.group-att__fill {
+  display: block;
+  height: 100%;
+  background: var(--navy);
+  border-radius: var(--radius-pill);
+}
+
+.nowrap {
+  white-space: nowrap;
+}

@@ -1,0 +1,9 @@
+/* --------------------------------------------------------------- backdrop */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-drawer) - 1);
+  background: var(--overlay);
+  border: none;
+}

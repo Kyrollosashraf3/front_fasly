@@ -1,154 +1,50 @@
-import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { useModal } from '../../context/ModalContext'
-import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useClassScope, useDebounced, useQuery } from '../../hooks'
-import { TeacherAPI } from '../../lib/endpoints'
-import { normalizeSearch } from '../../lib/search'
 import { Icon } from '../../components/ui/Icon'
-import { Button, IconButton } from '../../components/ui/Button'
-import { ContactActions } from '../../components/ui/ContactActions'
-import { ClassFilter } from '../../components/ui/ClassFilter'
-import { SearchInput } from '../../components/ui/Field'
-import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { Button } from '../../components/ui/Button'
 import { Table } from '../../components/ui/Table'
-import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
-import { FileMenu } from '../../components/ui/FileMenu'
 import { ImportResult } from '../../components/ui/ImportResult'
-import { NoteCell } from '../boys/BoyForm'
 import { TeacherForm } from './TeacherForm'
-import { formatDate } from '../../lib/format'
+import { TeachersToolbar } from './TeachersToolbar'
+import { teachersColumns } from './teachersColumns'
+import { useTeachersList } from './useTeachersList'
 import './teachers.css'
 
 export default function TeachersPage() {
-  const { classLabel, can, user, isServant } = useAuth()
-  const { classId, multi, classes, picked, setPicked } = useClassScope()
-  const toast = useToast()
-  const modal = useModal()
+  const list = useTeachersList()
+  const {
+    classLabel,
+    classId,
+    multi,
+    classes,
+    picked,
+    setPicked,
+    toast,
+    allClasses,
+    label,
+    canWrite,
+    isServant,
+    search,
+    setSearch,
+    formOpen,
+    setFormOpen,
+    editing,
+    importResult,
+    setImportResult,
+    teachers,
+    loading,
+    error,
+    refetch,
+    rows,
+    openCreate,
+    openEdit,
+    remove,
+  } = list
 
-  const allClasses = !classId
-  const label = allClasses ? 'كل الفصول' : classLabel(classId)
   usePageTitle(`الخدام — ${label}`)
 
-  const canWrite = can.writeDirectory(user)
-
-  const [search, setSearch] = useState('')
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const [importResult, setImportResult] = useState(null)
-
-  const debounced = useDebounced(search, 220)
-
-  const { data: teachers, loading, error, refetch } = useQuery(
-    () => TeacherAPI.list({ class_id: classId || undefined }),
-    [classId],
-  )
-
-  const rows = useMemo(() => {
-    const q = normalizeSearch(debounced)
-    return (teachers || []).filter(
-      (t) =>
-        !q ||
-        normalizeSearch(t.teacher_name).includes(q) ||
-        normalizeSearch(t.phone).includes(q) ||
-        normalizeSearch(t.phone_2).includes(q) ||
-        normalizeSearch(t.zone).includes(q) ||
-        normalizeSearch(t.address).includes(q),
-    )
-  }, [teachers, debounced])
-
-  const remove = async (teacher) => {
-    const ok = await modal.confirm({
-      title: `حذف "${teacher.teacher_name}"؟`,
-      message: 'لو الخادم عنده افتقاد أو متابعة مسجّلة، السيرفر هيرفض الحذف.',
-      confirmLabel: 'حذف',
-    })
-    if (!ok) return
-    try {
-      await TeacherAPI.remove(teacher.id)
-      toast.success('تم حذف الخادم.')
-      refetch()
-    } catch (err) {
-      toast.error(err.message)
-    }
-  }
-
-  const columns = [
-    {
-      key: 'teacher_name',
-      label: 'الاسم',
-      mobile: 'الاسم',
-      render: (t) => <span className="table__name">{t.teacher_name}</span>,
-    },
-    ...(multi
-      ? [
-          {
-            key: 'class',
-            label: 'الفصل',
-            width: 150,
-            mobile: 'الفصل',
-            render: (t) => <span className="small muted">{classLabel(t.class_id)}</span>,
-          },
-        ]
-      : []),
-    {
-      key: 'phone',
-      label: 'التليفون',
-      width: 150,
-      mobile: 'التليفون',
-      render: (t) =>
-        t.phone ? (
-          <a className="ltr" style={{ display: 'block', textAlign: 'center' }} href={`tel:${t.phone}`}>
-            {t.phone}
-          </a>
-        ) : (
-          '—'
-        ),
-    },
-    {
-      key: 'contact',
-      label: 'تواصل',
-      width: 96,
-      align: 'center',
-      mobile: 'تواصل',
-      render: (t) => <ContactActions phone={t.phone} phone2={t.phone_2} />,
-    },
-    {
-      key: 'last_visit_date',
-      label: 'آخر اعتراف / زيارة',
-      width: 170,
-      mobile: 'آخر زيارة',
-      render: (t) =>
-        t.last_visit_date ? (
-          <span className="row" style={{ gap: 6 }}>
-            <Icon name="calendar" size={14} />
-            {formatDate(t.last_visit_date, { withDay: false })}
-          </span>
-        ) : (
-          <Badge kind="neutral">لم يُسجّل</Badge>
-        ),
-    },
-    { key: 'note', label: 'ملاحظة', mobile: 'ملاحظة', render: (t) => <NoteCell note={t.note} /> },
-    {
-      key: 'actions',
-      label: '',
-      width: 90,
-      align: 'end',
-      mobile: '',
-      render: (t) =>
-        canWrite ? (
-          <div className="table__actions">
-            <IconButton icon={<Icon name="edit" size={16} />} label="تعديل" onClick={() => { setEditing(t); setFormOpen(true) }} />
-            <IconButton icon={<Icon name="trash" size={16} />} label="حذف" danger onClick={() => remove(t)} />
-          </div>
-        ) : (
-          <span className="muted xsmall">—</span>
-        ),
-    },
-  ]
+  const columns = teachersColumns({ multi, classLabel, canWrite, openEdit, remove })
 
   return (
     <>
@@ -179,51 +75,26 @@ export default function TeachersPage() {
             متابعة الخدام
           </Link>
           {canWrite && (
-            <Button
-              variant="primary"
-              icon={<Icon name="plus" size={16} />}
-              onClick={() => { setEditing(null); setFormOpen(true) }}
-            >
+            <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={openCreate}>
               إضافة خادم
             </Button>
           )}
         </div>
       </div>
 
-      <Toolbar className="toolbar--scroll">
-        {multi && (
-          <ClassFilter
-            value={picked}
-            onChange={setPicked}
-            classes={classes}
-            allLabel="كل الفصول"
-          />
-        )}
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون أو العنوان..." />
-        <ToolbarSpacer />
-        <FileMenu
-          items={[
-            { key: 'template', label: 'تنزيل نموذج إكسل', icon: 'download', onClick: () => TeacherAPI.template() },
-            { key: 'export', label: 'تصدير البيانات', icon: 'download', onClick: () => TeacherAPI.export(classId || undefined) },
-            canWrite && {
-              key: 'import',
-              label: 'استيراد من إكسل',
-              icon: 'upload',
-              fileInput: true,
-              onFile: async (file) => {
-                try {
-                  setImportResult(await TeacherAPI.import(file))
-                  refetch()
-                } catch (err) {
-                  toast.error(err.message)
-                }
-              },
-            },
-          ].filter(Boolean)}
-        />
-      </Toolbar>
-
-      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون أو العنوان..." />
+      <TeachersToolbar
+        classId={classId}
+        multi={multi}
+        classes={classes}
+        picked={picked}
+        setPicked={setPicked}
+        search={search}
+        setSearch={setSearch}
+        canWrite={canWrite}
+        setImportResult={setImportResult}
+        refetch={refetch}
+        toast={toast}
+      />
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {loading ? (
@@ -243,7 +114,7 @@ export default function TeachersPage() {
             }
             action={
               canWrite && !search ? (
-                <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={() => { setEditing(null); setFormOpen(true) }}>
+                <Button variant="primary" icon={<Icon name="plus" size={16} />} onClick={openCreate}>
                   إضافة خادم
                 </Button>
               ) : null

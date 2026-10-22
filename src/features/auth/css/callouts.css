@@ -1,0 +1,110 @@
+/* Prominent callout under the login form pointing to account activation. */
+.login__cta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  color: var(--gold-ink);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.login__cta:hover {
+  border-color: var(--gold);
+}
+
+.login__cta:active {
+  transform: translateY(1px);
+}
+
+.login__cta > svg {
+  flex: none;
+}
+
+.login__cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.login__cta-text b {
+  color: var(--navy);
+  font-weight: var(--weight-bold);
+}
+
+/* Soft callout: the number is on file but still needs a password. */
+.login__note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-md);
+}
+
+.login__note-text {
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--gold-ink);
+  text-align: center;
+}
+
+.login__note-text b {
+  color: var(--navy);
+}
+
+/* WhatsApp support — a hint line with a clear, tappable green button. */
+.login__support {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--surface-border);
+}
+
+.login__support-text {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.login__support-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  background: #25d366;
+  border: 1px solid #1eb85a;
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.35);
+  transition: background var(--dur) var(--ease), transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.login__support-btn svg {
+  flex: none;
+}
+
+.login__support-btn:hover {
+  background: #1eb85a;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.45);
+}
+
+.login__support-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(37, 211, 102, 0.35);
+}

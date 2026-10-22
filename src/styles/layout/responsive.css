@@ -1,0 +1,58 @@
+/* -------------------------------------------------------------- responsive */
+@media (max-width: 900px) {
+  .view {
+    padding: var(--sp-5) var(--sp-4) var(--sp-8);
+  }
+  .topbar {
+    padding: 0 var(--sp-4);
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(100%);
+    transition: transform var(--dur) var(--ease);
+    box-shadow: var(--shadow-lg);
+  }
+
+  [dir='ltr'] .sidebar {
+    transform: translateX(-100%);
+  }
+
+  body.sidebar-open .sidebar {
+    transform: none;
+  }
+
+  body.sidebar-open .sidebar-backdrop {
+    display: block;
+  }
+
+  .main-col {
+    margin-inline-start: 0;
+  }
+
+  /* The bottom tab bar replaces the drawer entirely on a phone. */
+  .menu-toggle {
+    display: none;
+  }
+
+  .topbar__crumb {
+    display: none;
+  }
+
+  :root {
+    --topbar-height: 56px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    gap: var(--sp-2);
+  }
+  .user-chip__name {
+    display: none;
+  }
+  .user-chip {
+    padding: 4px;
+  }
+}

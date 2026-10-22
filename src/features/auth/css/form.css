@@ -1,0 +1,92 @@
+/* -------------------------------------------------------------- form side */
+.login__panel {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6);
+}
+
+.login__box {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-7);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  animation: fadeUp var(--dur-slow) var(--ease);
+}
+
+.login__box-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login__box-head h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+}
+
+.login__mobile-mark {
+  display: none;
+}
+
+.login__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.login__link {
+  color: var(--navy);
+  font-weight: var(--weight-bold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.login__link:hover {
+  color: var(--gold-deep, var(--gold));
+}
+
+/* ------------------------------------------------------- mode switcher */
+/* Two buttons pinned at the top of both auth screens. */
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--surface-alt, rgba(15, 33, 63, 0.04));
+  border: 1px solid var(--surface-border);
+}
+
+.auth-tabs__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px var(--sp-3);
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.auth-tabs__btn:hover {
+  color: var(--navy);
+}
+
+.auth-tabs__btn.is-active {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}

@@ -1,0 +1,192 @@
+/* ----------------------------------------------------------------- tables */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+  box-shadow: var(--shadow-xs);
+}
+
+.table {
+  width: 100%;
+  font-size: var(--text-base);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 11px var(--sp-4);
+  text-align: start;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--navy);
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--surface-border);
+  white-space: nowrap;
+}
+
+/* Sortable header (Table prop `sortable` + a column's `sortValue`). */
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.th-sort:hover {
+  color: var(--navy);
+}
+
+.th-sort__icon {
+  display: inline-flex;
+  opacity: 0.35;
+  transition: transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+
+.th-sort:hover .th-sort__icon {
+  opacity: 0.7;
+}
+
+.th-sort.is-active .th-sort__icon {
+  opacity: 1;
+}
+
+.th-sort__icon.is-asc {
+  transform: rotate(180deg);
+}
+
+.table td {
+  padding: 11px var(--sp-4);
+  border-bottom: 1px solid var(--surface-border);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr {
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.table tbody tr:hover {
+  background: var(--bg-soft);
+}
+
+/* A marked-present row is a faint wash (~40% lighter than before) so the
+   tan/yellow never competes with the green tick words. */
+.table tbody tr.is-present {
+  background: rgba(255, 249, 230, 0.6); /* --gold-soft at 60% */
+}
+.table tbody tr.is-present:hover {
+  background: rgba(255, 243, 209, 0.6);
+}
+
+.table__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* Call / WhatsApp quick links (components/ui/ContactActions.jsx). */
+.contact-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contact-actions__btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.contact-actions__btn:hover {
+  text-decoration: none;
+}
+.contact-actions__btn--call:hover {
+  color: var(--navy);
+  background: var(--surface-sunken);
+  border-color: var(--surface-border);
+}
+.contact-actions__btn--wa {
+  color: #25d366;
+  border-color: #b7e9c9;
+}
+.contact-actions__btn--wa:hover {
+  color: #128c4b;
+  background: #e7f9ee;
+  border-color: #8fdcac;
+}
+
+.table__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-weight: var(--weight-semibold);
+  color: var(--navy);
+}
+
+.flag-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+/* Boy's name + the ✎ data-edit marker (features/boys/BoyName.jsx). */
+.boy-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  font-weight: var(--weight-semibold);
+}
+
+.boy-name > .truncate {
+  min-width: 0;
+}
+
+.boy-edit {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.boy-edit:hover,
+.boy-edit:focus-visible,
+.boy-name:hover .boy-edit {
+  opacity: 1;
+  color: var(--gold-hover);
+  background: var(--gold-soft);
+  border-color: transparent;
+}
+
+.boy-edit:disabled {
+  opacity: 0.6;
+}
+
+.note-indicator {
+  color: var(--gold-hover);
+  font-size: var(--text-sm);
+}

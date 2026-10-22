@@ -1,0 +1,65 @@
+/* the dashed "add a note" button (attendance + follow-up sheets) */
+.note-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: start;
+  width: 100%;
+  max-width: 280px;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.note-btn:hover {
+  background: var(--gold-soft);
+  border-color: var(--gold-border);
+  color: var(--gold-ink);
+}
+
+/* the save bar under the weekly sheets */
+.att-savebar {
+  position: sticky;
+  bottom: var(--sp-4);
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--navy);
+  /* White labels on the navy bar; the stat numbers pick up gold below. */
+  color: #fff;
+  border: 1px solid var(--navy-dark);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* On the phone the save bar pins to the bottom of the screen (clear of the
+   bottom tab bar) instead of scrolling away with the sheet. */
+.att-savebar-space {
+  height: 0;
+}
+
+@media (max-width: 768px) {
+  .att-savebar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: calc(62px + env(safe-area-inset-bottom));
+    z-index: 16;
+    margin: 0;
+    border-inline: 0;
+    border-radius: 0;
+    padding: var(--sp-3) var(--sp-4);
+  }
+
+  /* Room so the last sheet rows clear the pinned bar. */
+  .att-savebar-space {
+    height: 84px;
+  }
+}

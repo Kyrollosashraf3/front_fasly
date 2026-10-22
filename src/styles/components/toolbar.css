@@ -1,0 +1,43 @@
+/* ---------------------------------------------------------------- toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  /* Pins under the topbar while the list scrolls, so the search and filters
+     never leave reach — handy on long sheets like attendance. */
+  position: sticky;
+  top: calc(var(--topbar-height) + env(safe-area-inset-top));
+  z-index: 15;
+}
+
+/* Secondary bars (e.g. the "history" filter below a list) stay in flow so two
+   pinned toolbars never stack on the same page. */
+.toolbar--static {
+  position: static;
+}
+
+.toolbar__spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------- toolbar search (mobile)
+   On the phone a `toolbar--scroll` toolbar scrolls away with the page, and a
+   second copy of the search (<ToolbarSearch>) pins under the topbar instead,
+   so only the search stays in reach while the tabs and filters move off. */
+.toolbar-search-sticky {
+  display: none;
+}

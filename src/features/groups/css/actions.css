@@ -1,0 +1,56 @@
+/* ---- action bar ---- */
+.game__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border-top: 1px solid var(--surface-border);
+}
+
+.game__count {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.game__count strong {
+  color: var(--navy);
+  font-size: var(--text-lg);
+}
+
+.game__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.game__done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--success-border);
+  border-radius: var(--radius-lg);
+  background: var(--success-soft);
+  color: var(--success-ink);
+  font-weight: var(--weight-semibold);
+}
+
+@media (max-width: 640px) {
+  .game__lbl-hint {
+    display: none;
+  }
+  .game__servants {
+    grid-template-columns: 1fr;
+  }
+  .game__actions {
+    width: 100%;
+  }
+  .game__actions .btn {
+    flex: 1;
+  }
+}

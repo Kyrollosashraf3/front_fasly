@@ -1,0 +1,131 @@
+/* ---------------------------------------------------------------- main col */
+.main-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin-inline-start: var(--sidebar-width);
+}
+
+/* ----------------------------------------------------------------- topbar */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  min-height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  /* Keeps the bar clear of the notch/status bar when installed standalone. */
+  padding-block-start: env(safe-area-inset-top);
+  padding-inline: var(--sp-6);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.topbar__left,
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.topbar__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__crumb {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.topbar__crumb a:hover {
+  color: var(--navy);
+  text-decoration: underline;
+}
+
+.menu-toggle {
+  display: none;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  font-size: 18px;
+  color: var(--navy);
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px 12px 5px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--navy-soft);
+  border: 1px solid var(--surface-border);
+  max-width: 260px;
+}
+
+.user-chip__name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--gold);
+  font-weight: var(--weight-extrabold);
+  line-height: 1;
+  user-select: none;
+}
+
+.avatar--sm {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+.avatar--md {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+}
+.avatar--lg {
+  width: 56px;
+  height: 56px;
+  font-size: 21px;
+}
+.avatar--gold {
+  background: var(--gold);
+  color: var(--navy-dark);
+}
+
+/* ------------------------------------------------------------------ view */
+.view {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--sp-7) var(--sp-6) var(--sp-9);
+  animation: fadeUp var(--dur-slow) var(--ease);
+}
+
+.view--wide {
+  max-width: 1400px;
+}

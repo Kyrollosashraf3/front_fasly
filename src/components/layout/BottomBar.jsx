@@ -1,91 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useLastClassId } from '../../hooks'
 import { Icon } from '../ui/Icon'
-import { Avatar } from '../ui/Avatar'
-import { ROLE_LABELS } from '../../lib/roles'
-import { userLabel } from '../../lib/constants'
 import {
   accountLinks,
   analyticsModules,
-  classHref,
   classIdFrom,
   classLinks,
   classModules,
   globalModules,
-  navClass,
   rootLinks,
 } from './navLinks'
-
-/* ------------------------------------------------------------------ sheet */
-
-/** Bottom sheet — the phone's answer to the desktop sidebar drawer. */
-function Sheet({ open, title, onClose, children }) {
-  useEffect(() => {
-    if (!open) return undefined
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = prevOverflow
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, onClose])
-
-  if (!open) return null
-
-  return (
-    <div className="sheet-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="sheet__grip" aria-hidden="true" />
-        <div className="sheet__head">
-          <div className="sheet__title">{title}</div>
-          <button type="button" className="sheet__close" onClick={onClose} aria-label="إغلاق">
-            ✕
-          </button>
-        </div>
-        <div className="sheet__body">{children}</div>
-      </div>
-    </div>
-  )
-}
-
-function SheetLink({ to, icon, label, end, onNavigate }) {
-  return (
-    <NavLink to={to} end={end} className={navClass('sheet__item')} onClick={onNavigate}>
-      <span className="sheet__item-icon">
-        <Icon name={icon} size={17} />
-      </span>
-      <span className="truncate">{label}</span>
-    </NavLink>
-  )
-}
-
-function SheetButton({ icon, label, onClick, danger }) {
-  return (
-    <button
-      type="button"
-      className={`sheet__item${danger ? ' sheet__item--danger' : ''}`}
-      onClick={onClick}
-    >
-      <span className="sheet__item-icon">
-        <Icon name={icon} size={17} />
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
-  )
-}
-
-function SheetLabel({ children }) {
-  return <div className="sheet__label">{children}</div>
-}
-
-/* -------------------------------------------------------------- tab bar */
+import { Sheet } from './Sheet'
+import { AccountLinks, HomeSheetBody, MeSheetBody, MenuSheetBody } from './BottomSheets'
 
 const TABS = [
   { key: 'home', icon: 'home', label: 'الرئيسية' },
@@ -147,13 +76,7 @@ export function BottomBar() {
   }
 
   const accountSection = (
-    <>
-      <SheetLabel>الحساب</SheetLabel>
-      {accountLinks.map((l) => (
-        <SheetLink key={l.to} {...l} onNavigate={close} />
-      ))}
-      <SheetButton icon="logout" label="تسجيل الخروج" onClick={handleLogout} danger />
-    </>
+    <AccountLinks links={accountLinks} onLogout={handleLogout} close={close} />
   )
 
   return (
@@ -176,102 +99,34 @@ export function BottomBar() {
       </nav>
 
       <Sheet open={sheet === 'home'} title="الرئيسية" onClose={close}>
-        {multi ? (
-          <>
-            <SheetLabel>الوحدات</SheetLabel>
-            {gmods.map((m) => (
-              <SheetLink key={m.to} {...m} onNavigate={close} />
-            ))}
-          </>
-        ) : (
-          myClassId &&
-          mods.length > 0 && (
-            <>
-              <SheetLabel>وحدات الفصل</SheetLabel>
-              {mods.map((m) => (
-                <SheetLink
-                  key={m.path || 'overview'}
-                  to={classHref(myClassId, m.path)}
-                  icon={m.icon}
-                  label={m.label}
-                  end={m.end}
-                  onNavigate={close}
-                />
-              ))}
-            </>
-          )
-        )}
-        {analytics.length > 0 && (
-          <>
-            <SheetLabel>تحليل</SheetLabel>
-            {analytics.map((m) => (
-              <SheetLink key={m.to} {...m} onNavigate={close} />
-            ))}
-          </>
-        )}
-        <SheetLabel>وصول سريع</SheetLabel>
-        {roots.map((l) => (
-          <SheetLink key={l.to} {...l} onNavigate={close} />
-        ))}
-        {accountSection}
+        <HomeSheetBody
+          multi={multi}
+          globalModules={gmods}
+          classModules={mods}
+          myClassId={myClassId}
+          analytics={analytics}
+          roots={roots}
+          account={accountSection}
+          close={close}
+        />
       </Sheet>
 
       <Sheet open={sheet === 'menu'} title="القائمة" onClose={close}>
-        {multi ? (
-          <>
-            <SheetLabel>الوحدات</SheetLabel>
-            {gmods.map((m) => (
-              <SheetLink key={m.to} {...m} onNavigate={close} />
-            ))}
-            <SheetLabel>أقسام ثابتة</SheetLabel>
-            {roots.map((l) => (
-              <SheetLink key={l.to} {...l} onNavigate={close} />
-            ))}
-          </>
-        ) : myClassId ? (
-          <>
-            {!single && (
-              <SheetLink to="/" end icon="chevronStart" label="كل الفصول" onNavigate={close} />
-            )}
-            <SheetLabel>إدارة الفصل</SheetLabel>
-            {classLinks({ isManager }).map((l) => (
-              <SheetLink
-                key={l.path}
-                to={classHref(myClassId, l.path)}
-                icon={l.icon}
-                label={l.label}
-                end={l.end}
-                onNavigate={close}
-              />
-            ))}
-            <SheetLabel>أقسام ثابتة</SheetLabel>
-            {roots.map((l) => (
-              <SheetLink key={l.to} {...l} onNavigate={close} />
-            ))}
-          </>
-        ) : (
-          <>
-            <SheetLabel>القائمة</SheetLabel>
-            {roots.map((l) => (
-              <SheetLink key={l.to} {...l} onNavigate={close} />
-            ))}
-          </>
-        )}
-        {accountSection}
+        <MenuSheetBody
+          multi={multi}
+          globalModules={gmods}
+          roots={roots}
+          myClassId={myClassId}
+          single={single}
+          isManager={isManager}
+          classLinks={classLinks}
+          account={accountSection}
+          close={close}
+        />
       </Sheet>
 
       <Sheet open={sheet === 'me'} title="الحساب" onClose={close}>
-        <div className="sheet__me">
-          <Avatar name={userLabel(user)} size="md" gold />
-          <div className="sheet__me-text">
-            <div className="sheet__me-name">{userLabel(user)}</div>
-            <div className="sheet__me-role">{ROLE_LABELS[user?.role] || user?.role}</div>
-          </div>
-        </div>
-        {accountLinks.map((l) => (
-          <SheetLink key={l.to} {...l} onNavigate={close} />
-        ))}
-        <SheetButton icon="logout" label="تسجيل الخروج" onClick={handleLogout} danger />
+        <MeSheetBody user={user} links={accountLinks} onLogout={handleLogout} close={close} />
       </Sheet>
     </>
   )

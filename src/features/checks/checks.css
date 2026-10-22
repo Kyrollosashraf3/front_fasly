@@ -1,4 +1,5 @@
 /* Servant weekly check sheet. */
+/* Shared .note-btn / .att-savebar live in styles/components/sheet.css. */
 
 .check-person {
   display: flex;
@@ -11,40 +12,137 @@
   text-align: start;
 }
 
-.note-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 9px;
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--border-strong);
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  text-align: start;
-  width: 100%;
-  transition: all var(--dur-fast) var(--ease);
+/* A tick you can actually hit with a thumb. */
+.att-check {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--navy);
+  cursor: pointer;
 }
 
-.note-btn:hover {
-  background: var(--gold-soft);
-  border-color: var(--gold-border);
-  color: var(--gold-ink);
+/* The search and the column header pin together under the app bar on a phone,
+   so «حضور / قداس / …» stays visible while the sheet scrolls. */
+.check-sticky {
+  display: contents;
 }
 
-.att-savebar {
-  position: sticky;
-  bottom: var(--sp-4);
-  z-index: 15;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  margin-top: var(--sp-4);
-  padding: var(--sp-3) var(--sp-4);
-  background: var(--navy);
-  color: #fff;
-  border: 1px solid var(--navy-dark);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+.check-mhead {
+  display: none;
+}
+
+/* ------------------------------------------------ phone: compact grid
+   The stacked table is fine for two-field sheets, but this sheet has five
+   ticks per servant. On a phone each servant becomes one line: name on the
+   start, the five ticks in fixed columns beside it, and the note underneath. */
+@media (max-width: 768px) {
+  .check-sticky {
+    display: block;
+    position: sticky;
+    top: calc(var(--topbar-height) + env(safe-area-inset-top));
+    z-index: 18;
+    padding-bottom: 6px;
+    background: var(--bg);
+  }
+
+  .check-sticky .toolbar-search-sticky {
+    display: block;
+    position: static;
+    z-index: auto;
+    margin: 0 0 6px;
+    padding: 0;
+    background: none;
+  }
+
+  .check-mhead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(5, 40px);
+    align-items: end;
+    gap: 4px;
+    padding: 6px var(--sp-3);
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  .check-mhead span {
+    white-space: nowrap;
+  }
+
+  .check-mhead span:first-child {
+    text-align: start;
+  }
+
+  .check-table {
+    overflow: visible;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .check-table .table--stack {
+    width: 100%;
+  }
+
+  .check-table .table--stack tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(5, 40px);
+    align-items: center;
+    gap: 4px;
+    padding: var(--sp-2) var(--sp-3);
+    margin-bottom: 6px;
+  }
+
+  .check-table .table--stack td {
+    display: block;
+    padding: 0;
+    border: 0;
+    text-align: center !important;
+  }
+
+  .check-table .table--stack td::before {
+    content: none;
+  }
+
+  .check-table .table--stack td:first-child {
+    min-width: 0;
+    text-align: start !important;
+  }
+
+  .check-table .table--stack td:last-child {
+    grid-column: 1 / -1;
+    text-align: start !important;
+    padding-top: 4px;
+  }
+
+  .check-table .check-person {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .check-table .check-person .table__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .check-table .check-person .xsmall {
+    display: none;
+  }
+
+  .check-table .att-check {
+    width: 26px;
+    height: 26px;
+  }
+
+  .check-table .note-btn {
+    padding: 4px 8px;
+  }
 }

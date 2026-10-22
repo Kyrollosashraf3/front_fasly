@@ -1,35 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useModal } from '../../context/ModalContext'
-import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { useUnsavedGuard } from '../../context/UnsavedChangesContext'
-import { useClassScope, useDebounced, useQuery } from '../../hooks'
-import { CheckAPI, TeacherAPI } from '../../lib/endpoints'
-import { normalizeSearch } from '../../lib/search'
+import { useClassScope } from '../../hooks'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
-import { ClassFilter } from '../../components/ui/ClassFilter'
-import { Input, SearchInput } from '../../components/ui/Field'
-import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
+import { ToolbarSearch } from '../../components/ui/Toolbar'
 import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
-import { formatDate, lastFridayISO, todayISO } from '../../lib/format'
+import { formatDate } from '../../lib/format'
+import { FLAGS } from './constants'
+import { CheckToolbar } from './CheckToolbar'
+import { checkColumns } from './checksColumns'
+import { useTeacherCheckSheet } from './useTeacherCheckSheet'
 import './checks.css'
 
-const FLAGS = [
-  { key: 'attend', label: 'حاضر' },
-  { key: 'prepare', label: 'تحضير الدرس' },
-  { key: 'liturgy', label: 'القداس' },
-  { key: 'follow', label: 'افتقاد' },
-  { key: 'teachers_meeting', label: 'اجتماع الخدام' },
-]
-
 /**
- * TeacherCheckPage — the amin's weekly review of his servants.
- * Managers write; a servant (or boy) sees the sheet read-only (a boy: 403).
+ * TeacherCheckPage — the amin's weekly review of his servants, and each
+ * servant's own self check-in. Managers write every row; a servant writes only
+ * his own (the API scopes his list to himself). A boy never reaches this page.
  */
 export default function TeacherCheckPage() {
   const { classLabel, can, user } = useAuth()
@@ -37,219 +26,18 @@ export default function TeacherCheckPage() {
   const { multi, classes, picked, setPicked, firstClassId, isGlobal } = scope
   // A check sheet always needs one class: fall back to the first until picked.
   const classId = scope.classId || firstClassId
-  const toast = useToast()
-  const modal = useModal()
 
   const label = classId ? classLabel(classId) : ''
   usePageTitle(isGlobal ? 'متابعة الخدام' : `متابعة الخدام — ${label}`)
 
   const canWrite = can.writeChecks(user)
+  const sheet = useTeacherCheckSheet({ classId, setPicked, canWrite })
+  const { date, search, setSearch, rows, loading, error, refetch, stats } = sheet
 
-  const [date, setDate] = useState(lastFridayISO())
-  const [search, setSearch] = useState('')
-  const [marks, setMarks] = useState({})
-  const [saving, setSaving] = useState(false)
-
-  const debounced = useDebounced(search, 200)
-
-  const { data, loading, error, refetch } = useQuery(
-    async () => {
-      const [teachers, checks] = await Promise.all([
-        TeacherAPI.list({ class_id: classId }),
-        CheckAPI.list({ class_id: classId, action_date: date }),
-      ])
-      return { teachers, checks }
-    },
-    [classId, date],
-    { enabled: Boolean(classId) },
-  )
-
-  useEffect(() => {
-    if (!data) return
-    const next = {}
-    for (const c of data.checks || []) {
-      next[c.teacher_id] = {
-        attend: c.attend,
-        prepare: c.prepare,
-        liturgy: c.liturgy,
-        follow: c.follow,
-        teachers_meeting: c.teachers_meeting,
-        note: c.note || '',
-      }
-    }
-    setMarks(next)
-  }, [data])
-
-  const getMark = (id) =>
-    marks[id] || {
-      attend: false,
-      prepare: false,
-      liturgy: false,
-      follow: false,
-      teachers_meeting: false,
-      note: '',
-    }
-
-  const setFlag = (id, flag, value) =>
-    setMarks((m) => ({ ...m, [id]: { ...getMark(id), [flag]: value } }))
-
-  const rows = useMemo(() => {
-    const q = normalizeSearch(debounced)
-    return (data?.teachers || []).filter((t) => !q || normalizeSearch(t.teacher_name).includes(q))
-  }, [data, debounced])
-
-  const dirty = useMemo(() => {
-    if (!data) return false
-    const server = new Map((data.checks || []).map((c) => [c.teacher_id, c]))
-    for (const t of data.teachers || []) {
-      const local = marks[t.id]
-      const remote = server.get(t.id)
-      if (!remote && !local) continue
-      if (!remote) return true
-      const base = {
-        attend: false,
-        prepare: false,
-        liturgy: false,
-        follow: false,
-        teachers_meeting: false,
-        note: '',
-      }
-      const l = local || base
-      for (const f of FLAGS.map((x) => x.key)) {
-        if (Boolean(l[f]) !== Boolean(remote[f])) return true
-      }
-      if ((l.note || '') !== (remote.note || '')) return true
-    }
-    return false
-  }, [data, marks])
-
-  const stats = useMemo(() => {
-    const total = data?.teachers?.length || 0
-    const done = (data?.teachers || []).filter((t) => getMark(t.id).attend).length
-    return { total, done }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, marks])
-
-  const setAllPresent = (value) => {
-    setMarks((m) => {
-      const next = { ...m }
-      for (const t of data?.teachers || []) next[t.id] = { ...getMark(t.id), attend: value }
-      return next
-    })
-  }
-
-  const askNote = async (teacher) => {
-    const note = await modal.prompt({ title: `ملاحظة — ${teacher.teacher_name}`, value: getMark(teacher.id).note })
-    if (note !== null) setMarks((m) => ({ ...m, [teacher.id]: { ...getMark(teacher.id), note } }))
-  }
-
-  const save = async () => {
-    setSaving(true)
-    try {
-      await CheckAPI.saveBulk({
-        date,
-        items: (data?.teachers || []).map((t) => ({
-          teacher_id: t.id,
-          ...getMark(t.id),
-          note: getMark(t.id).note || null,
-        })),
-      })
-      toast.success(`تم حفظ متابعة ${formatDate(date)}.`)
-      await refetch()
-      return true
-    } catch (err) {
-      toast.error(err.message)
-      return false
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Warn before leaving with a check sheet that still has unsaved ticks.
-  useUnsavedGuard(canWrite && dirty, save, `فيه تعديلات متابعة لسه متحفظتش ليوم ${formatDate(date)}.`)
-
-  /** Switching the date reloads the sheet — confirm first when it is dirty. */
-  const changeDate = async (next) => {
-    if (next === date) return
-    if (canWrite && dirty) {
-      const ok = await modal.confirm({
-        title: 'تغيير التاريخ؟',
-        message: 'فيه تعديلات متابعة لسه متحفظتش. لو غيّرت التاريخ هتخسرها.',
-        confirmLabel: 'تغيير والتجاهل',
-        kind: 'danger',
-      })
-      if (!ok) return
-    }
-    setDate(next)
-  }
-
-  /** Switching the class reloads the sheet — confirm first when it is dirty. */
-  const changeClass = async (next) => {
-    if (!next || next === classId) return
-    if (canWrite && dirty) {
-      const ok = await modal.confirm({
-        title: 'تغيير الفصل؟',
-        message: 'فيه تعديلات متابعة لسه متحفظتش. لو غيّرت الفصل هتخسرها.',
-        confirmLabel: 'تغيير والتجاهل',
-        kind: 'danger',
-      })
-      if (!ok) return
-    }
-    setPicked(next)
-  }
+  const columns = checkColumns({ sheet, canWrite })
 
   // No class resolved yet (classes still loading) — keep the skeleton up.
   const busy = loading || !classId
-
-  const columns = [
-    {
-      key: 'teacher_name',
-      label: 'الخادم',
-      mobile: 'الخادم',
-      render: (t) => (
-        <div className="check-person">
-          <span className="table__name">{t.teacher_name}</span>
-          {t.phone && <span className="xsmall muted ltr">{t.phone}</span>}
-        </div>
-      ),
-    },
-    ...FLAGS.map((f) => ({
-      key: f.key,
-      label: f.label,
-      width: 110,
-      align: 'center',
-      mobile: f.label,
-      render: (t) => (
-        <input
-          key={f.key}
-          type="checkbox"
-          className="att-check"
-          aria-label={`${f.label}: ${t.teacher_name}`}
-          checked={Boolean(getMark(t.id)[f.key])}
-          disabled={!canWrite}
-          onChange={(e) => setFlag(t.id, f.key, e.target.checked)}
-        />
-      ),
-    })),
-    {
-      key: 'note',
-      label: 'ملاحظة',
-      width: 200,
-      mobile: 'ملاحظة',
-      render: (t) => {
-        const note = getMark(t.id).note
-        if (!canWrite) return note ? <span className="small">{note}</span> : <span className="muted xsmall">—</span>
-        return (
-          <button type="button" className="note-btn" onClick={() => askNote(t)} title="إضافة ملاحظة">
-            <Icon name="note" size={15} className={note ? 'note-indicator' : ''} />
-            <span className="small truncate" style={{ maxWidth: 130 }}>
-              {note || 'أضف'}
-            </span>
-          </button>
-        )
-      },
-    },
-  ]
 
   return (
     <>
@@ -277,85 +65,87 @@ export default function TeacherCheckPage() {
         </Link>
       </div>
 
-      <Toolbar className="toolbar--scroll">
-        {multi && (
-          <ClassFilter
-            value={picked || firstClassId}
-            onChange={changeClass}
-            classes={classes}
-          />
-        )}
-        <label className="row small bold" style={{ gap: 8 }}>
-          <Icon name="calendar" size={16} />
-          <Input
-            type="date"
-            value={date}
-            max={todayISO()}
-            disabled={!canWrite}
-            onChange={(e) => changeDate(e.target.value)}
-            style={{ width: 160 }}
-          />
-        </label>
-
-        <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
-        <ToolbarSpacer />
-
-        {canWrite && (
-          <div className="toolbar__group">
-            <Button variant="ghost" size="sm" onClick={() => setAllPresent(true)}>
-              الكل حاضر
-            </Button>
-            <span className="badge badge--navy">
-              {stats.done} / {stats.total} اتعلّموا
-            </span>
-          </div>
-        )}
-      </Toolbar>
-
-      <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
+      <CheckToolbar
+        sheet={sheet}
+        multi={multi}
+        classes={classes}
+        picked={picked}
+        firstClassId={firstClassId}
+        canWrite={canWrite}
+      />
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
         {busy ? (
           <SkeletonRows rows={6} cols={6} />
         ) : error ? (
           <ErrorState error={error} onRetry={refetch} />
-        ) : rows.length === 0 ? (
-          <EmptyState
-            icon="servant"
-            title="لا يوجد خدام"
-            message="ضيف خدام الفصل الأول عشان تقدر تتابعهم."
-            action={
-              can.writeDirectory(user) ? (
-                <a className="btn btn-primary" href={`#/class/${classId}/teachers`}>
-                  دليل الخدام
-                </a>
-              ) : null
-            }
-          />
         ) : (
-          <Table columns={columns} rows={rows} rowKey={(t) => t.id} stackOnMobile />
+          <>
+            <div className="check-sticky">
+              <ToolbarSearch value={search} onChange={setSearch} placeholder="ابحث باسم الخادم..." />
+              {rows.length > 0 && (
+                <div className="check-mhead" aria-hidden="true">
+                  <span>الخادم</span>
+                  {FLAGS.map((f) => (
+                    <span key={f.key} title={f.label}>
+                      {f.short}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {rows.length === 0 ? (
+              <EmptyState
+                icon="servant"
+                title="لا يوجد خدام"
+                message="ضيف خدام الفصل الأول عشان تقدر تتابعهم."
+                action={
+                  can.writeDirectory(user) ? (
+                    <a className="btn btn-primary" href={`#/class/${classId}/teachers`}>
+                      دليل الخدام
+                    </a>
+                  ) : null
+                }
+              />
+            ) : (
+              <Table
+                columns={columns}
+                rows={rows}
+                rowKey={(t) => t.id}
+                stackOnMobile
+                className="check-table"
+              />
+            )}
+          </>
         )}
       </div>
 
       {canWrite && stats.total > 0 && (
         <>
-        <div className="att-savebar">
-          <div className="summary-bar__stats">
-            <span className="summary-bar__stat">
-              اتعلّموا <span className="summary-bar__num">{stats.done}</span>
-            </span>
-            <span className="summary-bar__stat small" style={{ opacity: 0.8 }}>
-              من {stats.total}
-            </span>
+          <div className="att-savebar">
+            <div className="summary-bar__stats">
+              <span className="summary-bar__stat">
+                اتعلّموا <span className="summary-bar__num">{stats.done}</span>
+              </span>
+              <span className="summary-bar__stat small" style={{ opacity: 0.8 }}>
+                من {stats.total}
+              </span>
+            </div>
+            <div className="row" style={{ gap: 10 }}>
+              {sheet.dirty && <Badge kind="gold" dot>تعديلات غير محفوظة</Badge>}
+              <Button
+                variant="accent"
+                loading={sheet.saving}
+                disabled={!sheet.dirty}
+                onClick={sheet.save}
+                icon={<Icon name="check" size={16} />}
+              >
+                حفظ المتابعة
+              </Button>
+            </div>
           </div>
-          <div className="row" style={{ gap: 10 }}>
-            {dirty && <Badge kind="gold" dot>تعديلات غير محفوظة</Badge>}
-            <Button variant="accent" loading={saving} disabled={!dirty} onClick={save} icon={<Icon name="check" size={16} />}>
-              حفظ المتابعة
-            </Button>
-          </div>
-        </div>
-        <div className="att-savebar-space" aria-hidden="true" />
+          <div className="att-savebar-space" aria-hidden="true" />
         </>
       )}
     </>

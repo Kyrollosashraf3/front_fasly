@@ -4,7 +4,8 @@ import { useToast } from '../../context/ToastContext'
 import { BoyAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { IconButton } from '../../components/ui/Button'
-import { BoyForm, FlagDot } from './BoyForm'
+import { BoyForm } from './BoyForm'
+import { FlagDot } from './boyBits'
 
 /**
  * BoyName / BoyNameEdit — a boy's name with the ✎ data-edit marker beside it.

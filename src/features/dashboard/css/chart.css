@@ -1,0 +1,61 @@
+/* ----------------------------------------------------------------- chart */
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  direction: ltr;
+}
+
+/* Rotated x-axis names need the full canvas, not the 300px cap. */
+.chart--servants {
+  max-height: none;
+}
+
+.chart-grid {
+  stroke: var(--surface-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.chart-base {
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.chart-bar {
+  fill: var(--navy);
+  transition: fill var(--dur-fast) var(--ease);
+}
+
+.chart-bar.max {
+  fill: var(--gold);
+}
+
+/* Second series: mass (قداس) attendance beside the navy boys bars. */
+.chart-bar--liturgy {
+  fill: var(--gold);
+}
+
+.chart-bar:hover {
+  fill: var(--gold-hover);
+}
+
+.chart-val {
+  fill: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.chart-xlabel,
+.chart-ylabel {
+  fill: var(--text-muted);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.chart-ylabel {
+  text-anchor: end;
+}

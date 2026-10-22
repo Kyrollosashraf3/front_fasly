@@ -1,17 +1,12 @@
-import { useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
-import { Button } from '../../components/ui/Button'
-import { Field, Input } from '../../components/ui/Field'
 import { Icon } from '../../components/ui/Icon'
-import { ApiError } from '../../lib/api'
-import { AuthAPI } from '../../lib/endpoints'
-import { isPhone, normalisePhone } from '../../lib/constants'
 import { AuthBrand } from './AuthBrand'
 import { AuthSupport } from './AuthSupport'
 import { AuthTabs } from './AuthTabs'
+import { SignupPasswordStep, SignupPhoneStep } from './SignupSteps'
+import { useSignupFlow } from './useSignupFlow'
 import './login.css'
 
 /**
@@ -25,95 +20,11 @@ import './login.css'
  */
 export default function SignUpPage() {
   usePageTitle('إنشاء كلمة المرور')
-  const { loginWithToken, isAuthenticated } = useAuth()
-  const toast = useToast()
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  const [step, setStep] = useState('phone') // phone | password
-  // Prefilled when we arrive from login with a phone that has no password yet.
-  const [phone, setPhone] = useState(location.state?.phone || '')
-  const [who, setWho] = useState(null)
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [errors, setErrors] = useState({})
-  const [formError, setFormError] = useState('')
-  const [busy, setBusy] = useState(false)
+  const { isAuthenticated } = useAuth()
+  const flow = useSignupFlow()
+  const { step, phone, setPhone, who, password, setPassword, confirm, setConfirm, errors, formError, busy } = flow
 
   if (isAuthenticated) return <Navigate to="/" replace />
-
-  const showFormError = (err) => {
-    if (!(err instanceof ApiError)) return setFormError('حصل خطأ. حاول مرة أخرى.')
-    if (err.status === 404) {
-      setFormError('الرقم ده مش مسجّل عندنا. كلّم أمين الفصل يضيف حسابك.')
-      setStep('phone')
-      return
-    }
-    if (err.status === 409) {
-      setFormError('الرقم ده عنده كلمة مرور بالفعل. ادخل من صفحة الدخول.')
-      setStep('phone')
-      return
-    }
-    setFormError(
-      err.status === 429 ? 'طلبات كثيرة جدًا. انتظر قليلًا وحاول تاني.' : err.message,
-    )
-  }
-
-  const checkPhone = async (e) => {
-    e.preventDefault()
-    setFormError('')
-    const value = normalisePhone(phone)
-    if (!isPhone(value)) {
-      setErrors({ phone: 'رقم التليفون غير صحيح (01xxxxxxxxx).' })
-      return
-    }
-    setErrors({})
-    setBusy(true)
-    try {
-      const res = await AuthAPI.signupCheck(value)
-      if (!res.exists) {
-        setFormError('الرقم ده مش مسجّل عندنا. كلّم أمين الفصل يضيف حسابك.')
-        return
-      }
-      if (!res.needs_signup) {
-        setFormError('الرقم ده عنده كلمة مرور بالفعل. ادخل من صفحة الدخول.')
-        return
-      }
-      setPhone(value)
-      setWho(res)
-      setStep('password')
-    } catch (err) {
-      showFormError(err)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const setPasswordNow = async (e) => {
-    e.preventDefault()
-    setFormError('')
-    const next = {}
-    if (password.length < 8) next.password = 'كلمة المرور 8 حروف على الأقل.'
-    if (password !== confirm) next.confirm = 'كلمتا المرور مش متطابقتين.'
-    setErrors(next)
-    if (Object.keys(next).length) return
-
-    setBusy(true)
-    try {
-      const { access_token } = await AuthAPI.signup({
-        phone,
-        password,
-        password_confirm: confirm,
-      })
-      await loginWithToken(access_token)
-      toast.success('تم إنشاء كلمة المرور. أهلًا بيك.')
-      navigate('/', { replace: true })
-    } catch (err) {
-      showFormError(err)
-    } finally {
-      setBusy(false)
-    }
-  }
 
   return (
     <div className="login">
@@ -150,84 +61,26 @@ export default function SignUpPage() {
           )}
 
           {step === 'phone' ? (
-            <form className="stack" onSubmit={checkPhone} noValidate>
-              <Field label="رقم التليفون" required htmlFor="su-phone" error={errors.phone}>
-                <Input
-                  id="su-phone"
-                  type="tel"
-                  dir="ltr"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="01012345678"
-                  value={phone}
-                  error={errors.phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </Field>
-
-              <Button type="submit" variant="primary" size="lg" block loading={busy}>
-                {busy ? 'جارٍ التحقق...' : 'متابعة'}
-              </Button>
-            </form>
+            <SignupPhoneStep
+              phone={phone}
+              setPhone={setPhone}
+              errors={errors}
+              busy={busy}
+              onSubmit={flow.checkPhone}
+            />
           ) : (
-            <form className="stack" onSubmit={setPasswordNow} noValidate>
-              <div className="login__who">
-                <Icon name="phone" size={16} />
-                <span>
-                  {who?.display_name ? `${who.display_name} — ` : ''}
-                  <b dir="ltr">{phone}</b>
-                </span>
-              </div>
-
-              <Field
-                label="كلمة المرور"
-                required
-                hint="8 حروف على الأقل"
-                htmlFor="su-pass"
-                error={errors.password}
-              >
-                <Input
-                  id="su-pass"
-                  type="password"
-                  dir="ltr"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  value={password}
-                  error={errors.password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </Field>
-
-              <Field label="تأكيد كلمة المرور" required htmlFor="su-confirm" error={errors.confirm}>
-                <Input
-                  id="su-confirm"
-                  type="password"
-                  dir="ltr"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  value={confirm}
-                  error={errors.confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                />
-              </Field>
-
-              <Button type="submit" variant="primary" size="lg" block loading={busy}>
-                {busy ? 'جارٍ الحفظ...' : 'إنشاء كلمة المرور'}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setStep('phone')
-                  setFormError('')
-                  setErrors({})
-                }}
-              >
-                تغيير الرقم
-              </Button>
-            </form>
+            <SignupPasswordStep
+              phone={phone}
+              who={who}
+              password={password}
+              setPassword={setPassword}
+              confirm={confirm}
+              setConfirm={setConfirm}
+              errors={errors}
+              busy={busy}
+              onSubmit={flow.setPasswordNow}
+              onBack={flow.backToPhone}
+            />
           )}
 
           <div className="login__hint">

@@ -66,10 +66,10 @@ export const can = {
   /** Log a weekly follow-up contact (a servant logs only his own). */
   writeFollowUp: (user) => roleOf(user) !== ROLES.USER,
 
-  /** The weekly servant check sheet — managers only (an amin's job). */
-  writeChecks: (user) => isManager(user),
+  /** The weekly servant check sheet — managers write everyone, a servant his own row. */
+  writeChecks: (user) => roleOf(user) !== ROLES.USER,
 
-  /** See the servant check sheet at all (a servant reads his own, read-only). */
+  /** See the servant check sheet at all (a servant sees and fills his own). */
   seeChecks: (user) => roleOf(user) !== ROLES.USER,
 
   /** Assign boys to servant groups. */

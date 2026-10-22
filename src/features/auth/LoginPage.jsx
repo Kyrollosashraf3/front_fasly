@@ -1,91 +1,22 @@
-import { useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useToast } from '../../context/ToastContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { Button } from '../../components/ui/Button'
 import { Field, Input } from '../../components/ui/Field'
 import { Icon } from '../../components/ui/Icon'
-import { ApiError } from '../../lib/api'
-import { AuthAPI } from '../../lib/endpoints'
-import { isPhone, normalisePhone } from '../../lib/constants'
 import { AuthBrand } from './AuthBrand'
 import { AuthSupport } from './AuthSupport'
 import { AuthTabs } from './AuthTabs'
+import { useLogin } from './useLogin'
 import './login.css'
 
 export default function LoginPage() {
   usePageTitle('تسجيل الدخول')
-  const { login, isAuthenticated } = useAuth()
-  const toast = useToast()
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  const [identifier, setIdentifier] = useState('')
-  const [password, setPassword] = useState('')
-  const [errors, setErrors] = useState({})
-  const [formError, setFormError] = useState('')
-  // Set when the number is on file but still has no password — we then nudge
-  // the person to finish signing up instead of just showing "wrong password".
-  const [pendingHandle, setPendingHandle] = useState('')
-  const [busy, setBusy] = useState(false)
+  const { isAuthenticated } = useAuth()
+  const form = useLogin()
+  const { identifier, setIdentifier, password, setPassword, errors, formError, pendingHandle, busy } = form
 
   if (isAuthenticated) return <Navigate to="/" replace />
-
-  const validate = () => {
-    const next = {}
-    const value = identifier.trim()
-    if (!value) next.identifier = 'رقم التليفون مطلوب.'
-    else if (!isPhone(value)) next.identifier = 'اكتب رقم تليفون صحيح (01xxxxxxxxx).'
-    if (!password) next.password = 'كلمة المرور مطلوبة.'
-    setErrors(next)
-    return Object.keys(next).length === 0
-  }
-
-  const submit = async (e) => {
-    e.preventDefault()
-    setFormError('')
-    setPendingHandle('')
-    if (!validate()) return
-
-    const handle = normalisePhone(identifier)
-
-    setBusy(true)
-    try {
-      await login(handle, password)
-      toast.success('مرحبًا بعودتك.')
-      navigate(location.state?.from || '/', { replace: true })
-    } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 401) {
-          // The API answers "wrong phone OR wrong password" with a single 401
-          // so it can't be used to probe which numbers exist. Ask the signup
-          // lookup which of the two it really was, to show a kinder message.
-          try {
-            const res = await AuthAPI.signupCheck(handle)
-            if (!res.exists) {
-              setFormError('الرقم ده مش مسجّل عندنا. كلّم أمين الفصل يضيف حسابك.')
-            } else if (res.needs_signup) {
-              // Account on file but no password yet — point them at sign-up.
-              setPendingHandle(handle)
-            } else {
-              setFormError('رقم التليفون أو كلمة المرور مش صح.')
-            }
-          } catch {
-            setFormError('رقم التليفون أو كلمة المرور مش صح.')
-          }
-        } else if (err.status === 429) {
-          setFormError('طلبات كثيرة جدًا. انتظر قليلًا قبل ما تجرّب تاني.')
-        } else {
-          setFormError(err.message)
-        }
-      } else {
-        setFormError('حصل خطأ. حاول مرة أخرى.')
-      }
-    } finally {
-      setBusy(false)
-    }
-  }
 
   return (
     <div className="login">
@@ -102,7 +33,7 @@ export default function LoginPage() {
             <p className="muted small">سجّل الدخول عشان تكمل.</p>
           </div>
 
-          <form className="stack" onSubmit={submit} noValidate>
+          <form className="stack" onSubmit={form.submit} noValidate>
             {formError && (
               <div className="form-error" role="alert">
                 <Icon name="alert" size={16} />

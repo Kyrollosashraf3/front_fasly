@@ -1,0 +1,11 @@
+/* ---- focus ------------------------------------------------------------ */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+::selection {
+  background: var(--gold-soft);
+  color: var(--text);
+}

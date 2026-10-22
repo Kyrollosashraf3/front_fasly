@@ -1,0 +1,58 @@
+/* ----------------------------------------------------------- group lists */
+
+.class-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.class-group__title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+  margin-bottom: var(--sp-2);
+}
+
+.name-list__main {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.name-list__main strong {
+  font-weight: var(--weight-bold);
+}
+
+.dash-rank {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-extrabold);
+}
+
+.dash-rank--1 {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy);
+}
+
+.dash-rank--2 {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.dash-rank--3 {
+  background: var(--gold-soft);
+  border-color: var(--gold-border);
+  color: var(--gold-ink);
+}

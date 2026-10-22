@@ -1,0 +1,54 @@
+/* -------------------------------------------------------------- page head */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+
+.page-head__crumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.page-head__crumb a:hover {
+  color: var(--navy);
+  text-decoration: underline;
+}
+
+.page-head__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+  line-height: 1.2;
+}
+
+.page-head__sub {
+  margin-top: 3px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: var(--sp-6) 0 var(--sp-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  border-radius: var(--radius-pill);
+}

@@ -1,0 +1,75 @@
+/* ------------------------------------------------------------ empty/loading */
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-9) var(--sp-5);
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--surface-border);
+  border-radius: var(--radius-lg);
+}
+
+.state-block--inline {
+  border: none;
+  background: transparent;
+  padding: var(--sp-7) var(--sp-4);
+}
+
+.state-block__icon {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  font-size: 27px;
+  color: var(--gold-hover);
+}
+
+.state-block--error .state-block__icon {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.state-block__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--navy);
+}
+
+.state-block__msg {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  max-width: 460px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f2f3f6 25%, #e9ebf1 50%, #f2f3f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+  border-radius: var(--radius-sm);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--surface-border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.loading-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-9);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}

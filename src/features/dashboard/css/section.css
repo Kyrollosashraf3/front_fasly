@@ -1,0 +1,20 @@
+/* --------------------------------------------------------------- section */
+
+.dash-section {
+  margin-top: var(--sp-3);
+}
+
+.dash-hint {
+  margin: -2px 0 var(--sp-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.n-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+}
