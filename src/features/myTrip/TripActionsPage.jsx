@@ -12,6 +12,7 @@ import RegisterSubscription from './RegisterSubscription'
 import SubscriptionAnalysis from './SubscriptionAnalysis'
 import TripStatus from './TripStatus'
 import BoyAccount from './BoyAccount'
+import ServerAccountStatement from './ServerAccountStatement'
 import './myTrip.css'
 
 const ACTIONS = [
@@ -38,6 +39,12 @@ const ACTIONS = [
     label: 'حساب ولد',
     hint: 'دفعات ولد واحد وتاريخها',
     icon: 'user',
+  },
+  {
+    key: 'serverStatement',
+    label: 'كشف حساب',
+    hint: 'مجموع ما استلمه كل خادم',
+    icon: 'servant',
   },
 ]
 
@@ -158,6 +165,10 @@ export default function TripActionsPage() {
           )}
 
           {action.key === 'account' && <BoyAccount tripId={trip.id} />}
+
+          {action.key === 'serverStatement' && (
+            <ServerAccountStatement tripId={trip.id} />
+          )}
         </Modal>
       )}
     </>

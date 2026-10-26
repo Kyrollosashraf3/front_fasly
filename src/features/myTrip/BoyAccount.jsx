@@ -37,7 +37,9 @@ export default function BoyAccount({ tripId }) {
         // بناء map: id → name
         const map = {}
         if (Array.isArray(users)) {
-          users.forEach((u) => { map[String(u.id)] = u.name || u.username || u.phone })
+          users.forEach((u) => {
+            map[String(u.id)] = u.display_name || u.name || u.username || u.phone
+          })
         }
         setUsersMap(map)
         setError(null)
@@ -187,10 +189,14 @@ export default function BoyAccount({ tripId }) {
                           </span>
                         </div>
                       </div>
-                      {p.created_by && (
+                      {(p.created_by_name || p.created_by) && (
                         <div className="mytrip__history-note">
-                          <Icon name="user" size={12} />
-                          <span>{usersMap[String(p.created_by)] ?? p.created_by}</span>
+                          <Icon name="servant" size={12} />
+                          <span>
+                            {p.created_by_name
+                              || (p.created_by != null ? usersMap[String(p.created_by)] : null)
+                              || '—'}
+                          </span>
                         </div>
                       )}
                       {p.note && (
