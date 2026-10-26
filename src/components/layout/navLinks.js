@@ -22,6 +22,9 @@ export function rootLinks({ user, isBoy, can, classes = [] }) {
 
   if (!isBoy) {
     links.push({ to: '/groups', icon: 'groups', label: 'المجموعات' })
+    if (can.manageTrips(user)) {
+      links.push({ to: '/myTrip', icon: 'calendar', label: 'رحلتي' })
+    }
     links.push({ to: '/reveal', icon: 'sparkles', label: 'اكشفلي' })
     links.push({ to: '/birthdays', icon: 'gift', label: 'أعياد الميلاد' })
   }

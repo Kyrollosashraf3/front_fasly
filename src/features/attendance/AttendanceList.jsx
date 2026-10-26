@@ -23,6 +23,9 @@ export function AttendanceList({ sheet, classId, canWrite, canAdd, onAddBoy }) {
     setEditing,
     rowSaving,
     previousAbsent,
+    makeup,
+    toggleMakeup,
+    saving,
   } = sheet
 
   const columns = [
@@ -37,15 +40,40 @@ export function AttendanceList({ sheet, classId, canWrite, canAdd, onAddBoy }) {
       render: (b) => (
         <span className="table__name">
           <BoyName boy={b} classId={classId} onSaved={refetch} />
-          {previousAbsent.has(b.id) && (
-            <span
-              className="att-absent-x"
-              title="غاب الجمعة اللي فاتت"
-              aria-label="غاب الجمعة اللي فاتت"
-            >
-              ✕
-            </span>
-          )}
+          {previousAbsent.has(b.id) &&
+            (canWrite ? (
+              <button
+                type="button"
+                className={`att-absent-x att-absent-x--action${makeup.has(b.id) ? ' is-made-up' : ''}`}
+                title={
+                  makeup.has(b.id)
+                    ? 'هيتسجل حضوره الجمعة اللي فاتت — اضغط للتراجع'
+                    : 'غاب الجمعة اللي فاتت — اضغط لتسجيل حضوره'
+                }
+                aria-label={
+                  makeup.has(b.id)
+                    ? 'إلغاء تسجيل حضوره الجمعة اللي فاتت'
+                    : 'تسجيل حضوره الجمعة اللي فاتت'
+                }
+                aria-pressed={makeup.has(b.id)}
+                disabled={saving}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  toggleMakeup(b.id)
+                }}
+              >
+                {makeup.has(b.id) ? '✓' : '✕'}
+              </button>
+            ) : (
+              <span
+                className="att-absent-x"
+                title="غاب الجمعة اللي فاتت"
+                aria-label="غاب الجمعة اللي فاتت"
+              >
+                ✕
+              </span>
+            ))}
         </span>
       ),
     },
@@ -56,6 +84,7 @@ export function AttendanceList({ sheet, classId, canWrite, canAdd, onAddBoy }) {
             label: '',
             align: 'start',
             mobile: '',
+            sortable: false,
             render: (b) => {
               const locked = isLocked(b.id)
               const rowEdit = editing.has(b.id)

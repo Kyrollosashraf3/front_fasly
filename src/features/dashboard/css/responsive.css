@@ -1,7 +1,17 @@
 /* ------------------------------------------------------------- responsive */
 
+@media (max-width: 900px) {
+  .dash-channels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .dash-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-channels {
     grid-template-columns: 1fr;
   }
 

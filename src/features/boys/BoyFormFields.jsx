@@ -40,6 +40,8 @@ export function BoyFormFields({ form, set, setForm, errors, classes, servants, a
             value={form.class_id}
             error={errors.class_id}
             onChange={set('class_id')}
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
           >
             <option value="">— اختر الفصل —</option>
             {classes.map((c) => (
@@ -54,9 +56,15 @@ export function BoyFormFields({ form, set, setForm, errors, classes, servants, a
           label="الخادم"
           htmlFor="boy-servant"
           error={errors.teacher_id}
-          hint="الخادم ده هو اللي هياخد حضوره — اختياري"
+          hint="الخادم المسئول عن افتقاده"
         >
-          <Select id="boy-servant" value={form.teacher_id} onChange={set('teacher_id')}>
+          <Select
+            id="boy-servant"
+            value={form.teacher_id}
+            onChange={set('teacher_id')}
+            searchable
+            searchPlaceholder="ابحث باسم الخادم..."
+          >
             <option value="">— من غير خادم —</option>
             {(servants || []).map((t) => (
               <option key={t.id} value={t.id}>
@@ -101,7 +109,13 @@ export function BoyFormFields({ form, set, setForm, errors, classes, servants, a
         </Field>
 
         <Field label="أبونا الاعتراف" htmlFor="boy-father">
-          <Select id="boy-father" value={form.father_name} onChange={set('father_name')}>
+          <Select
+            id="boy-father"
+            value={form.father_name}
+            onChange={set('father_name')}
+            searchable
+            searchPlaceholder="ابحث باسم أبونا..."
+          >
             <option value="">— بدون —</option>
             {FATHERS.map((f) => (
               <option key={f} value={f}>

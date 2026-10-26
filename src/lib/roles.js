@@ -102,6 +102,10 @@ export const can = {
   /** The account administration table (profile page). */
   manageAccounts: (user) => isManager(user),
 
+  /** Create/edit/retire trips (class subscriptions). Any staff member may
+   * add a trip for his own class; only the super admin may pick another class. */
+  manageTrips: (user) => roleOf(user) !== ROLES.USER,
+
   /** Grant the super_admin role. */
   grantSuperAdmin: (user) => roleOf(user) === ROLES.SUPER_ADMIN,
 }

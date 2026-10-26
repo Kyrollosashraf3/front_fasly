@@ -1,30 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
 import { useQuery } from '../../hooks'
 import { GroupAPI } from '../../lib/endpoints'
 
-/** Query, filters and assignment actions behind the groups page. */
+/**
+ * useGroups — data and actions behind the /groups picker board.
+ *
+ *   servants[]  one per servant in the class (boys may be empty)
+ *   active      the servant whose group is open, or null
+ *   unassigned  boys who are in no group yet
+ *
+ * A boy may sit in exactly one group, so every action is a single
+ * assign / unassign call followed by a refetch.
+ */
 export function useGroups() {
-  const { user, can, classes, isSuperAdmin, classReady } = useAuth()
+  const { user, can, classes, classReady } = useAuth()
   const toast = useToast()
-  const modal = useModal()
 
   const canWrite = can.writeGroups(user)
-  const showClassPicker = classes.length > 1
 
   const [classId, setClassId] = useState('')
-  const [selectedTeacherId, setSelectedTeacherId] = useState('')
-  const [selectedBoyId, setSelectedBoyId] = useState('')
-  const [editing, setEditing] = useState(false)
-  const [assigning, setAssigning] = useState(false)
-  const [viewing, setViewing] = useState(null)
-  const [importResult, setImportResult] = useState(null)
+  const [activeId, setActiveId] = useState('')
+  const [busyId, setBusyId] = useState(null)
 
   const effectiveClassId = classId || (classReady && classes[0] ? String(classes[0].id) : '')
 
-  // A sheet always needs one class; keep the picker on the first until changed.
+  // The board always shows one class; keep the picker on the first until it
+  // is changed (or the remembered class disappears).
   useEffect(() => {
     if (!classReady || !classes.length) return
     if (!classId || !classes.some((c) => String(c.id) === String(classId))) {
@@ -32,245 +35,88 @@ export function useGroups() {
     }
   }, [classReady, classes, classId])
 
-  // Switching class invalidates every filter from the previous class.
+  // A servant belongs to one class, so a class switch closes his group.
   useEffect(() => {
-    setSelectedTeacherId('')
-    setSelectedBoyId('')
+    setActiveId('')
   }, [effectiveClassId])
 
   const { data, loading, error, refetch } = useQuery(
     () => GroupAPI.list(effectiveClassId ? { class_id: effectiveClassId } : {}),
     [effectiveClassId],
-    { enabled: Boolean(classReady) },
+    { enabled: Boolean(classReady && effectiveClassId) },
   )
 
-  const teachers = useMemo(
-    () => (data?.groups || []).map((g) => ({ id: g.teacher_id, name: g.teacher_name })),
+  const servants = useMemo(
+    () =>
+      (data?.groups || []).map((g) => ({
+        id: String(g.teacher_id),
+        name: g.teacher_name,
+        boys: g.boys || [],
+      })),
     [data],
   )
 
-  const classOptions = useMemo(
-    () => classes.map((c) => ({ value: c.id, label: c.name })),
-    [classes],
-  )
+  const active = servants.find((s) => s.id === activeId) || null
+  const unassigned = data?.unassigned || []
 
-  const teacherOptions = useMemo(
-    () => teachers.map((t) => ({ value: t.id, label: t.name })),
-    [teachers],
-  )
-
-  const boyOptions = useMemo(() => {
-    const seen = new Set()
-    const rows = []
-    for (const g of data?.groups || []) {
-      for (const b of g.boys || []) {
-        const id = String(b.boy_id)
-        if (seen.has(id)) continue
-        seen.add(id)
-        rows.push({
-          value: b.boy_id,
-          label: b.boy_name,
-          hint: `في مجموعة: ${g.teacher_name}`,
-        })
-      }
-    }
-    for (const b of data?.unassigned || []) {
-      const id = String(b.boy_id)
-      if (seen.has(id)) continue
-      seen.add(id)
-      rows.push({ value: b.boy_id, label: b.boy_name, hint: 'بدون مجموعة' })
-    }
-    return rows.sort((a, b) => a.label.localeCompare(b.label, 'ar'))
-  }, [data])
-
-  const selectedBoy = useMemo(() => {
-    if (!selectedBoyId) return null
-    for (const g of data?.groups || []) {
-      const boy = (g.boys || []).find((b) => String(b.boy_id) === String(selectedBoyId))
-      if (boy) return { ...boy, group: g.teacher_name, teacher_id: g.teacher_id, inGroup: true }
-    }
-    const boy = (data?.unassigned || []).find(
-      (b) => String(b.boy_id) === String(selectedBoyId),
-    )
-    return boy ? { ...boy, group: null, teacher_id: null, inGroup: false } : null
-  }, [data, selectedBoyId])
-
-  const visibleGroups = useMemo(
-    () =>
-      (data?.groups || [])
-        .filter((g) => {
-          if (selectedTeacherId && String(g.teacher_id) !== String(selectedTeacherId)) {
-            return false
-          }
-          if (
-            selectedBoy &&
-            String(selectedBoy.teacher_id ?? '') !== String(g.teacher_id)
-          ) {
-            return false
-          }
-          return true
-        })
-        .map((g) => ({
-          ...g,
-          boys: selectedBoy
-            ? (g.boys || []).filter(
-                (b) => String(b.boy_id) === String(selectedBoy.boy_id),
-              )
-            : g.boys || [],
-        })),
-    [data, selectedTeacherId, selectedBoy],
-  )
-
-  const unassigned = useMemo(() => {
-    if (selectedBoy) return selectedBoy.inGroup ? [] : [selectedBoy]
-    return data?.unassigned || []
-  }, [data, selectedBoy])
-
-  const assignGroups = useMemo(() => {
-    const rows = data?.groups || []
-    return selectedTeacherId
-      ? rows.filter((g) => String(g.teacher_id) === String(selectedTeacherId))
-      : rows
-  }, [data, selectedTeacherId])
-
-  const pickTeacher = (value) => {
-    setSelectedTeacherId(value)
-    if (value) setSelectedBoyId('')
-  }
-
-  const pickBoy = (value) => {
-    setSelectedBoyId(value)
-    if (value) setSelectedTeacherId('')
-  }
-
-  const clearFilters = () => {
-    setSelectedTeacherId('')
-    setSelectedBoyId('')
-  }
-
-  const toggleEditing = () => setEditing((value) => !value)
-
-  const editGroup = (teacherId) => {
-    setSelectedTeacherId(String(teacherId))
-    setSelectedBoyId('')
-    setEditing(true)
-  }
-
-  const assign = async (teacherId, boyIds) => {
-    if (!teacherId) {
-      toast.error('اختر الخادم الأول.')
-      return false
-    }
-    if (!boyIds.length) {
-      toast.error('اختار أولاد على الأقل.')
-      return false
-    }
-    setAssigning(true)
+  /** One mutation at a time: keeps double clicks from racing each other. */
+  const run = async (boy, action, message) => {
+    if (!canWrite || busyId != null) return false
+    setBusyId(boy.boy_id)
     try {
-      const res = await GroupAPI.assign(teacherId, boyIds)
-      toast.success(`اتوزع ${res.assigned} على ${res.teacher_name}.`)
+      const res = await action()
+      toast.success(message(res))
       refetch()
       return true
     } catch (err) {
       toast.error(err.message)
       return false
     } finally {
-      setAssigning(false)
+      setBusyId(null)
     }
   }
 
-  const unassign = async (boy) => {
-    const ok = await modal.confirm({
-      title: `إلغاء توزيع "${boy.boy_name}"؟`,
-      message: 'هيتحط في قائمة بدون مجموعة تاني.',
-      confirmLabel: 'إلغاء التوزيع',
-    })
-    if (!ok) return
-    try {
-      await GroupAPI.unassign([boy.boy_id])
-      toast.success('تم إلغاء التوزيع.')
-      refetch()
-    } catch (err) {
-      toast.error(err.message)
-    }
-  }
+  /** Add an unassigned boy to a servant's group. */
+  const assign = (boy, teacherId) =>
+    run(
+      boy,
+      () => GroupAPI.assign(Number(teacherId), [boy.boy_id]),
+      (res) => `اتضاف ${boy.boy_name} لمجموعة ${res.teacher_name}.`,
+    )
 
-  const unassignMany = async (boys) => {
-    if (!boys.length) return
-    const ok = await modal.confirm({
-      title: `إلغاء توزيع ${boys.length} ولد؟`,
-      message: 'هيتحطوا في قائمة بدون مجموعة تاني.',
-      confirmLabel: 'إلغاء التوزيع',
-    })
-    if (!ok) return
-    try {
-      await GroupAPI.unassign(boys.map((b) => b.boy_id))
-      toast.success(`اتلغى توزيع ${boys.length}.`)
-      refetch()
-    } catch (err) {
-      toast.error(err.message)
-    }
-  }
+  /** Take a boy out of his group only — the boy row itself is untouched. */
+  const remove = (boy) =>
+    run(
+      boy,
+      () => GroupAPI.unassign([boy.boy_id]),
+      () => `${boy.boy_name} بقى بدون مجموعة.`,
+    )
 
-  const moveBoy = async (boy, toTeacherId) => {
-    if (!toTeacherId) return false
-    try {
-      const res = await GroupAPI.assign(Number(toTeacherId), [boy.boy_id])
-      toast.success(`اتنقل ${boy.boy_name} لمجموعة ${res.teacher_name}.`)
-      refetch()
-      return true
-    } catch (err) {
-      toast.error(err.message)
-      return false
-    }
-  }
-
-  const importFile = async (file) => {
-    try {
-      setImportResult(await GroupAPI.import(file))
-      refetch()
-    } catch (err) {
-      toast.error(err.message)
-    }
-  }
+  /** Move a boy straight from one servant to another. */
+  const move = (boy, teacherId) =>
+    run(
+      boy,
+      () => GroupAPI.assign(Number(teacherId), [boy.boy_id]),
+      (res) => `اتنقل ${boy.boy_name} لمجموعة ${res.teacher_name}.`,
+    )
 
   return {
     classes,
-    classOptions,
-    isSuperAdmin,
     canWrite,
-    showClassPicker,
-    classId,
+    classId: effectiveClassId,
     setClassId,
-    effectiveClassId,
-    selectedTeacherId,
-    setSelectedTeacherId: pickTeacher,
-    teacherOptions,
-    selectedBoyId,
-    setSelectedBoyId: pickBoy,
-    boyOptions,
-    selectedBoy,
-    clearFilters,
-    editing,
-    toggleEditing,
-    editGroup,
-    assigning,
-    viewing,
-    setViewing,
-    importResult,
-    setImportResult,
     data,
     loading,
     error,
     refetch,
-    teachers,
-    assignGroups,
+    servants,
+    active,
+    activeId,
+    setActiveId,
     unassigned,
-    visibleGroups,
+    busyId,
     assign,
-    unassign,
-    unassignMany,
-    moveBoy,
-    importFile,
+    remove,
+    move,
   }
 }

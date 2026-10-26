@@ -53,18 +53,48 @@ export function tally(boys, getMark) {
 }
 
 /**
- * boyId -> the most recent Friday recorded *before* this sheet, used for the
- * small "غاب الجمعة اللي فاتت" flag. A missing row means nothing was recorded.
+ * boyId -> the Friday he missed *right before* this sheet, used for the small
+ * "غاب الجمعة اللي فاتت" flag.
+ *
+ * The anchor is the last Friday the class actually has a sheet for — not the
+ * last absence. Anchoring to an older absence would leave the ✕ beside a boy
+ * who came last Friday, and would also bring it back once his make-up for that
+ * Friday is saved and the search falls through to an even older absence.
+ * A missing row means nothing was recorded that Friday.
  */
 export function previousAbsentMap(history, date) {
+  const rows = (history || []).filter((row) => String(row.date) < date)
+  if (!rows.length) return new Map()
+
+  let last = ''
+  for (const row of rows) {
+    const day = String(row.date)
+    if (day > last) last = day
+  }
+
   const map = new Map()
-  for (const row of history || []) {
-    if (String(row.date) >= date) continue
-    if (row.present) continue
-    const seen = map.get(row.boy_id)
-    if (!seen || String(row.date) > String(seen)) map.set(row.boy_id, row.date)
+  for (const row of rows) {
+    if (String(row.date) !== last || row.present) continue
+    map.set(row.boy_id, row.date)
   }
   return map
+}
+
+/**
+ * The pending make-up ticks grouped by the Friday they belong to.
+ * `makeup` is the set of boy ids whose ✕ was switched to a ✓; each one is
+ * written as «حاضر» on the Friday he was flagged absent for.
+ */
+export function makeupBatches(makeup, previousAbsent) {
+  const batches = new Map()
+  for (const boyId of makeup || []) {
+    const day = previousAbsent.get(boyId)
+    if (!day) continue
+    const key = String(day)
+    if (!batches.has(key)) batches.set(key, [])
+    batches.get(key).push({ boy_id: boyId, present: true, liturgy: false })
+  }
+  return [...batches.entries()].map(([day, items]) => ({ date: day, items }))
 }
 
 /** The ticked, not-yet-saved boys — the only rows a bulk save writes. */

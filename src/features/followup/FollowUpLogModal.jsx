@@ -91,7 +91,13 @@ export function FollowUpLogModal({
 
         {canPickMentor && !existing && (
           <Field label="الخادم" htmlFor="fu-teacher" hint="الخادم المسؤول عن الولد">
-            <Select id="fu-teacher" value={teacher} onChange={(e) => setTeacher(e.target.value)}>
+            <Select
+              id="fu-teacher"
+              value={teacher}
+              onChange={(e) => setTeacher(e.target.value)}
+              searchable
+              searchPlaceholder="ابحث باسم الخادم..."
+            >
               <option value="">— اختر الخادم —</option>
               {teachers.map((t) => (
                 <option key={t.id} value={t.id}>

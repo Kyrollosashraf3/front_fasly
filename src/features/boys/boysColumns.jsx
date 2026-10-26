@@ -30,12 +30,27 @@ export function boysColumns({
             label: 'الفصل',
             width: 150,
             mobile: 'الفصل',
+            sortValue: (b) => classLabel(b.class_id),
             render: (b) => <span className="small muted">{classLabel(b.class_id)}</span>,
           },
         ]
       : []),
-    { key: 'gender', label: 'النوع', width: 80, mobile: 'النوع', render: (b) => (b.gender === 'f' ? 'بنت' : 'ولد') },
-    { key: 'age', label: 'السن', width: 70, mobile: 'السن', render: (b) => calcAge(b.birth_date) ?? '—' },
+    {
+      key: 'gender',
+      label: 'النوع',
+      width: 80,
+      mobile: 'النوع',
+      sortValue: (b) => (b.gender === 'f' ? 'بنت' : 'ولد'),
+      render: (b) => (b.gender === 'f' ? 'بنت' : 'ولد'),
+    },
+    {
+      key: 'age',
+      label: 'السن',
+      width: 70,
+      mobile: 'السن',
+      sortValue: (b) => calcAge(b.birth_date),
+      render: (b) => calcAge(b.birth_date) ?? '—',
+    },
     {
       key: 'phone',
       label: 'التليفون',
@@ -57,6 +72,7 @@ export function boysColumns({
       width: 130,
       align: 'end',
       mobile: '',
+      sortable: false,
       render: (b) => (
         <div className="table__actions">
           <IconButton icon={<Icon name="eye" size={16} />} label="عرض" onClick={() => setViewing(b)} />

@@ -223,6 +223,8 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
                 value={role === 'user' ? form.boy_id : form.teacher_id}
                 error={errors.owner}
                 onChange={set(role === 'user' ? 'boy_id' : 'teacher_id')}
+                searchable
+                searchPlaceholder={role === 'user' ? 'ابحث باسم الولد...' : 'ابحث باسم الخادم...'}
               >
                 {ownerOptions()}
               </Select>

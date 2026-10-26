@@ -25,7 +25,13 @@ export function TeacherFormFields({ form, errors, set, classes, setForm, onSubmi
         </Field>
 
         <Field label="الفصل" required htmlFor="t-class">
-          <Select id="t-class" value={form.class_id} onChange={set('class_id')}>
+          <Select
+            id="t-class"
+            value={form.class_id}
+            onChange={set('class_id')}
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
+          >
             <option value="">— اختر الفصل —</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
@@ -40,7 +46,13 @@ export function TeacherFormFields({ form, errors, set, classes, setForm, onSubmi
         </Field>
 
         <Field label="أبونا الاعتراف" htmlFor="t-father">
-          <Select id="t-father" value={form.father_name} onChange={set('father_name')}>
+          <Select
+            id="t-father"
+            value={form.father_name}
+            onChange={set('father_name')}
+            searchable
+            searchPlaceholder="ابحث باسم أبونا..."
+          >
             <option value="">— بدون —</option>
             {FATHERS.map((f) => (
               <option key={f} value={f}>

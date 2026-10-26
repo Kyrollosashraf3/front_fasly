@@ -83,6 +83,8 @@ export default function BirthdaysPage() {
             className="select--plain"
             style={{ minWidth: 170 }}
             aria-label="اختيار الفصل"
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
           >
             {showAll && <option value="">كل الفصول</option>}
             {classes.map((c) => (

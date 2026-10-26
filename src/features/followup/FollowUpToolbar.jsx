@@ -37,6 +37,8 @@ export function FollowUpToolbar({ sheet, multi, classes, scopeClassId }) {
           className="select--plain"
           style={{ minWidth: 190 }}
           aria-label="اختيار الخادم"
+          searchable
+          searchPlaceholder="ابحث باسم الخادم..."
         >
           <option value="">كل الخدام</option>
           {(data?.teachers || []).map((t) => (

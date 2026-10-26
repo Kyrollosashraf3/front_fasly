@@ -185,3 +185,116 @@
   color: var(--navy);
   background: var(--surface-sunken);
 }
+
+/* ----------------------------------------------- servants: kids count cell */
+.servant-kids {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--info-soft);
+  color: var(--info);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  border: 1px solid var(--info-border);
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.servant-kids--outside {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: var(--warning-border);
+}
+
+.servant-kids:hover,
+.servant-kids:focus-visible {
+  background: var(--info);
+  color: #fff;
+  border-color: var(--info);
+  outline: none;
+}
+
+.servant-kids--outside:hover,
+.servant-kids--outside:focus-visible {
+  background: var(--warning);
+  border-color: var(--warning);
+}
+
+/* ----------------------------------------------- servants: kids modal list */
+.servant-kids__box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.servant-kids__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.servant-kids__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+}
+
+.servant-kids__name {
+  min-width: 0;
+  flex: 1;
+}
+
+.servant-kids__servant {
+  flex-basis: 100%;
+  font-size: var(--text-xs);
+  color: var(--primary);
+  font-weight: var(--weight-semibold);
+}
+
+.servant-kids__date {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.servant-kids__history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--sp-1);
+  flex-basis: 100%;
+}
+
+.servant-kids__history li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.servant-kids__hdate {
+  font-weight: var(--weight-bold);
+  min-width: 56px;
+  color: var(--text-secondary);
+}
+
+/* The hero percentage on «أداء الافتقاد»: half the usual KPI number size,
+   so the big percentage stops dominating the cards. */
+.dash-kpi .kpi-num.kpi-num--percent {
+  font-size: var(--text-lg);
+}

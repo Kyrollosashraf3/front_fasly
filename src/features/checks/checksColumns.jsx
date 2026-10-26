@@ -23,6 +23,9 @@ export function checkColumns({ sheet, canWrite }) {
       width: 110,
       align: 'center',
       mobile: f.label,
+      // The marks live in sheet state, not on the row — re-sorting on each tick
+      // would shuffle the row under the cursor.
+      sortable: false,
       render: (t) => (
         <input
           key={f.key}
@@ -40,6 +43,7 @@ export function checkColumns({ sheet, canWrite }) {
       label: 'ملاحظة',
       width: 200,
       mobile: 'ملاحظة',
+      sortValue: (t) => getMark(t.id).note || null,
       render: (t) => {
         const note = getMark(t.id).note
         if (!canWrite) return note ? <span className="small">{note}</span> : <span className="muted xsmall">—</span>

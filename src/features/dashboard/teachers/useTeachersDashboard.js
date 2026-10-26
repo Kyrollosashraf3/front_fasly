@@ -4,16 +4,52 @@ import { useQuery } from '../../../hooks'
 import { DashboardAPI, CheckAPI, TeacherAPI } from '../../../lib/endpoints'
 import { lastFridayISO, todayISO } from '../../../lib/format'
 
+/** The metric filter of the «أداء الخدام» curve. */
+export const PERF_METRICS = [
+  { value: 'attend', label: 'حضور' },
+  { value: 'liturgy', label: 'قداس' },
+  { value: 'follow', label: 'افتقاد' },
+  { value: 'prepare', label: 'تحضير' },
+  { value: 'teachers_meeting', label: 'اجتماع خدام' },
+  { value: 'all', label: 'الكل' },
+]
+
+const PERF_KEYS = {
+  attend: 'attend',
+  liturgy: 'liturgy',
+  follow: 'follow',
+  prepare: 'prepare',
+  teachers_meeting: 'teachers_meeting',
+  all: 'score',
+}
+
+const PERF_LABELS = {
+  attend: 'الحضور',
+  liturgy: 'القداس',
+  follow: 'الافتقاد',
+  prepare: 'التحضير',
+  teachers_meeting: 'اجتماع الخدام',
+  all: 'مجموع النقاط',
+}
+
+const byName = (a, b) =>
+  String(a.teacher_name || '').localeCompare(String(b.teacher_name || ''), 'ar')
+
 /** State, query and derived totals for «أداء الخدام». */
 export function useTeachersDashboard() {
   const { user, classes, can } = useAuth()
 
+  const [view, setView] = useState('perf')
   const [classId, setClassId] = useState('')
   const [dateMode, setDateMode] = useState('last_friday')
   const [topN, setTopN] = useState(5)
   const [trendN, setTrendN] = useState(8)
-  const [coverTab, setCoverTab] = useState('todo')
   const [absentMode, setAbsentMode] = useState('last_friday')
+
+  // Filters of the performance curve: which metric, best/worst set, sort order.
+  const [perfMetric, setPerfMetric] = useState('all')
+  const [perfRank, setPerfRank] = useState('best')
+  const [perfOrder, setPerfOrder] = useState('desc')
 
   const { data, loading, error, refetch } = useQuery(
     () =>
@@ -53,9 +89,7 @@ export function useTeachersDashboard() {
     ? (sum('score') / d.servants.length).toFixed(1)
     : '—'
 
-  const cover = d?.follow?.servants
   const late = d?.confession?.servants
-  const coverGroups = coverTab === 'done' ? cover?.done : cover?.todo
 
   const teacherById = useMemo(
     () => new Map((absentQuery.data?.teachers || []).map((t) => [t.id, t])),
@@ -80,6 +114,40 @@ export function useTeachersDashboard() {
         String(a.teacher_name).localeCompare(String(b.teacher_name), 'ar'),
       )
   }, [absentQuery.data, teacherById])
+
+  const perfKey = PERF_KEYS[perfMetric] || 'score'
+  const perfLabel = PERF_LABELS[perfMetric] || 'مجموع النقاط'
+
+  /** The whole servant list sorted by the chosen metric and order. */
+  const perfAllSorted = useMemo(() => {
+    const rows = [...(d?.servants || [])]
+    rows.sort((a, b) => {
+      const diff = Number(a[perfKey] ?? 0) - Number(b[perfKey] ?? 0)
+      if (diff !== 0) return perfOrder === 'asc' ? diff : -diff
+      return byName(a, b)
+    })
+    return rows
+  }, [d, perfKey, perfOrder])
+
+  /**
+   * The points drawn on the curve: the top (best) or bottom (worst) `topN`
+   * servants for the chosen metric, then shown in the requested order.
+   */
+  const perfServants = useMemo(() => {
+    const desc = [...(d?.servants || [])].sort((a, b) => {
+      const diff = Number(b[perfKey] ?? 0) - Number(a[perfKey] ?? 0)
+      if (diff !== 0) return diff
+      return byName(a, b)
+    })
+    const n = Math.max(1, Number(topN) || 5)
+    const picked = perfRank === 'worst' ? desc.slice(-n) : desc.slice(0, n)
+    picked.sort((a, b) => {
+      const diff = Number(a[perfKey] ?? 0) - Number(b[perfKey] ?? 0)
+      if (diff !== 0) return perfOrder === 'asc' ? diff : -diff
+      return byName(a, b)
+    })
+    return picked
+  }, [d, perfKey, perfRank, perfOrder, topN])
 
   /**
    * The servants who came (attend > 0) yet scored between 1 and 3 out of 5
@@ -106,6 +174,8 @@ export function useTeachersDashboard() {
 
   return {
     classes,
+    view,
+    setView,
     classId,
     setClassId,
     dateMode,
@@ -114,8 +184,6 @@ export function useTeachersDashboard() {
     setTopN,
     trendN,
     setTrendN,
-    coverTab,
-    setCoverTab,
     showAll,
     data: d,
     loading,
@@ -125,9 +193,7 @@ export function useTeachersDashboard() {
     totalChecks,
     attendPct,
     avg,
-    cover,
     late,
-    coverGroups,
     needsFollow,
     absentMode,
     setAbsentMode,
@@ -137,5 +203,15 @@ export function useTeachersDashboard() {
     absentLoading: absentQuery.loading,
     absentError: absentQuery.error,
     absentRefetch: absentQuery.refetch,
+    perfMetric,
+    setPerfMetric,
+    perfRank,
+    setPerfRank,
+    perfOrder,
+    setPerfOrder,
+    perfKey,
+    perfLabel,
+    perfServants,
+    perfAllSorted,
   }
 }

@@ -22,6 +22,8 @@ export function ClassFilter({
       className="select--plain"
       style={{ minWidth: 190 }}
       aria-label={ariaLabel}
+      searchable
+      searchPlaceholder="ابحث باسم الفصل..."
     >
       {allLabel !== undefined && <option value="">{allLabel}</option>}
       {classes.map((c) => (

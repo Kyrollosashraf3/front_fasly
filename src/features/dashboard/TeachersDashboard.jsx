@@ -1,21 +1,29 @@
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
+import { Icon } from '../../components/ui/Icon'
 import { Select } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
-import { DateModeField, Kpi, KpiRow } from './parts'
+import { DateModeField } from './parts'
 import { AbsentServantsList } from './teachers/AbsentServantsList'
-import { NeedsFollowList } from './teachers/NeedsFollowList'
-import { TeachersSections } from './teachers/TeachersSections'
+import {
+  LateConfessionView,
+  PerformanceView,
+  TopServantsView,
+} from './teachers/TeachersSections'
 import { useTeachersDashboard } from './teachers/useTeachersDashboard'
 import './dashboard.css'
 
 /**
- * TeachersDashboard — "أداء الخدام".
+ * TeachersDashboard — «أداء الخدام».
+ *
+ * One screen with four channels on top; each channel swaps the view instead of
+ * stacking every section. «أداء الخدام» is the curve with its metric / best-
+ * worst / order filters, «أفضل الخدام» the score ranking, «خدام غابوا» the
+ * absence log of a chosen day and «متأخرون عن الاعتراف» the confession list.
  *
  * Score = true flags summed across checks
  * (attend + prepare + liturgy + follow + teachers_meeting), max 5 per friday.
- * Ties with the Nth servant are included on purpose.
  */
 export default function TeachersDashboard() {
   usePageTitle('أداء الخدام')
@@ -24,6 +32,8 @@ export default function TeachersDashboard() {
   const dash = useTeachersDashboard()
   const {
     classes,
+    view,
+    setView,
     classId,
     setClassId,
     dateMode,
@@ -32,8 +42,6 @@ export default function TeachersDashboard() {
     setTopN,
     trendN,
     setTrendN,
-    coverTab,
-    setCoverTab,
     showAll,
     data: d,
     loading,
@@ -43,9 +51,7 @@ export default function TeachersDashboard() {
     totalChecks,
     attendPct,
     avg,
-    cover,
     late,
-    coverGroups,
     needsFollow,
     absentMode,
     setAbsentMode,
@@ -55,7 +61,44 @@ export default function TeachersDashboard() {
     absentLoading,
     absentError,
     absentRefetch,
+    perfMetric,
+    setPerfMetric,
+    perfRank,
+    setPerfRank,
+    perfOrder,
+    setPerfOrder,
+    perfKey,
+    perfLabel,
+    perfServants,
+    perfAllSorted,
   } = dash
+
+  const channels = [
+    {
+      key: 'perf',
+      label: 'أداء الخدام',
+      icon: 'chart',
+      count: d?.servants?.length,
+    },
+    {
+      key: 'top',
+      label: 'أفضل الخدام',
+      icon: 'star',
+      count: d?.top_servants?.length,
+    },
+    {
+      key: 'absent',
+      label: 'خدام غابوا',
+      icon: 'servant',
+      count: absentServants.length,
+    },
+    {
+      key: 'late',
+      label: 'متأخرون عن الاعتراف',
+      icon: 'history',
+      count: late?.late_count,
+    },
+  ]
 
   return (
     <>
@@ -68,6 +111,27 @@ export default function TeachersDashboard() {
         </div>
       </div>
 
+      <div className="dash-channels" role="tablist" aria-label="أقسام أداء الخدام">
+        {channels.map((channel) => (
+          <button
+            key={channel.key}
+            type="button"
+            role="tab"
+            aria-selected={view === channel.key}
+            className={`dash-channel${view === channel.key ? ' is-active' : ''}`}
+            onClick={() => setView(channel.key)}
+          >
+            <span className="dash-channel__icon">
+              <Icon name={channel.icon} size={18} />
+            </span>
+            <span className="dash-channel__label">{channel.label}</span>
+            {channel.count !== undefined && (
+              <span className="dash-channel__count">{channel.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <Toolbar>
         {classes.length > 1 && (
           <Select
@@ -76,6 +140,8 @@ export default function TeachersDashboard() {
             className="select--plain"
             style={{ minWidth: 190 }}
             aria-label="اختيار الفصل"
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
           >
             {showAll && <option value="">كل الفصول</option>}
             {classes.map((c) => (
@@ -85,61 +151,66 @@ export default function TeachersDashboard() {
             ))}
           </Select>
         )}
-        <DateModeField value={dateMode} onChange={setDateMode} />
+        {view !== 'absent' && <DateModeField value={dateMode} onChange={setDateMode} />}
         <ToolbarSpacer />
         <span className="small muted">النقاط من 5 لكل جمعة</span>
       </Toolbar>
 
-      <AbsentServantsList
-        servants={absentServants}
-        date={absentDate}
-        mode={absentMode}
-        onModeChange={setAbsentMode}
-        hasSession={absentHasSession}
-        loading={absentLoading}
-        error={absentError}
-        onRetry={absentRefetch}
-        classLabel={classLabel}
-        singleClass={d?.scope?.single_class ?? true}
-      />
-
-      <NeedsFollowList servants={needsFollow} classLabel={classLabel} />
-
-      {loading && !d ? (
-        <div style={{ marginTop: 'var(--sp-4)' }}>
-          <SkeletonRows rows={6} cols={5} />
-        </div>
-      ) : error ? (
-        <ErrorState error={error} onRetry={refetch} />
-      ) : d ? (
-        <div className="dash">
-          <KpiRow>
-            <Kpi
-              hero
-              value={d.counts.teachers}
-              label="خدام تمت متابعتهم"
-              sub={`متابعة مسجلة ${totalChecks} • متوسط النقاط ${avg} من 5`}
-            />
-            <Kpi value={`${attendPct}%`} label="حضور الخدام" />
-            <Kpi value={sum('teachers_meeting')} label="اجتماع الخدام" sub="مرات الحضور" />
-            <Kpi value={avg} label="متوسط النقاط" sub="من 5" />
-          </KpiRow>
-
-          <TeachersSections
-            data={d}
-            cover={cover}
-            late={late}
-            coverGroups={coverGroups}
-            coverTab={coverTab}
-            setCoverTab={setCoverTab}
-            trendN={trendN}
-            setTrendN={setTrendN}
-            topN={topN}
-            setTopN={setTopN}
+      <div className="dash-view">
+        {view === 'absent' ? (
+          <AbsentServantsList
+            servants={absentServants}
+            date={absentDate}
+            mode={absentMode}
+            onModeChange={setAbsentMode}
+            hasSession={absentHasSession}
+            loading={absentLoading}
+            error={absentError}
+            onRetry={absentRefetch}
             classLabel={classLabel}
+            singleClass={d?.scope?.single_class ?? true}
           />
-        </div>
-      ) : null}
+        ) : error ? (
+          <ErrorState error={error} onRetry={refetch} />
+        ) : loading && !d ? (
+          <SkeletonRows rows={6} cols={5} />
+        ) : d ? (
+          view === 'perf' ? (
+            <PerformanceView
+              data={d}
+              classLabel={classLabel}
+              topN={topN}
+              setTopN={setTopN}
+              trendN={trendN}
+              setTrendN={setTrendN}
+              perfMetric={perfMetric}
+              setPerfMetric={setPerfMetric}
+              perfRank={perfRank}
+              setPerfRank={setPerfRank}
+              perfOrder={perfOrder}
+              setPerfOrder={setPerfOrder}
+              perfKey={perfKey}
+              perfLabel={perfLabel}
+              perfServants={perfServants}
+              perfAllSorted={perfAllSorted}
+              needsFollow={needsFollow}
+              totalChecks={totalChecks}
+              attendPct={attendPct}
+              avg={avg}
+              sum={sum}
+            />
+          ) : view === 'top' ? (
+            <TopServantsView
+              data={d}
+              classLabel={classLabel}
+              topN={topN}
+              setTopN={setTopN}
+            />
+          ) : (
+            <LateConfessionView data={d} late={late} />
+          )
+        ) : null}
+      </div>
     </>
   )
 }

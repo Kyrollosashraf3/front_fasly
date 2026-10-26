@@ -95,6 +95,7 @@ export function boyColumns({ data, refetch, expanded, setExpanded, setHistoryBoy
       label: 'الطريقة',
       width: 116,
       mobile: 'الطريقة',
+      sortValue: (r) => (r.last_status ? followLabel(r.last_status) : null),
       render: (r) => (r.last_status ? <Badge kind="navy">{followLabel(r.last_status)}</Badge> : <span className="muted xsmall">—</span>),
     },
     {
@@ -102,6 +103,7 @@ export function boyColumns({ data, refetch, expanded, setExpanded, setHistoryBoy
       label: 'ملاحظات',
       width: 160,
       mobile: 'ملاحظات',
+      sortValue: (r) => r.last_note || r.note || null,
       render: (r) => (r.last_note || r.note) || <span className="muted xsmall">—</span>,
     },
     {
@@ -109,6 +111,7 @@ export function boyColumns({ data, refetch, expanded, setExpanded, setHistoryBoy
       label: 'سجّله',
       width: 150,
       mobile: 'سجّله',
+      sortValue: (r) => r.last_by_name || null,
       render: (r) => r.last_by_name || <span className="muted xsmall">—</span>,
     },
     {
@@ -117,6 +120,7 @@ export function boyColumns({ data, refetch, expanded, setExpanded, setHistoryBoy
       width: 150,
       align: 'end',
       mobile: '',
+      sortable: false,
       render: (r) => (
         <div className="row" style={{ gap: 6, justifyContent: 'flex-end' }}>
           {r.count > 0 && (
@@ -139,7 +143,22 @@ export function boyColumns({ data, refetch, expanded, setExpanded, setHistoryBoy
 }
 
 /** Table columns for the servants coverage list. */
-export function servantColumns(data) {
+export function servantColumns(data, { onOpenBoys } = {}) {
+  const countCell = (s, kind, count) => (
+    <button
+      type="button"
+      className={`servant-kids${kind === 'outside' ? ' servant-kids--outside' : ''}`}
+      onClick={() => onOpenBoys?.(s, kind)}
+      aria-label={
+        kind === 'outside'
+          ? `عرض أولاد خارج مجموعة ${s.teacher_name} (${count})`
+          : `عرض أولاد مجموعة ${s.teacher_name} الذين افتقدهم (${count})`
+      }
+    >
+      {count}
+    </button>
+  )
+
   return [
     {
       key: 'teacher_name',
@@ -166,7 +185,7 @@ export function servantColumns(data) {
             </>
           )}
         </span>
-      ),
+      ),  
     },
     ...(data?.scope?.single_class
       ? []
@@ -181,12 +200,31 @@ export function servantColumns(data) {
           },
         ]),
     {
-      key: 'group_size',
-      label: 'المجموعة',
-      width: 92,
+      key: 'inside_count',
+      label: 'افتقد من مجموعته',
+      width: 126,
       align: 'center',
-      mobile: 'المجموعة',
+      mobile: 'افتقد من مجموعته',
+      sortValue: (s) => s.inside_count || 0,
+      render: (s) => countCell(s, 'inside', s.inside_count || 0),
+    },
+    {
+      key: 'outside_count',
+      label: 'افتقد خارج مجموعته',
+      width: 132,
+      align: 'center',
+      mobile: 'افتقد خارج مجموعته',
+      sortValue: (s) => s.outside_count || 0,
+      render: (s) => countCell(s, 'outside', s.outside_count || 0),
+    },
+    {
+      key: 'group_size',
+      label: 'حجم المجموعة',
+      width: 104,
+      align: 'center',
+      mobile: 'حجم المجموعة',
       sortValue: (s) => s.group_size,
+      render: (s) => (s.group_size ? s.group_size : <span className="muted xsmall">0</span>),
     },
     {
       key: 'percent',
@@ -196,19 +234,10 @@ export function servantColumns(data) {
       sortValue: (s) => s.percent,
       render: (s) =>
         s.group_size ? (
-          <Progress value={s.percent} label={`${s.percent}%`} />
+          <Progress value={s.percent} label={`${Math.round(s.percent)}%`} />
         ) : (
           <span className="muted xsmall">بدون أولاد</span>
         ),
-    },
-    {
-      key: 'logged',
-      label: 'افتقادات سجلها',
-      width: 120,
-      align: 'center',
-      mobile: 'افتقادات سجلها',
-      sortValue: (s) => s.logged,
-      render: (s) => s.logged || <span className="muted xsmall">0</span>,
     },
     {
       key: 'last',
@@ -223,6 +252,7 @@ export function servantColumns(data) {
       label: 'الحالة',
       width: 106,
       mobile: 'الحالة',
+      sortValue: (s) => (s.active ? 1 : 0),
       render: (s) => (s.active ? <Badge kind="green">افتقد</Badge> : <Badge kind="red">لم يفتقد</Badge>),
     },
   ]

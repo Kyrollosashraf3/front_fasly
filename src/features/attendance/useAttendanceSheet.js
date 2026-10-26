@@ -9,6 +9,7 @@ import { useRowEdit } from './useRowEdit'
 import {
   EMPTY_MARK,
   filterBoys,
+  makeupBatches,
   previousAbsentMap,
   rowDiffers,
   saveItems,
@@ -35,6 +36,9 @@ export function useAttendanceSheet({ classId, canWrite, canAdd, setPicked }) {
   const [view, setView] = useState('all')
   const [marks, setMarks] = useState({})
   const [saving, setSaving] = useState(false)
+  // Boy ids whose ✕ was switched to a temporary ✓: he says he was there that
+  // Friday, so saving writes him «حاضر» on that earlier date.
+  const [makeup, setMakeup] = useState(() => new Set())
   // Boy ids whose already-saved row is unlocked for a correction.
   const [editing, setEditing] = useState(() => new Set())
   const [addOpen, setAddOpen] = useState(false)
@@ -57,7 +61,7 @@ export function useAttendanceSheet({ classId, canWrite, canAdd, setPicked }) {
    * The whole Friday history of the class, once, regardless of the date being
    * edited — all it needs from it is "was he there the Friday before?".
    */
-  const { data: history } = useQuery(
+  const { data: history, refetch: refetchHistory } = useQuery(
     () => AttendAPI.list({ class_id: classId }),
     [classId],
     { enabled: Boolean(classId) },
@@ -112,7 +116,7 @@ export function useAttendanceSheet({ classId, canWrite, canAdd, setPicked }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, marks, serverById])
 
-  const unsaved = dirty || editingDirty
+  const unsaved = dirty || editingDirty || makeup.size > 0
 
   const rows = useMemo(
     () => filterBoys({ boys: data?.boys, query: debounced, gender, view, getMark }),
@@ -134,6 +138,29 @@ export function useAttendanceSheet({ classId, canWrite, canAdd, setPicked }) {
     [history, date],
   )
 
+  // A make-up tick only means something while that Friday is still the one he
+  // is flagged for. Changing the date/class or refetching after a save rebuilds
+  // the map, so drop any tick that no longer applies instead of writing a
+  // make-up for a Friday the boy is no longer marked absent on.
+  useEffect(() => {
+    setMakeup((prev) => {
+      if (!prev.size) return prev
+      const next = new Set([...prev].filter((boyId) => previousAbsent.has(boyId)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [previousAbsent])
+
+  /** Switch the previous-Friday ✕ of one boy to a temporary ✓ (and back). */
+  const toggleMakeup = (boyId) => {
+    if (!canWrite || !previousAbsent.has(boyId)) return
+    setMakeup((prev) => {
+      const next = new Set(prev)
+      if (next.has(boyId)) next.delete(boyId)
+      else next.add(boyId)
+      return next
+    })
+  }
+
   const save = async () => {
     setSaving(true)
     try {
@@ -146,12 +173,21 @@ export function useAttendanceSheet({ classId, canWrite, canAdd, setPicked }) {
       // API rejects an empty bulk, so the call is skipped.
       if (items.length) await AttendAPI.saveBulk({ date, items })
 
+      // The corrected «he was actually there» ticks are written on the Friday
+      // each one was flagged for — one bulk per date, because the payload
+      // carries a single date.
+      for (const batch of makeupBatches(makeup, previousAbsent))
+        await AttendAPI.saveBulk(batch)
+
       // Any saved boy left open in edit mode is flushed alongside the new ticks.
       for (const id of editing) if (rowChanged(id)) await persistRow(id)
       setEditing(new Set())
+      setMakeup(new Set())
 
       toast.success(`تم حفظ حضور ${formatDate(date)}.`)
-      await refetch()
+      // The sheet and the history both move: the make-up rows belong to an
+      // older Friday, so the flags are refreshed from the same source.
+      await Promise.all([refetch(), refetchHistory()])
       return true
     } catch (err) {
       toast.error(err.message)
@@ -246,5 +282,7 @@ export function useAttendanceSheet({ classId, canWrite, canAdd, setPicked }) {
     counts,
     allDone,
     previousAbsent,
+    makeup,
+    toggleMakeup,
   }
 }

@@ -2,25 +2,38 @@ import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/States'
 import { Avatar } from '../../components/ui/Avatar'
+import { Table } from '../../components/ui/Table'
 import { BoyName } from '../boys/BoyName'
 import { followLabel } from '../boys/BoyProfile'
 import { formatShort } from '../../lib/format'
 
-const HEADERS = ['الاسم', 'التليفون', 'الحضور', 'آخر افتقاد', 'ملاحظات', '']
-const UNASSIGNED_HEADERS = ['الاسم', 'التليفون', 'الحضور', 'آخر افتقاد', 'ملاحظات', '']
-
-/** One table row; shared by the group cards and the unassigned card. */
-function BoyRow({ b, classId, canWrite, editing, onView, onUnassign, onMove, refetch }) {
-  return (
-    <tr>
-      <td>
-        <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />
-      </td>
-      <td className="ltr" style={{ textAlign: 'center' }}>
-        {b.phone || '—'}
-      </td>
-      <td>
-        {b.percent !== null && b.percent !== undefined ? (
+/** One card's boy table, sortable through the shared Table headers. */
+function BoyTable({ boys, classId, canWrite, editing, onView, onUnassign, onMove, refetch }) {
+  const columns = [
+    {
+      key: 'boy_name',
+      label: 'الاسم',
+      mobile: 'الاسم',
+      sortValue: (b) => b.boy_name,
+      render: (b) => <BoyName boy={b} className="table__name" classId={classId} onSaved={refetch} />,
+    },
+    {
+      key: 'phone',
+      label: 'التليفون',
+      width: 140,
+      align: 'center',
+      mobile: 'التليفون',
+      sortValue: (b) => b.phone || null,
+      render: (b) => <span className="ltr">{b.phone || '—'}</span>,
+    },
+    {
+      key: 'percent',
+      label: 'الحضور',
+      width: 200,
+      mobile: 'الحضور',
+      sortValue: (b) => b.percent,
+      render: (b) =>
+        b.percent !== null && b.percent !== undefined ? (
           <span className="row" style={{ gap: 8 }}>
             <span className="group-att">
               <span className="group-att__fill" style={{ width: `${b.percent}%` }} />
@@ -31,20 +44,39 @@ function BoyRow({ b, classId, canWrite, editing, onView, onUnassign, onMove, ref
           </span>
         ) : (
           <span className="muted xsmall">—</span>
-        )}
-      </td>
-      <td>
-        {b.last_followup ? (
+        ),
+    },
+    {
+      key: 'last_followup',
+      label: 'آخر افتقاد',
+      width: 190,
+      mobile: 'آخر افتقاد',
+      sortValue: (b) => b.last_followup?.action_date || null,
+      render: (b) =>
+        b.last_followup ? (
           <span className="row" style={{ gap: 6 }}>
             <span className="badge badge--blue">{followLabel(b.last_followup.status)}</span>
             <span className="xsmall muted">{formatShort(b.last_followup.action_date)}</span>
           </span>
         ) : (
           <span className="muted xsmall">—</span>
-        )}
-      </td>
-      <td className="muted small">{b.note || '—'}</td>
-      <td>
+        ),
+    },
+    {
+      key: 'note',
+      label: 'ملاحظات',
+      mobile: 'ملاحظات',
+      sortValue: (b) => b.note || null,
+      render: (b) => <span className="muted small">{b.note || '—'}</span>,
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 130,
+      align: 'end',
+      mobile: '',
+      sortable: false,
+      render: (b) => (
         <div className="table__actions">
           <IconButton icon={<Icon name="eye" size={16} />} label="عرض الملف" onClick={() => onView(b)} />
           {canWrite && editing && (
@@ -63,41 +95,19 @@ function BoyRow({ b, classId, canWrite, editing, onView, onUnassign, onMove, ref
             </>
           )}
         </div>
-      </td>
-    </tr>
-  )
-}
+      ),
+    },
+  ]
 
-function BoyTable({ boys, headers, classId, canWrite, editing, onView, onUnassign, onMove, refetch }) {
   return (
-    <div className="table-wrap group-table">
-      <table className="table table--compact">
-        <thead>
-          <tr>
-            {headers.map((h, i) => (
-              <th key={i} style={{ textAlign: 'start' }}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {boys.map((b) => (
-            <BoyRow
-              key={b.boy_id}
-              b={b}
-              classId={classId}
-              canWrite={canWrite}
-              editing={editing}
-              onView={onView}
-              onUnassign={onUnassign}
-              onMove={onMove}
-              refetch={refetch}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table
+      columns={columns}
+      rows={boys}
+      rowKey={(b) => b.boy_id}
+      compact
+      stackOnMobile
+      className="group-table"
+    />
   )
 }
 
@@ -177,7 +187,7 @@ export function GroupCards({ groups }) {
               <p className="small muted">لا يوجد أولاد في مجموعة الخادم ده.</p>
             </div>
           ) : (
-            <BoyTable boys={g.boys} headers={UNASSIGNED_HEADERS} {...tableProps} />
+            <BoyTable boys={g.boys} {...tableProps} />
           )}
         </section>
       ))}
@@ -195,7 +205,7 @@ export function GroupCards({ groups }) {
               </div>
             </div>
           </div>
-          <BoyTable boys={unassigned} headers={HEADERS} {...tableProps} />
+          <BoyTable boys={unassigned} {...tableProps} />
         </section>
       )}
     </div>

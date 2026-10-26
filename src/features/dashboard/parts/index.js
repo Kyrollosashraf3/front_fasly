@@ -2,6 +2,7 @@ export { shortDate, NField, PERIOD_OPTIONS, PeriodField, DATE_MODE_OPTIONS, Date
 export { Kpi, KpiRow } from './kpi'
 export { DashSection, DashCard } from './Section'
 export { TrendChart } from './TrendChart'
+export { PerformanceCurve } from './PerformanceCurve'
 export { ClassGroups, ServantGroups } from './groups'
 export {
   StreakBadge,

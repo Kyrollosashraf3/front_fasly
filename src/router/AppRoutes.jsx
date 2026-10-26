@@ -6,6 +6,8 @@ import LoginPage from '../features/auth/LoginPage'
 import SignUpPage from '../features/auth/SignUpPage'
 import HomePage from '../features/home/HomePage'
 import ClassesPage from '../features/classes/ClassesPage'
+import MyTripPage from '../features/myTrip/MyTripPage'
+import TripActionsPage from '../features/myTrip/TripActionsPage'
 import ClassOverviewPage from '../features/classes/ClassOverviewPage'
 import BoysPage from '../features/boys/BoysPage'
 import AttendancePage from '../features/attendance/AttendancePage'
@@ -119,6 +121,23 @@ export function AppRoutes() {
             element={
               <RoleGuard allow={(c, u) => c.manageClasses(u)}>
                 <ClassesPage />
+              </RoleGuard>
+            }
+          />
+          <Route path="trips" element={<Navigate to="/myTrip" replace />} />
+          <Route
+            path="myTrip"
+            element={
+              <RoleGuard allow={(c, u) => c.manageTrips(u)}>
+                <MyTripPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="myTrip/:tripId"
+            element={
+              <RoleGuard allow={(c, u) => c.manageTrips(u)}>
+                <TripActionsPage />
               </RoleGuard>
             }
           />

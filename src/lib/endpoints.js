@@ -71,6 +71,30 @@ export const FollowUpAPI = {
   remove: (id) => api.del(`/follow-ups/${id}`),
 }
 
+/* ------------------------------------------------------------------ trips */
+export const TripAPI = {
+  list: (params) => api.get('/trips', params),
+  get: (id) => api.get(`/trips/${id}`),
+  create: (body) => api.post('/trips', body),
+  update: (id, body) => api.patch(`/trips/${id}`, body),
+  remove: (id) => api.del(`/trips/${id}`),
+}
+
+
+/* -------------------------------------------------------- subscriptions */
+export const SubscriptionAPI = {
+  list: (params) => api.get('/subscriptions', params),
+  getForTrip: (tripId) => api.get(`/subscriptions/trip/${tripId}`),
+  getBoys: (tripId) => api.get(`/subscriptions/trip/${tripId}/boys`),
+  getTripSummary: (tripId) => api.get(`/subscriptions/trip/${tripId}/summary`),
+  getBoyTripSummary: (tripId, boyId) =>
+    api.get(`/subscriptions/trip/${tripId}/boy/${boyId}/summary`),
+  create: (body) => api.post('/subscriptions', body),
+  update: (id, body) => api.patch(`/subscriptions/${id}`, body),
+  remove: (id) => api.del(`/subscriptions/${id}`),
+};
+
+/* ------------------------- myTrip (رحلتي) ------------------------- */
 /* -------------------------------------------------------- servant checks */
 export const CheckAPI = {
   list: (params) => api.get('/teacher-checks', params),
@@ -84,6 +108,8 @@ export const GroupAPI = {
   list: (params) => api.get('/groups', params),
   assign: (teacherId, boyIds) => api.post('/groups/assign', { teacher_id: teacherId, boy_ids: boyIds }),
   unassign: (boyIds) => api.post('/groups/unassign', { boy_ids: boyIds }),
+  template: (classId) =>
+    download('/groups/template', { class_id: classId }, 'follow-up-groups-template.xlsx'),
   import: (file) => api.upload('/groups/import', file),
   export: (classId) => download('/groups/export', { class_id: classId }, 'follow-up-groups.xlsx'),
 }

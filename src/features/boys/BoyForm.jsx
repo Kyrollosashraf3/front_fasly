@@ -44,21 +44,26 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
 
   // Servants of the class being picked - a boy may only be filed under one
   // of them, so the list has to follow the class select.
-  const { data: servants } = useQuery(
+  const { data: servants, loading: servantsLoading } = useQuery(
     () => (form.class_id ? TeacherAPI.list({ class_id: form.class_id }) : Promise.resolve([])),
     [open, form.class_id],
     { enabled: open },
   )
 
   useEffect(() => {
-    if (!open || !servants) return
+    // Only trust a list that has actually arrived for this class. On the render
+    // where `form.class_id` first becomes the boy's class, the query still
+    // holds the previous (empty) result and `servantsLoading` is stale-false;
+    // treating that as "his servant is gone" blanked teacher_id, so the save
+    // sent `teacher_id: null` and silently unfiled him from his group.
+    if (!open || servantsLoading || !servants?.length) return
     if (
       form.teacher_id &&
       !servants.some((t) => String(t.id) === String(form.teacher_id))
     ) {
       setForm((f) => ({ ...f, teacher_id: '' }))
     }
-  }, [open, servants, form.teacher_id])
+  }, [open, servants, servantsLoading, form.teacher_id])
 
   const performSave = async () => {
     const nextErrors = validateBoy(form)

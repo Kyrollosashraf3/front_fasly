@@ -8,7 +8,7 @@
  *   API prefixes → never touched. Attendance data must never go stale.
  */
 
-const VERSION = 'fasly-shell-v1'
+const VERSION = 'fasly-shell-v2'
 const SHELL = './index.html'
 
 /** The API is mounted on the root, so name its prefixes explicitly. */
@@ -21,6 +21,9 @@ const API_PREFIXES = [
   '/follow-ups',
   '/teacher-checks',
   '/groups',
+  '/dashboard',
+  '/trips',
+  '/subscriptions',
   '/users',
 ]
 

@@ -30,7 +30,6 @@ function HistoryPanel({ row, onOpenBoy }) {
 
 /** The ranked boys list, filtered by the todo/done/all tabs. */
 export function BoysRankingSection({
-  data,
   totals,
   tab,
   setTab,

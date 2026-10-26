@@ -71,6 +71,8 @@ export default function BoysDashboard() {
             className="select--plain"
             style={{ minWidth: 190 }}
             aria-label="اختيار الفصل"
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
           >
             {showAll && <option value="">كل الفصول</option>}
             {classes.map((c) => (

@@ -1,9 +1,9 @@
 import { Progress } from '../../../components/ui/Avatar'
 
-export function Kpi({ hero = false, value, label, sub, progress }) {
+export function Kpi({ hero = false, value, label, sub, progress, numClassName = '' }) {
   return (
     <div className={`dash-kpi ${hero ? 'hero' : ''}`}>
-      <div className="kpi-num">{value}</div>
+      <div className={`kpi-num ${numClassName}`.trim()}>{value}</div>
       <div className="kpi-label">{label}</div>
       {hero && progress !== undefined && <Progress value={progress} />}
       {sub && <div className="kpi-sub">{sub}</div>}

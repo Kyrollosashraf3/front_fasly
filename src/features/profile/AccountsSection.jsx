@@ -82,6 +82,8 @@ export function AccountsSection({ accounts, classes }) {
                   className="select--plain"
                   style={{ minWidth: 170 }}
                   aria-label="فلتر الفصل"
+                  searchable
+                  searchPlaceholder="ابحث باسم الفصل..."
                 >
                   <option value="">كل الفصول</option>
                   {classes.map((c) => (
@@ -207,6 +209,7 @@ export function AccountsSection({ accounts, classes }) {
                   width: 100,
                   align: 'end',
                   mobile: '',
+                  sortable: false,
                   render: (u) => (
                     <div className="table__actions">
                       <IconButton

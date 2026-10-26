@@ -19,7 +19,7 @@ export function AbsentServantsList({
 }) {
   return (
     <DashSection
-      title="خدام غابوا"
+      title="سجل الغياب"
       hint={`الخدام اللي اتسجل غيابهم في ${formatDate(date)} — كلّمهم واطمن عليهم.`}
       control={
         <Select

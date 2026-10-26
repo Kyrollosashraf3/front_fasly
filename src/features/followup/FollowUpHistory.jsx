@@ -73,23 +73,25 @@ export function FollowUpHistory({ sheet, classId, canDelete }) {
   }
 
   const historyColumns = [
-    { key: 'action_date', label: 'تاريخ الافتقاد', width: 130, mobile: 'تاريخ الافتقاد', render: (r) => formatDate(r.action_date, { withDay: false }) },
-    { key: 'teacher_id', label: 'الخادم', width: 150, mobile: 'الخادم', render: (r) => nameOfTeacher(r.teacher_id) },
-    { key: 'boy_id', label: 'الولد', mobile: 'الولد', render: (r) => <BoyName boy={boyOf(r.boy_id)} classId={classId} onSaved={refetchHistory} /> },
+    { key: 'action_date', label: 'تاريخ الافتقاد', width: 130, mobile: 'تاريخ الافتقاد', sortValue: (r) => r.action_date, render: (r) => formatDate(r.action_date, { withDay: false }) },
+    { key: 'teacher_id', label: 'الخادم', width: 150, mobile: 'الخادم', sortValue: (r) => nameOfTeacher(r.teacher_id), render: (r) => nameOfTeacher(r.teacher_id) },
+    { key: 'boy_id', label: 'الولد', mobile: 'الولد', sortValue: (r) => nameOfBoy(r.boy_id), render: (r) => <BoyName boy={boyOf(r.boy_id)} classId={classId} onSaved={refetchHistory} /> },
     {
       key: 'status',
       label: 'الطريقة',
       width: 130,
       mobile: 'الطريقة',
+      sortValue: (r) => followLabel(r.status),
       render: (r) => <Badge kind={KIND[r.status] || 'neutral'}>{followLabel(r.status)}</Badge>,
     },
-    { key: 'note', label: 'الملاحظات', mobile: 'الملاحظات', render: (r) => r.note || <span className="muted xsmall">—</span> },
+    { key: 'note', label: 'الملاحظات', mobile: 'الملاحظات', sortValue: (r) => r.note || null, render: (r) => r.note || <span className="muted xsmall">—</span> },
     {
       key: 'actions',
       label: '',
       width: 90,
       align: 'end',
       mobile: '',
+      sortable: false,
       render: (r) =>
         canWrite ? (
           <div className="table__actions">

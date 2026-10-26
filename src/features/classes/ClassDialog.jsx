@@ -136,6 +136,8 @@ export function ClassDialog({ class: klass, onSaved, trigger = 'button' }) {
               value={form.name}
               error={errors.name}
               onChange={set('name')}
+              searchable
+              searchPlaceholder="ابحث باسم الفصل..."
             >
               <option value="">— اختر الفصل —</option>
               {!CLASS_NAMES.includes(form.name) && form.name ? (

@@ -90,6 +90,8 @@ export default function FollowUpPerformancePage() {
             className="select--plain"
             style={{ minWidth: 190 }}
             aria-label="اختيار الفصل"
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
           >
             {showAll && <option value="">كل الفصول</option>}
             {classes.map((c) => (
@@ -119,6 +121,8 @@ export default function FollowUpPerformancePage() {
             className="select--plain"
             style={{ minWidth: 180 }}
             aria-label="اختيار الخادم"
+            searchable
+            searchPlaceholder="ابحث باسم الخادم..."
           >
             <option value="">كل الخدام</option>
             {(teachers || []).map((t) => (
@@ -154,7 +158,8 @@ export default function FollowUpPerformancePage() {
           <KpiRow>
             <Kpi
               hero
-              value={`${totals.percent}%`}
+              value={`${Math.round(totals.percent)}%`}
+              numClassName="kpi-num--percent"
               label="نسبة الافتقاد"
               progress={totals.percent}
               sub={`افتقد ${totals.followed} • لم يُفتقد ${totals.not_followed} • الكل ${totals.boys}`}
@@ -186,7 +191,7 @@ export default function FollowUpPerformancePage() {
                       <div className="class-bars__row">
                         <strong>{c.class_name || c.class_id}</strong>
                         <span className="muted small">
-                          {c.followed}/{c.boys} • {c.percent}%
+                          {c.followed}/{c.boys} • {Math.round(c.percent)}%
                         </span>
                       </div>
                       <div className="progress">
@@ -206,7 +211,6 @@ export default function FollowUpPerformancePage() {
           />
 
           <BoysRankingSection
-            data={data}
             totals={totals}
             tab={tab}
             setTab={setTab}

@@ -21,6 +21,7 @@ export function teachersColumns({ multi, classLabel, canWrite, openEdit, remove 
             label: 'الفصل',
             width: 150,
             mobile: 'الفصل',
+            sortValue: (t) => classLabel(t.class_id),
             render: (t) => <span className="small muted">{classLabel(t.class_id)}</span>,
           },
         ]
@@ -45,6 +46,7 @@ export function teachersColumns({ multi, classLabel, canWrite, openEdit, remove 
       width: 96,
       align: 'center',
       mobile: 'تواصل',
+      sortable: false,
       render: (t) => <ContactActions phone={t.phone} phone2={t.phone_2} />,
     },
     {
@@ -52,6 +54,7 @@ export function teachersColumns({ multi, classLabel, canWrite, openEdit, remove 
       label: 'آخر اعتراف / زيارة',
       width: 170,
       mobile: 'آخر زيارة',
+      sortValue: (t) => t.last_visit_date || null,
       render: (t) =>
         t.last_visit_date ? (
           <span className="row" style={{ gap: 6 }}>
@@ -69,6 +72,7 @@ export function teachersColumns({ multi, classLabel, canWrite, openEdit, remove 
       width: 90,
       align: 'end',
       mobile: '',
+      sortable: false,
       render: (t) =>
         canWrite ? (
           <div className="table__actions">

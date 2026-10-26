@@ -42,6 +42,36 @@
   fill: var(--gold-hover);
 }
 
+/* Performance curve: one line across the selected servants. */
+.chart-area {
+  fill: var(--info-soft);
+  opacity: 0.7;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-dot {
+  fill: var(--surface);
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  transition: fill var(--dur-fast) var(--ease);
+}
+
+.chart-dot:hover {
+  fill: var(--gold);
+  stroke: var(--gold-hover);
+}
+
+.chart-xlabel--name {
+  text-anchor: end;
+}
+
 .chart-val {
   fill: var(--text-secondary);
   font-size: 12px;

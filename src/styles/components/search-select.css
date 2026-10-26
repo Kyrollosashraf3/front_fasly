@@ -10,6 +10,12 @@
   cursor: text;
 }
 
+/* Inside a form field the picker fills the column instead of demanding 210px. */
+.field .search-select {
+  width: 100%;
+  min-width: 0;
+}
+
 .search-select__icon,
 .search-select__chevron {
   position: absolute;

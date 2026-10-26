@@ -22,9 +22,14 @@ import { Icon } from './Icon'
  * `mobile` label as the field name — wide sheets stay readable on a phone
  * instead of scrolling sideways.
  *
- * `sortable` turns any column that defines `sortValue(row)` into a click-to-sort
- * header (asc → desc → unsorted). Everything else stays exactly as passed.
+ * Sorting is on by default. Any column with a `sortValue(row)` accessor — or a
+ * plain `key` that the row data actually carries — becomes a click-to-sort
+ * header (asc → desc → unsorted). Blank values always sink to the bottom, and
+ * a column can opt out with `sortable: false` (action cells, checkboxes, …).
  */
+const COLLATOR = new Intl.Collator('ar', { numeric: true, sensitivity: 'base' })
+const isBlank = (value) => value === null || value === undefined || value === ''
+
 export function Table({
   columns,
   rows,
@@ -35,27 +40,41 @@ export function Table({
   stackOnMobile = false,
   className = '',
   footer,
-  sortable = false,
+  sortable = true,
   initialSort = null,
 }) {
   const [sort, setSort] = useState(initialSort)
 
+  // Only offer a header control where the column actually has values to sort.
+  const sortableKeys = useMemo(() => {
+    const keys = new Set()
+    for (const col of columns) {
+      if (!col.key || col.sortable === false) continue
+      if (typeof col.sortValue === 'function') {
+        keys.add(col.key)
+        continue
+      }
+      if (rows?.some((row) => !isBlank(row?.[col.key]))) keys.add(col.key)
+    }
+    return keys
+  }, [columns, rows])
+
   const sorted = useMemo(() => {
-    if (!sortable || !sort?.key) return rows
+    if (!sortable || !sort?.key || !sortableKeys.has(sort.key)) return rows
     const col = columns.find((c) => c.key === sort.key)
-    const valueOf = col?.sortValue
-    if (!valueOf) return rows
+    if (!col) return rows
+    const valueOf = typeof col.sortValue === 'function' ? col.sortValue : (row) => row?.[col.key]
     const dir = sort.dir === 'desc' ? -1 : 1
     return [...rows].sort((a, b) => {
       const va = valueOf(a)
       const vb = valueOf(b)
-      if (va == null && vb == null) return 0
-      if (va == null) return 1
-      if (vb == null) return -1
+      if (isBlank(va) && isBlank(vb)) return 0
+      if (isBlank(va)) return 1
+      if (isBlank(vb)) return -1
       if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir
-      return String(va).localeCompare(String(vb), 'ar') * dir
+      return COLLATOR.compare(String(va), String(vb)) * dir
     })
-  }, [rows, columns, sort, sortable])
+  }, [rows, columns, sort, sortable, sortableKeys])
 
   if (!rows?.length) return null
 
@@ -74,7 +93,7 @@ export function Table({
         <thead>
           <tr>
             {columns.map((col) => {
-              const canSort = sortable && Boolean(col.sortValue)
+              const canSort = sortable && sortableKeys.has(col.key)
               const active = sort?.key === col.key
               return (
                 <th

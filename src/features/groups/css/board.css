@@ -1,0 +1,310 @@
+/* ==========================================================================
+   /groups — the single picker board.
+   Servant pills on top, his boys as boxes, unassigned boys underneath.
+   ========================================================================== */
+
+.groups-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+
+.groups-board__top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.groups-board__search {
+  flex: 1 1 240px;
+  min-width: 180px;
+}
+
+.groups-board__boy {
+  flex: 1 1 260px;
+  min-width: 200px;
+}
+
+.groups-board__top .file-menu {
+  margin-inline-start: auto;
+}
+
+.groups-board__class {
+  flex: 0 0 auto;
+  min-width: 150px;
+  max-width: 220px;
+}
+
+/* ---- servant pills ------------------------------------------------------ */
+
+.groups-servants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px dashed var(--border);
+}
+
+.groups-servant {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.groups-servant:hover {
+  border-color: var(--navy);
+  background: var(--navy-soft);
+}
+
+.groups-servant.is-active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.groups-servant__name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groups-servant__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
+.groups-servant.is-active .groups-servant__count {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+/* ---- one servant's group ------------------------------------------------ */
+
+.groups-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.groups-group--unassigned {
+  padding-top: var(--sp-3);
+  border-top: 1px dashed var(--border);
+}
+
+.groups-group__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.groups-group__name {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-md);
+  color: var(--navy);
+}
+
+.groups-group__count {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.groups-boys {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--sp-2);
+}
+
+.groups-boy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: 42px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.groups-boy__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+
+.groups-boy__actions {
+  display: flex;
+  gap: 4px;
+  flex: none;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.groups-boy:hover .groups-boy__actions,
+.groups-boy:focus-within .groups-boy__actions {
+  opacity: 1;
+}
+
+/* Touch screens have no hover — keep the two actions reachable. */
+@media (hover: none) {
+  .groups-boy__actions {
+    opacity: 1;
+  }
+}
+
+.groups-boy__btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.groups-boy__btn:hover {
+  background: var(--navy-soft);
+  color: var(--navy);
+}
+
+.groups-boy__btn--danger:hover {
+  background: #fdecec;
+  color: #b42318;
+}
+
+.groups-boy.is-busy {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* The boy the top search just found: ringed in gold, then the mark fades. */
+.groups-boy.is-found {
+  border-color: var(--gold);
+  border-style: solid;
+  background: var(--gold-soft);
+  box-shadow: 0 0 0 2px var(--gold-border);
+}
+
+/* ---- unassigned boys (click to add) ------------------------------------- */
+
+.groups-boy--unassigned {
+  background: var(--surface);
+  border-style: dashed;
+}
+
+.groups-boy.is-pickable {
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.groups-boy.is-pickable:hover {
+  border-color: var(--gold);
+  border-style: solid;
+  background: var(--gold-soft);
+}
+
+.groups-boy__plus {
+  flex: none;
+  color: var(--gold-ink);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.groups-boy.is-pickable:hover .groups-boy__plus,
+.groups-boy.is-pickable:focus-visible .groups-boy__plus {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .groups-boy__plus {
+    opacity: 0.7;
+  }
+}
+
+/* ---- move-to-another-servant dialog ------------------------------------- */
+
+.groups-move {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.groups-move__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.groups-move__option:hover:not(:disabled) {
+  border-color: var(--navy);
+  background: var(--navy-soft);
+}
+
+.groups-move__option:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ---- shared small text -------------------------------------------------- */
+
+.groups-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}

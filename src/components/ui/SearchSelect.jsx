@@ -26,6 +26,9 @@ export function SearchSelect({
   searchPlaceholder = 'ابحث...',
   ariaLabel,
   disabled = false,
+  error,
+  id,
+  name,
   className = '',
   style,
   clearable = true,
@@ -131,10 +134,13 @@ export function SearchSelect({
       </span>
       <input
         ref={inputRef}
+        id={id}
+        name={name}
         type="text"
-        className="input search-select__input"
+        className={`input search-select__input ${error ? 'is-error' : ''}`.trim()}
         role="combobox"
         aria-label={ariaLabel || placeholder}
+        aria-invalid={error ? 'true' : undefined}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-autocomplete="list"
