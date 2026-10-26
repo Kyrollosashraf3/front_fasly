@@ -94,6 +94,26 @@ export const SubscriptionAPI = {
   remove: (id) => api.del(`/subscriptions/${id}`),
 };
 
+/* -------------------------------------------------------------- tasks */
+export const TaskAPI = {
+  list: (params) => api.get('/tasks', params),
+  get: (id) => api.get(`/tasks/${id}`),
+  create: (body) => api.post('/tasks', body),
+  update: (id, body) => api.patch(`/tasks/${id}`, body),
+  remove: (id) => api.del(`/tasks/${id}`),
+}
+
+/* --------------------------------------------------------- task values */
+export const TaskValueAPI = {
+  list: (params) => api.get('/task-values', params),
+  get: (id) => api.get(`/task-values/${id}`),
+  create: (body) => api.post('/task-values', body),
+  /** The dues sheet: tick every طايو handed over, then save once. */
+  saveBulk: (items) => api.patch('/task-values/bulk', { items }),
+  update: (id, body) => api.patch(`/task-values/${id}`, body),
+  remove: (id) => api.del(`/task-values/${id}`),
+}
+
 /* ------------------------- myTrip (رحلتي) ------------------------- */
 /* -------------------------------------------------------- servant checks */
 export const CheckAPI = {

@@ -19,6 +19,8 @@ const apiPrefixes = [
   '/dashboard',
   '/trips',
   '/subscriptions',
+  '/tasks',
+  '/task-values',
 ]
 
 const proxy = Object.fromEntries(

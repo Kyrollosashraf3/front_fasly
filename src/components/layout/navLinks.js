@@ -25,6 +25,7 @@ export function rootLinks({ user, isBoy, can, classes = [] }) {
     if (can.manageTrips(user)) {
       links.push({ to: '/myTrip', icon: 'calendar', label: 'رحلتي' })
     }
+    links.push({ to: '/tasks', icon: 'trophy', label: 'المسابقات' })
     links.push({ to: '/reveal', icon: 'sparkles', label: 'اكشفلي' })
     links.push({ to: '/birthdays', icon: 'gift', label: 'أعياد الميلاد' })
   }

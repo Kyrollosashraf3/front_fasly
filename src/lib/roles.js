@@ -106,6 +106,15 @@ export const can = {
    * add a trip for his own class; only the super admin may pick another class. */
   manageTrips: (user) => roleOf(user) !== ROLES.USER,
 
+  /** Open the competitions module at all (a boy never does). */
+  seeTasks: (user) => roleOf(user) !== ROLES.USER,
+
+  /** Open/close and edit a competition — the class amin or the general amin. */
+  manageTasks: (user) => isManager(user),
+
+  /** Register a boy's recitation and tick the طايو he collected. */
+  writeRecitations: (user) => roleOf(user) !== ROLES.USER,
+
   /** Grant the super_admin role. */
   grantSuperAdmin: (user) => roleOf(user) === ROLES.SUPER_ADMIN,
 }

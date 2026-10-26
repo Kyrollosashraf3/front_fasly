@@ -8,6 +8,8 @@ import HomePage from '../features/home/HomePage'
 import ClassesPage from '../features/classes/ClassesPage'
 import MyTripPage from '../features/myTrip/MyTripPage'
 import TripActionsPage from '../features/myTrip/TripActionsPage'
+import TasksPage from '../features/tasks/TasksPage'
+import TaskActionsPage from '../features/tasks/TaskActionsPage'
 import ClassOverviewPage from '../features/classes/ClassOverviewPage'
 import BoysPage from '../features/boys/BoysPage'
 import AttendancePage from '../features/attendance/AttendancePage'
@@ -138,6 +140,22 @@ export function AppRoutes() {
             element={
               <RoleGuard allow={(c, u) => c.manageTrips(u)}>
                 <TripActionsPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="tasks"
+            element={
+              <RoleGuard allow={(c, u) => c.seeTasks(u)}>
+                <TasksPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="tasks/:taskId"
+            element={
+              <RoleGuard allow={(c, u) => c.seeTasks(u)}>
+                <TaskActionsPage />
               </RoleGuard>
             }
           />
