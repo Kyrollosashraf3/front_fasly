@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Table } from '../../components/ui/Table'
 import { SearchInput, Select } from '../../components/ui/Field'
 import { Badge } from '../../components/ui/Badge'
 import { ErrorState, Loading, EmptyState } from '../../components/ui/States'
@@ -73,43 +72,8 @@ export default function SubscriptionAnalysis({ tripId }) {
     [filtered],
   )
 
-  const columns = [
-    {
-      key: 'boy_name',
-      label: 'اسم الولد',
-      sortValue: (r) => r.boy_name,
-      render: (r) => r.boy_name,
-    },
-    {
-      key: 'paid',
-      label: 'المبلغ المدفوع',
-      align: 'end',
-      sortValue: (r) => r.total_paid ?? 0,
-      render: (r) => <span className="mytrip__amount">{num(r.total_paid ?? 0)} جنيه</span>,
-    },
-    {
-      key: 'remaining',
-      label: 'الباقي عليه',
-      align: 'end',
-      sortValue: (r) => Math.max(0, r.remaining ?? 0),
-      render: (r) => (
-        <span className={`mytrip__amount${(r.remaining ?? 0) > 0 ? ' mytrip__amount--due' : ''}`}>
-          {num(Math.max(0, r.remaining ?? 0))} جنيه
-        </span>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'الحالة',
-      align: 'center',
-      width: 110,
-      sortValue: (r) => statusOf(r).label,
-      render: (r) => {
-        const status = statusOf(r)
-        return <Badge kind={status.kind}>{status.label}</Badge>
-      },
-    },
-  ]
+
+
 
   return (
     <div className="mytrip__panel">
@@ -147,14 +111,25 @@ export default function SubscriptionAnalysis({ tripId }) {
           message={mode === 'paid' ? 'لم يدفع أحد بعد، أو لا يوجد اسم مطابق للفلتر.' : 'لا يوجد أولاد مطابقون للفلتر.'}
         />
       ) : (
-        <Table
-          columns={columns}
-          rows={filtered}
-          rowKey={(r) => r.boy_id}
-          stackOnMobile
-          sortable
-          initialSort={{ key: 'paid', dir: 'desc' }}
-        />
+        <div className="mytrip__analysis-list">
+          {filtered.map((r) => {
+            const status = statusOf(r)
+            return (
+              <div key={r.boy_id} className="mytrip__analysis-row">
+                <div className="mytrip__analysis-name">
+                  {r.boy_name}
+                  <Badge kind={status.kind}>{status.label}</Badge>
+                </div>
+                <div className="mytrip__analysis-paid">
+                  {num(r.total_paid ?? 0)} جنيه
+                </div>
+                <div className="mytrip__analysis-remaining">
+                  {num(Math.max(0, r.remaining ?? 0))} جنيه
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )

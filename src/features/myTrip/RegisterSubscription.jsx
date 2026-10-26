@@ -29,6 +29,7 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })
+  const [type, setType] = useState('charge')
   const [note, setNote] = useState('')
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
   }, [boys, query, selectedBoy])
 
   const remaining = summary?.remaining
-  const overBalance = remaining > 0 && Number(value) > remaining
+  const overBalance = remaining > 0 && type === 'charge' && Number(value) > remaining
 
   const selectBoy = (boy) => {
     setSelectedBoy(boy)
@@ -104,7 +105,7 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
       await SubscriptionAPI.create({
         boy_id: selectedBoy.id,
         trip_id: trip.id,
-        type: 'charge',
+        type,
         value: amount,
         date,
         note: note.trim() || undefined,
@@ -171,9 +172,11 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
         htmlFor="reg-value"
         hint={
           remaining !== undefined
-            ? `دفع ${num(summary?.total_paid ?? 0)} جنيه، والباقي عليه ${num(
-                Math.max(0, remaining),
-              )} جنيه.`
+            ? type === 'recover'
+              ? `يتم خصم المبلغ من المبلغ المستحق للولد.`
+              : `دفع ${num(summary?.total_paid ?? 0)} جنيه، والباقي عليه ${num(
+                  Math.max(0, remaining),
+                )} جنيه.`
             : undefined
         }
       >
@@ -187,6 +190,23 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
           onChange={(e) => setValue(e.target.value)}
         />
       </Field>
+
+      <div className="mytrip__type-toggle">
+        <button
+          type="button"
+          className={`mytrip__type-option${type === 'charge' ? ' is-active' : ''}`}
+          onClick={() => setType('charge')}
+        >
+          دفع
+        </button>
+        <button
+          type="button"
+          className={`mytrip__type-option${type === 'recover' ? 'is-active' : ''}`}
+          onClick={() => setType('recover')}
+        >
+          سحب
+        </button>
+      </div>
 
       <Field
         label="التاريخ"
@@ -241,7 +261,7 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
           loading={busy}
           disabled={!selectedBoy || !value || Number(value) <= 0}
         >
-          تسجيل الدفعة
+          {type === 'recover' ? 'سحب الاشتراك' : 'تسجيل الدفعة'}
         </Button>
       </div>
     </form>

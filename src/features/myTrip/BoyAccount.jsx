@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Field, Select } from '../../components/ui/Field'
-import { Table } from '../../components/ui/Table'
 import { Badge } from '../../components/ui/Badge'
 import { ErrorState, Loading, EmptyState } from '../../components/ui/States'
 import { SubscriptionAPI } from '../../lib/endpoints'
@@ -53,57 +52,12 @@ export default function BoyAccount({ tripId }) {
     [payments, boy],
   )
 
-  const columns = [
-    {
-      key: 'created_at',
-      label: 'التاريخ',
-      render: (p) => formatDate(p.created_at),
-    },
-    {
-      key: 'value',
-      label: 'المبلغ',
-      align: 'end',
-      render: (p) => (
-        <span className={p.type === 'recover' ? 'mytrip__amount--due' : 'mytrip__amount'}>
-          {num(p.value)} جنيه
-        </span>
-      ),
-    },
-    {
-      key: 'type',
-      label: 'النوع',
-      align: 'center',
-      width: 110,
-      sortValue: (p) => (p.type === 'recover' ? 'استرداد' : 'دفعة'),
-      render: (p) => (
-        <Badge kind={p.type === 'recover' ? 'red' : 'green'}>
-          {p.type === 'recover' ? 'استرداد' : 'دفعة'}
-        </Badge>
-      ),
-    },
-    {
-      key: 'created_by_name',
-      label: 'سجّلها',
-      render: (p) => p.created_by_name || <span className="muted xsmall">—</span>,
-    },
-    {
-      key: 'note',
-      label: 'ملاحظة',
-      width: 260,
-      mobile: 'ملاحظة',
-      render: (p) =>
-        p.note ? <span title={p.note}>{p.note}</span> : <span className="muted xsmall">—</span>,
-    },
-  ]
+
+
 
   return (
     <div className="mytrip__panel">
-      <div className="mytrip__panel-head">
-        <div>
-          <h3 className="mytrip__panel-title">حساب ولد</h3>
-          <p className="mytrip__panel-sub">اختر الولد لعرض المدفوع والباقي وكل الدفعات.</p>
-        </div>
-      </div>
+ 
 
       {loading ? (
         <Loading label="جارٍ تحميل الحسابات..." />
@@ -166,12 +120,33 @@ export default function BoyAccount({ tripId }) {
                   inline
                 />
               ) : (
-                <Table
-                  columns={columns}
-                  rows={history}
-                  rowKey={(p) => p.id}
-                  stackOnMobile
-                />
+                <div className="mytrip__history-list">
+                  {history.map((p) => (
+                    <div key={p.id} className="mytrip__history-item">
+                      <div className="mytrip__history-top">
+                        <div className="mytrip__history-left">
+                          <div className="mytrip__history-date">{formatDate(p.created_at)}</div>
+                          <div className="mytrip__history-type">
+                            <Badge kind={p.type === 'recover' ? 'red' : 'green'}>
+                              {p.type === 'recover' ? 'استرداد' : 'دفعة'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="mytrip__history-right">
+                          <span className={`mytrip__amount${p.type === 'recover' ? ' mytrip__amount--due' : ''}`}>
+                            {num(p.value)} جنيه
+                          </span>
+                        </div>
+                      </div>
+                      {p.note ? (
+                        <div className="mytrip__history-note">
+                          <Icon name="note" size={12} />
+                          <span>{p.note}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
               )}
             </>
           )}

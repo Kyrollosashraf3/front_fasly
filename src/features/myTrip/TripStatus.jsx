@@ -55,16 +55,6 @@ export default function TripStatus({ tripId, tripCost, tripName }) {
 
   return (
     <div className="mytrip__panel">
-      <div className="mytrip__panel-head">
-        <div>
-          <h3 className="mytrip__panel-title"> {tripName}</h3>
-          <p className="mytrip__panel-sub">
-            {subscribed} مشترك × {num(tripCost)} جنيه = <strong>{num(expected)} جنيه</strong>{' '}
-            متوقعة
-          </p>
-        </div>
-      </div>
-
       <div className="mytrip__stats-grid">
         <div className="mytrip__stat-box">
           <div className="mytrip__stat-value">{subscribed}/{boys}</div>
