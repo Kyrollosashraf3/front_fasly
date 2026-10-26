@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '../../components/ui/Badge'
 import { ErrorState, Loading, EmptyState } from '../../components/ui/States'
 import { Icon } from '../../components/ui/Icon'
-import { SubscriptionAPI } from '../../lib/endpoints'
+import { SubscriptionAPI, AuthAPI } from '../../lib/endpoints'
 import { formatDate, num } from '../../lib/format'
 import './myTrip.css'
 
@@ -15,6 +15,7 @@ import './myTrip.css'
 export default function BoyAccount({ tripId }) {
   const [boys, setBoys] = useState([])
   const [payments, setPayments] = useState([])
+  const [usersMap, setUsersMap] = useState({}) // { id: name }
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
@@ -23,13 +24,22 @@ export default function BoyAccount({ tripId }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    Promise.all([SubscriptionAPI.getTripSummary(tripId), SubscriptionAPI.getForTrip(tripId)])
-      .then(([summary, subs]) => {
+    Promise.all([
+      SubscriptionAPI.getTripSummary(tripId),
+      SubscriptionAPI.getForTrip(tripId),
+      AuthAPI.users().catch(() => []), // لو فشل مش مشكلة
+    ])
+      .then(([summary, subs, users]) => {
         if (cancelled) return
         const list = Array.isArray(summary) ? summary : []
-        // الذين دفعوا فقط
         setBoys(list.filter((b) => (b.total_paid ?? 0) > 0))
         setPayments(Array.isArray(subs) ? subs : [])
+        // بناء map: id → name
+        const map = {}
+        if (Array.isArray(users)) {
+          users.forEach((u) => { map[String(u.id)] = u.name || u.username || u.phone })
+        }
+        setUsersMap(map)
         setError(null)
       })
       .catch((err) => { if (!cancelled) setError(err) })
@@ -177,6 +187,12 @@ export default function BoyAccount({ tripId }) {
                           </span>
                         </div>
                       </div>
+                      {p.created_by && (
+                        <div className="mytrip__history-note">
+                          <Icon name="user" size={12} />
+                          <span>{usersMap[String(p.created_by)] ?? p.created_by}</span>
+                        </div>
+                      )}
                       {p.note && (
                         <div className="mytrip__history-note">
                           <Icon name="note" size={12} />
