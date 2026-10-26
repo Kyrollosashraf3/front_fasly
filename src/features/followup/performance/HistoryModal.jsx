@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { followLabel } from '../../boys/BoyProfile'
 import { formatShort } from '../../../lib/format'
+import { uniqueFollowHistory } from './followHistoryUtils'
 
 /** The full follow-up history of one boy, as a dialog. */
 export function HistoryModal({ boy, onClose }) {
@@ -21,8 +22,8 @@ export function HistoryModal({ boy, onClose }) {
       {boy && (
         <div className="fu-history">
           <ul className="fu-history__list">
-            {(boy.history || []).map((h, i) => (
-              <li key={`${h.date}-${i}`}>
+            {uniqueFollowHistory(boy.history).map((h) => (
+              <li key={h.id ?? `${h.date}-${h.status}-${h.teacher_id}`}>
                 <span className="fu-history__date">{formatShort(h.date)}</span>
                 <Badge kind="navy">{followLabel(h.status)}</Badge>
                 {h.teacher_name && <span className="muted small">{h.teacher_name}</span>}

@@ -4,6 +4,7 @@ import { Badge } from '../../../components/ui/Badge'
 import { followLabel } from '../../boys/BoyProfile'
 import { KIND } from '../constants'
 import { formatShort } from '../../../lib/format'
+import { uniqueFollowHistory } from './followHistoryUtils'
 
 /**
  * بوكس يُفتح عند الضغط على عدد أولاد الخادم في جدول أداء الخدام.
@@ -45,7 +46,9 @@ export function ServantMissedModal({
             </p>
           ) : (
             <ul className="servant-kids__list">
-              {boys.map((b) => (
+              {boys.map((b) => {
+                const history = uniqueFollowHistory(b.history)
+                return (
                 <li key={b.id} className="servant-kids__row">
                   <span className="servant-kids__name">{b.boy_name}</span>
                   {showGroupServant && (
@@ -55,26 +58,31 @@ export function ServantMissedModal({
                         : 'بدون مجموعة'}
                     </span>
                   )}
-                  <span className="servant-kids__date">
-                    {b.last_date ? formatShort(b.last_date) : '—'}
-                  </span>
-                  <Badge kind={KIND[b.last_status] || 'neutral'}>
-                    {followLabel(b.last_status || '—')}
-                  </Badge>
-                  {b.history && b.history.length > 0 && (
+                  {history.length === 0 ? (
+                    <>
+                      <span className="servant-kids__date">
+                        {b.last_date ? formatShort(b.last_date) : '—'}
+                      </span>
+                      <Badge kind={KIND[b.last_status] || 'neutral'}>
+                        {followLabel(b.last_status || '—')}
+                      </Badge>
+                    </>
+                  ) : (
                     <ul className="servant-kids__history">
-                      {b.history.map((h, i) => (
-                        <li key={i}>
+                      {history.map((h) => (
+                        <li key={h.id ?? `${h.date}-${h.status}-${h.teacher_id}`}>
                           <span className="servant-kids__hdate">
                             {formatShort(h.date)}
                           </span>
-                          <Badge kind="navy">{followLabel(h.status)}</Badge>
+                          <Badge kind={KIND[h.status] || 'navy'}>
+                            {followLabel(h.status)}
+                          </Badge>
                         </li>
                       ))}
                     </ul>
                   )}
                 </li>
-              ))}
+              )})}
             </ul>
           )}
         </div>

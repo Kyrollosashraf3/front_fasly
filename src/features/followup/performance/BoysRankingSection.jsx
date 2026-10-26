@@ -6,14 +6,15 @@ import { EmptyState } from '../../../components/ui/States'
 import { followLabel } from '../../boys/BoyProfile'
 import { DashSection } from '../../dashboard/parts'
 import { formatShort } from '../../../lib/format'
+import { uniqueFollowHistory } from './followHistoryUtils'
 
 /** Expanded row: the boy's recent follow-ups, newest first. */
 function HistoryPanel({ row, onOpenBoy }) {
   return (
     <div className="fu-history">
       <ul className="fu-history__list">
-        {row.history.map((h, i) => (
-          <li key={`${h.date}-${i}`}>
+        {uniqueFollowHistory(row.history).map((h) => (
+          <li key={h.id ?? `${h.date}-${h.status}-${h.teacher_id}`}>
             <span className="fu-history__date">{formatShort(h.date)}</span>
             <Badge kind="navy">{followLabel(h.status)}</Badge>
             <span className="muted small">{h.teacher_name}</span>
