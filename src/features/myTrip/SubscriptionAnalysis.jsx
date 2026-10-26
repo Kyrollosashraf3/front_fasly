@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { SearchInput, Select } from '../../components/ui/Field'
+import { SearchInput } from '../../components/ui/Field'
 import { Badge } from '../../components/ui/Badge'
 import { ErrorState, Loading, EmptyState } from '../../components/ui/States'
 import { SubscriptionAPI } from '../../lib/endpoints'
@@ -7,28 +7,17 @@ import { normalizeSearch } from '../../lib/search'
 import { num } from '../../lib/format'
 import './myTrip.css'
 
-const STATUS = {
-  paid: { kind: 'green', label: 'مكتمل' },
-  partial: { kind: 'gold', label: 'دفع جزئي' },
-  none: { kind: 'neutral', label: 'لم يدفع' },
-}
+// الأولاد الذين دفعوا فقط — دايمًا
+// فلتر الحالة: all | complete | remaining
+const statusOf = (r) =>
+  (r.remaining ?? 0) <= 0 ? 'complete' : 'remaining'
 
-const statusOf = (row) =>
-  (row.remaining ?? 0) <= 0 ? STATUS.paid : (row.total_paid ?? 0) > 0 ? STATUS.partial : STATUS.none
-
-/**
- * SubscriptionAnalysis — the "اشتراكات" action.
- *
- * Lists the boys of the trip's class who paid, with what they paid and what is
- * still due. The name filter and the sortable paid/remaining headers cover the
- * analysis the amin needs without another endpoint.
- */
 export default function SubscriptionAnalysis({ tripId }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [nameFilter, setNameFilter] = useState('')
-  const [mode, setMode] = useState('paid') // paid | all
+  const [statusFilter, setStatusFilter] = useState('all') // all | complete | remaining
 
   useEffect(() => {
     let cancelled = false
@@ -46,19 +35,21 @@ export default function SubscriptionAnalysis({ tripId }) {
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [tripId])
 
   const filtered = useMemo(() => {
     const q = normalizeSearch(nameFilter)
     return rows.filter((r) => {
-      if (mode === 'paid' && (r.total_paid ?? 0) <= 0) return false
+      // دايمًا نعرض الذين دفعوا فقط
+      if ((r.total_paid ?? 0) <= 0) return false
+      // فلتر الحالة
+      if (statusFilter !== 'all' && statusOf(r) !== statusFilter) return false
+      // فلتر الاسم
       if (q && !normalizeSearch(r.boy_name).includes(q)) return false
       return true
     })
-  }, [rows, nameFilter, mode])
+  }, [rows, nameFilter, statusFilter])
 
   const totals = useMemo(
     () =>
@@ -72,34 +63,43 @@ export default function SubscriptionAnalysis({ tripId }) {
     [filtered],
   )
 
-
-
-
   return (
     <div className="mytrip__panel">
+      {/* Header */}
       <div className="mytrip__panel-head">
         <div>
           <h3 className="mytrip__panel-title">اشتراكات الرحلة</h3>
           <p className="mytrip__panel-sub">
-            المدفوع: <strong>{num(totals.paid)} جنيه</strong> • الباقي:{' '}
-            <strong>{num(totals.remaining)} جنيه</strong>
+            المدفوع: <strong>{num(totals.paid)} ج</strong>
+            {totals.remaining > 0 && (
+              <> • الباقي: <strong className="mytrip__sub--due">{num(totals.remaining)} ج</strong></>
+            )}
           </p>
         </div>
       </div>
 
+      {/* Filters */}
       <div className="mytrip__filters">
         <SearchInput value={nameFilter} onChange={setNameFilter} placeholder="فلتر باسم الولد..." />
-        <Select
-          value={mode}
-          onChange={(e) => setMode(e.target.value)}
-          aria-label="عرض الاشتراكات"
-          style={{ minWidth: 170 }}
-        >
-          <option value="paid">الذين دفعوا</option>
-          <option value="all">كل أولاد الفصل</option>
-        </Select>
+        <div className="mytrip__seg" role="group" aria-label="فلتر الحالة">
+          {[
+            { value: 'all', label: 'الكل' },
+            { value: 'complete', label: 'مكتمل' },
+            { value: 'remaining', label: 'الباقي' },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`mytrip__seg-btn${statusFilter === opt.value ? ' mytrip__seg-btn--active' : ''}`}
+              onClick={() => setStatusFilter(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* Content */}
       {loading ? (
         <Loading label="جارٍ تحميل الاشتراكات..." />
       ) : error ? (
@@ -107,24 +107,30 @@ export default function SubscriptionAnalysis({ tripId }) {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon="inbox"
-          title="لا توجد اشتراكات مطابقة"
-          message={mode === 'paid' ? 'لم يدفع أحد بعد، أو لا يوجد اسم مطابق للفلتر.' : 'لا يوجد أولاد مطابقون للفلتر.'}
+          title="لا توجد نتائج"
+          message="لا يوجد أولاد مطابقون للفلتر المختار."
         />
       ) : (
         <div className="mytrip__analysis-list">
           {filtered.map((r) => {
-            const status = statusOf(r)
+            const complete = (r.remaining ?? 0) <= 0
             return (
-              <div key={r.boy_id} className="mytrip__analysis-row">
-                <div className="mytrip__analysis-name">
+              <div key={r.boy_id} className="mytrip__analysis-card">
+                <div className="mytrip__analysis-card-name">
                   {r.boy_name}
-                  <Badge kind={status.kind}>{status.label}</Badge>
+                  <Badge kind={complete ? 'green' : 'gold'}>
+                    {complete ? 'مكتمل' : 'جزئي'}
+                  </Badge>
                 </div>
-                <div className="mytrip__analysis-paid">
-                  {num(r.total_paid ?? 0)} جنيه
-                </div>
-                <div className="mytrip__analysis-remaining">
-                  {num(Math.max(0, r.remaining ?? 0))} جنيه
+                <div className="mytrip__analysis-card-amounts">
+                  <span className="mytrip__pill mytrip__pill--paid">
+                    <span className="mytrip__pill-label">دفع</span>
+                    <strong className="mytrip__pill-val">{num(r.total_paid ?? 0)} ج</strong>
+                  </span>
+                  <span className="mytrip__pill mytrip__pill--due">
+                    <span className="mytrip__pill-label">باقي</span>
+                    <strong className="mytrip__pill-val">{num(Math.max(0, r.remaining ?? 0))} ج</strong>
+                  </span>
                 </div>
               </div>
             )

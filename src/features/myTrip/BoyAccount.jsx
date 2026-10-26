@@ -1,23 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Field, Select } from '../../components/ui/Field'
 import { Badge } from '../../components/ui/Badge'
 import { ErrorState, Loading, EmptyState } from '../../components/ui/States'
+import { Icon } from '../../components/ui/Icon'
 import { SubscriptionAPI } from '../../lib/endpoints'
 import { formatDate, num } from '../../lib/format'
 import './myTrip.css'
 
 /**
- * BoyAccount — the "حساب ولد" action.
+ * BoyAccount — حساب ولد
  *
- * One boy at a time: what he paid, what is still due, and every payment (date,
- * amount, type) with the servant who recorded it.
+ * المستخدم يكتب اسم الولد → تظهر نتيجة (أو أكثر) → يضغط على الاسم →
+ * يظهر كارد بسيط بملخص الحساب وتاريخ الدفعات.
  */
 export default function BoyAccount({ tripId }) {
   const [boys, setBoys] = useState([])
   const [payments, setPayments] = useState([])
-  const [boyId, setBoyId] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [search, setSearch] = useState('')
+  const [boyId, setBoyId] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -26,99 +27,139 @@ export default function BoyAccount({ tripId }) {
       .then(([summary, subs]) => {
         if (cancelled) return
         const list = Array.isArray(summary) ? summary : []
-        setBoys(list)
+        // الذين دفعوا فقط
+        setBoys(list.filter((b) => (b.total_paid ?? 0) > 0))
         setPayments(Array.isArray(subs) ? subs : [])
-        setBoyId((current) => current || (list.length === 1 ? String(list[0].boy_id) : ''))
         setError(null)
       })
-      .catch((err) => {
-        if (!cancelled) setError(err)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+      .catch((err) => { if (!cancelled) setError(err) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [tripId])
 
+  // نتائج البحث — تظهر بس لو كتب حاجة
+  const results = useMemo(() => {
+    const q = search.trim()
+    if (!q) return []
+    return boys.filter((b) => b.boy_name?.includes(q))
+  }, [boys, search])
+
   const boy = useMemo(
-    () => boys.find((b) => String(b.boy_id) === String(boyId)) || null,
+    () => boys.find((b) => b.boy_id === boyId) || null,
     [boys, boyId],
   )
 
   const history = useMemo(
-    () => (boy ? payments.filter((p) => p.boy_id === boy.boy_id) : []),
+    () => (boy ? payments.filter((p) => String(p.boy_id) === String(boy.boy_id)) : []),
     [payments, boy],
   )
 
+  const handleSelect = (b) => {
+    setBoyId(b.boy_id)
+    setSearch(b.boy_name)
+  }
 
-
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value)
+    setBoyId(null) // إلغاء الاختيار لو بدأ يكتب تاني
+  }
 
   return (
     <div className="mytrip__panel">
- 
-
       {loading ? (
         <Loading label="جارٍ تحميل الحسابات..." />
       ) : error ? (
         <ErrorState error={error} />
       ) : boys.length === 0 ? (
-        <EmptyState icon="boys" title="لا يوجد أولاد" message="لا يوجد أولاد مسجلون في فصل هذه الرحلة." />
+        <EmptyState icon="boys" title="لا يوجد أولاد" message="لا يوجد أولاد دفعوا في هذه الرحلة." />
       ) : (
         <>
-          <Field label="اسم الولد" htmlFor="boy-account">
-            <Select
-              id="boy-account"
-              value={boyId}
-              onChange={(e) => setBoyId(e.target.value)}
-              searchable
-              searchPlaceholder="ابحث باسم الولد..."
-            >
-              <option value="">— اختر الولد —</option>
-              {boys.map((b) => (
-                <option key={b.boy_id} value={b.boy_id}>
-                  {b.boy_name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-
-          {!boy ? (
-            <EmptyState
-              icon="user"
-              title="اختر ولدًا"
-              message="اختر اسم الولد من القائمة لعرض حسابه."
-              inline
+          {/* حقل البحث */}
+          <div className="mytrip__search-wrap">
+            <Icon name="search" size={16} />
+            <input
+              className="mytrip__search-input"
+              type="text"
+              placeholder="اكتب اسم الولد..."
+              value={search}
+              onChange={handleSearchChange}
+              autoComplete="off"
             />
-          ) : (
-            <>
-              <div className="mytrip__stats-grid">
-                <div className="mytrip__stat-box">
-                  <div className="mytrip__stat-value mytrip__stat-value--good">
-                    {num(boy.total_paid ?? 0)}
-                  </div>
-                  <div className="mytrip__stat-label">دفع (جنيه)</div>
-                </div>
-                <div className="mytrip__stat-box">
-                  <div className="mytrip__stat-value mytrip__stat-value--due">
-                    {num(Math.max(0, boy.remaining ?? 0))}
-                  </div>
-                  <div className="mytrip__stat-label">الباقي عليه (جنيه)</div>
-                </div>
-                <div className="mytrip__stat-box">
-                  <div className="mytrip__stat-value">{num(boy.trip_cost)}</div>
-                  <div className="mytrip__stat-label">قيمة الاشتراك (جنيه)</div>
-                </div>
+            {search && (
+              <button
+                className="mytrip__search-clear"
+                onClick={() => { setSearch(''); setBoyId(null) }}
+                aria-label="مسح"
+              >
+                <Icon name="x" size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* نتائج البحث — تظهر فقط قبل الاختيار */}
+          {!boyId && results.length > 0 && (
+            <div className="mytrip__boys-list">
+              {results.map((b) => (
+                <button
+                  key={b.boy_id}
+                  className="mytrip__boy-row"
+                  onClick={() => handleSelect(b)}
+                >
+                  <span className="mytrip__boy-row-name">{b.boy_name}</span>
+                  <span className="mytrip__boy-row-summary">
+                    <span className="mytrip__summary-label">دفع</span>
+                    <strong className="mytrip__summary-amount">{num(b.total_paid ?? 0)} ج</strong>
+                    <span className="mytrip__summary-sep" />
+                    <span className="mytrip__summary-label">باقي</span>
+                    <strong className={`mytrip__summary-amount${(b.remaining ?? 0) > 0 ? ' mytrip__summary-amount--due' : ''}`}>
+                      {num(Math.max(0, b.remaining ?? 0))} ج
+                    </strong>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* إرشاد أولي */}
+          {!boyId && !search && (
+            <EmptyState icon="search" title="ابحث عن ولد" message="اكتب اسم الولد في خانة البحث." inline />
+          )}
+
+          {/* لا نتائج */}
+          {!boyId && search && results.length === 0 && (
+            <EmptyState icon="search" title="لا نتائج" message="لا يوجد ولد دفع بهذا الاسم." inline />
+          )}
+
+          {/* كارد الولد المختار */}
+          {boy && (
+            <div className="mytrip__account-card">
+              {/* اسم + حالة */}
+              <div className="mytrip__account-card-name">
+                {boy.boy_name}
+                <Badge kind={(boy.remaining ?? 0) <= 0 ? 'green' : 'gold'}>
+                  {(boy.remaining ?? 0) <= 0 ? 'مكتمل' : 'جزئي'}
+                </Badge>
               </div>
 
+              {/* ملخص دفع / باقي */}
+              <div className="mytrip__account-card-amounts">
+                <span className="mytrip__pill mytrip__pill--paid">
+                  <span className="mytrip__pill-label">دفع</span>
+                  <strong className="mytrip__pill-val">{num(boy.total_paid ?? 0)} ج</strong>
+                </span>
+                <span className="mytrip__pill mytrip__pill--due">
+                  <span className="mytrip__pill-label">باقي</span>
+                  <strong className="mytrip__pill-val">{num(Math.max(0, boy.remaining ?? 0))} ج</strong>
+                </span>
+                <span className="mytrip__pill mytrip__pill--neutral">
+                  <span className="mytrip__pill-label">الإجمالي</span>
+                  <strong className="mytrip__pill-val">{num(boy.trip_cost ?? 0)} ج</strong>
+                </span>
+              </div>
+
+              {/* تاريخ الدفعات */}
               {history.length === 0 ? (
-                <EmptyState
-                  icon="inbox"
-                  title="لا توجد دفعات"
-                  message="هذا الولد لم يسجل أي دفعة في الرحلة بعد."
-                  inline
-                />
+                <EmptyState icon="inbox" title="لا توجد دفعات" message="لم يسجل هذا الولد أي دفعة بعد." inline />
               ) : (
                 <div className="mytrip__history-list">
                   {history.map((p) => (
@@ -126,32 +167,31 @@ export default function BoyAccount({ tripId }) {
                       <div className="mytrip__history-top">
                         <div className="mytrip__history-left">
                           <div className="mytrip__history-date">{formatDate(p.created_at)}</div>
-                          <div className="mytrip__history-type">
-                            <Badge kind={p.type === 'recover' ? 'red' : 'green'}>
-                              {p.type === 'recover' ? 'استرداد' : 'دفعة'}
-                            </Badge>
-                          </div>
+                          <Badge kind={p.type === 'recover' ? 'red' : 'green'}>
+                            {p.type === 'recover' ? 'استرداد' : 'دفعة'}
+                          </Badge>
                         </div>
                         <div className="mytrip__history-right">
                           <span className={`mytrip__amount${p.type === 'recover' ? ' mytrip__amount--due' : ''}`}>
-                            {num(p.value)} جنيه
+                            {num(p.value)} ج
                           </span>
                         </div>
                       </div>
-                      {p.note ? (
+                      {p.note && (
                         <div className="mytrip__history-note">
                           <Icon name="note" size={12} />
                           <span>{p.note}</span>
                         </div>
-                      ) : null}
+                      )}
                     </div>
                   ))}
                 </div>
               )}
-            </>
+            </div>
           )}
         </>
       )}
     </div>
   )
 }
+

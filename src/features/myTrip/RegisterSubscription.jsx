@@ -76,7 +76,9 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
   }, [boys, query, selectedBoy])
 
   const remaining = summary?.remaining
+  const totalCharged = summary?.total_charged ?? 0
   const overBalance = remaining > 0 && type === 'charge' && Number(value) > remaining
+  const overRecover = type === 'recover' && Number(value) > totalCharged
 
   const selectBoy = (boy) => {
     setSelectedBoy(boy)
@@ -243,6 +245,12 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
           <span>المبلغ أكبر من الباقي عليه ({num(remaining)} جنيه).</span>
         </div>
       )}
+      {overRecover && (
+        <div className="mytrip__note mytrip__note--warn">
+          <Icon name="info" size={14} />
+          <span>المبلغ أكبر من المدفوع مسبقاً ({num(totalCharged)} جنيه).</span>
+        </div>
+      )}
 
       <div className="mytrip__note">
         <Icon name="info" size={14} />
@@ -259,7 +267,7 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
           variant="primary"
           type="submit"
           loading={busy}
-          disabled={!selectedBoy || !value || Number(value) <= 0}
+          disabled={!selectedBoy || !value || Number(value) <= 0 || overBalance || overRecover}
         >
           {type === 'recover' ? 'سحب الاشتراك' : 'تسجيل الدفعة'}
         </Button>
