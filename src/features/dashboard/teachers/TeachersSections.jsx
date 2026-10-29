@@ -1,7 +1,10 @@
 import { Tabs } from '../../../components/ui/Toolbar'
 import { Table } from '../../../components/ui/Table'
+import { Button } from '../../../components/ui/Button'
+import { Icon } from '../../../components/ui/Icon'
 import { EmptyState } from '../../../components/ui/States'
 import { ScorePill } from '../../../components/ui/Bits'
+import { DashboardAPI } from '../../../lib/endpoints'
 import { formatShort } from '../../../lib/format'
 import {
   DashSection,
@@ -39,11 +42,13 @@ function ServantsTable({ rows, classLabel }) {
     )
   }
 
+  /* The same table on a phone as on the desktop: every column, every
+     click-to-sort header. `servants-table` pins the name column while the
+     numbers scroll sideways (features/dashboard/css/responsive.css). */
   const columns = [
     {
       key: 'teacher_name',
       label: 'الخادم',
-      mobile: 'الخادم',
       sortValue: (s) => s.teacher_name,
       render: (s) => <span className="table__name">{s.teacher_name}</span>,
     },
@@ -51,7 +56,6 @@ function ServantsTable({ rows, classLabel }) {
       key: 'class_id',
       label: 'الفصل',
       width: 150,
-      mobile: 'الفصل',
       sortValue: (s) => classLabel(s.class_id),
       render: (s) => classLabel(s.class_id),
     },
@@ -59,7 +63,6 @@ function ServantsTable({ rows, classLabel }) {
       key: 'score',
       label: 'النقاط',
       width: 90,
-      mobile: 'النقاط',
       sortValue: (s) => s.score,
       render: (s) => <ScorePill value={s.score} suffix="" />,
     },
@@ -68,7 +71,6 @@ function ServantsTable({ rows, classLabel }) {
       label: 'حاضر',
       width: 70,
       align: 'center',
-      mobile: 'حاضر',
       sortValue: (s) => s.attend,
     },
     {
@@ -76,7 +78,6 @@ function ServantsTable({ rows, classLabel }) {
       label: 'تحضير الدرس',
       width: 90,
       align: 'center',
-      mobile: 'تحضير الدرس',
       sortValue: (s) => s.prepare,
     },
     {
@@ -84,7 +85,6 @@ function ServantsTable({ rows, classLabel }) {
       label: 'القداس',
       width: 70,
       align: 'center',
-      mobile: 'القداس',
       sortValue: (s) => s.liturgy,
     },
     {
@@ -92,7 +92,6 @@ function ServantsTable({ rows, classLabel }) {
       label: 'افتقاد',
       width: 70,
       align: 'center',
-      mobile: 'افتقاد',
       sortValue: (s) => s.follow,
     },
     {
@@ -100,7 +99,6 @@ function ServantsTable({ rows, classLabel }) {
       label: 'اجتماع الخدام',
       width: 100,
       align: 'center',
-      mobile: 'اجتماع الخدام',
       sortValue: (s) => s.teachers_meeting,
     },
   ]
@@ -110,9 +108,9 @@ function ServantsTable({ rows, classLabel }) {
       columns={columns}
       rows={rows}
       rowKey={(s) => s.teacher_id}
+      className="servants-table"
       compact
       sortable
-      stackOnMobile
     />
   )
 }
@@ -153,6 +151,14 @@ export function PerformanceView({
   const avgValue = values.length
     ? (values.reduce((n, v) => n + v, 0) / values.length).toFixed(1)
     : '—'
+
+  // The sheet is the table as it stands: same period, same metric and order.
+  const exportParams = {
+    date_mode: data.scope.date_mode,
+    metric: perfMetric,
+    order: perfOrder,
+    ...(data.scope.single_class ? { class_id: data.scope.classes[0] } : {}),
+  }
 
   return (
     <>
@@ -222,6 +228,18 @@ export function PerformanceView({
       <DashSection
         title="تفاصيل الخدام"
         hint="كل الخدام اللي عليهم متابعة في الفترة، بالأرقام، مرتبين حسب المقياس والترتيب المختارين فوق."
+        control={
+          perfAllSorted.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Icon name="download" size={15} />}
+              onClick={() => DashboardAPI.exportTeachers(exportParams)}
+            >
+              تصدير الإكسل
+            </Button>
+          )
+        }
       >
         <ServantsTable rows={perfAllSorted} classLabel={classLabel} />
       </DashSection>
