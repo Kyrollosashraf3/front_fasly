@@ -23,6 +23,23 @@ const WINDOW_OPTIONS = [
   { value: 'month', label: 'هذا الشهر' },
 ]
 
+const MONTH_OPTIONS = [
+  { value: '1', label: 'يناير' },
+  { value: '2', label: 'فبراير' },
+  { value: '3', label: 'مارس' },
+  { value: '4', label: 'أبريل' },
+  { value: '5', label: 'مايو' },
+  { value: '6', label: 'يونيو' },
+  { value: '7', label: 'يوليو' },
+  { value: '8', label: 'أغسطس' },
+  { value: '9', label: 'سبتمبر' },
+  { value: '10', label: 'أكتوبر' },
+  { value: '11', label: 'نوفمبر' },
+  { value: '12', label: 'ديسمبر' },
+]
+
+const monthLabel = (value) => MONTH_OPTIONS.find((m) => m.value === value)?.label
+
 /** "النهاردة" / "بعد 3 أيام" / "فات يومين". */
 function countdown(days) {
   if (days === 0) return { kind: 'green', label: 'النهاردة 🎉' }
@@ -43,6 +60,7 @@ export default function BirthdaysPage() {
 
   const [kind, setKind] = useState('boys')
   const [window, setWindow] = useState('twoweeks')
+  const [month, setMonth] = useState('')
   const [classId, setClassId] = useState('')
 
   const kindOptions = isServant ? [KIND_OPTIONS[0]] : KIND_OPTIONS
@@ -52,14 +70,17 @@ export default function BirthdaysPage() {
     () =>
       DashboardAPI.birthdays({
         kind,
-        window,
+        // A chosen month replaces the quick window on the server.
+        ...(month ? { month } : { window }),
         ...(classId ? { class_id: classId } : {}),
       }),
-    [kind, window, classId],
+    [kind, window, month, classId],
   )
 
   const d = data
   const items = d?.items || []
+
+  const scopeLabel = month ? `شهر ${monthLabel(month)}` : window === 'month' ? 'هذا الشهر' : 'خلال أسبوعين'
 
   return (
     <>
@@ -67,14 +88,35 @@ export default function BirthdaysPage() {
         <div>
           <h1 className="page-head__title">أعياد الميلاد</h1>
           <div className="page-head__sub">
-            {d ? `${d.count} مناسبة · ${window === 'month' ? 'هذا الشهر' : 'خلال أسبوعين'}` : 'مواليد قريبين'}
+            {d ? `${d.count} مناسبة · ${scopeLabel}` : 'مواليد قريبين'}
           </div>
         </div>
       </div>
 
       <Toolbar>
         <Tabs value={kind} onChange={setKind} options={kindOptions} />
-        <Tabs value={window} onChange={setWindow} options={WINDOW_OPTIONS} />
+        <Tabs
+          value={month ? '' : window}
+          onChange={(value) => {
+            setMonth('')
+            setWindow(value)
+          }}
+          options={WINDOW_OPTIONS}
+        />
+        <Select
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          className="select--plain"
+          style={{ minWidth: 150 }}
+          aria-label="اختيار الشهر"
+        >
+          <option value="">كل الشهور</option>
+          {MONTH_OPTIONS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.value} - {m.label}
+            </option>
+          ))}
+        </Select>
         <ToolbarSpacer />
         {classes.length > 1 && (
           <Select
@@ -107,9 +149,11 @@ export default function BirthdaysPage() {
           icon="gift"
           title="مفيش أعياد ميلاد"
           message={
-            window === 'month'
-              ? 'مفيش مواليد الشهر ده.'
-              : 'مفيش مواليد خلال الفترة دي. جرّب «هذا الشهر».'
+            month
+              ? `مفيش مواليد في شهر ${monthLabel(month)}.`
+              : window === 'month'
+                ? 'مفيش مواليد الشهر ده.'
+                : 'مفيش مواليد خلال الفترة دي. جرّب «هذا الشهر» أو اختار شهر.'
           }
           inline
         />
