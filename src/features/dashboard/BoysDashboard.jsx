@@ -1,5 +1,6 @@
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
+import { Icon } from '../../components/ui/Icon'
 import { Select } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -9,12 +10,17 @@ import { BoysSections } from './boys/BoysSections'
 import { useBoysDashboard } from './boys/useBoysDashboard'
 import './dashboard.css'
 
+/** Names across the class groups of a section, for its channel count. */
+const groupCount = (groups) =>
+  Object.values(groups || {}).reduce((n, rows) => n + rows.length, 0)
+
 /**
  * BoysDashboard — "أداء الأولاد".
  *
- * One GET /dashboard/summary drives every card. The class picker, the period
- * and the three N-controls are query params, so changing one re-requests.
- * The class picker now drives the WHOLE page (totals included).
+ * One GET /dashboard/summary drives every card and seven channel buttons swap
+ * the section underneath them, so only one section is open at a time (the same
+ * shape as «أداء الخدام»). The class picker and the period are query params, so
+ * changing one re-requests; the streak section adds its own Friday range.
  */
 export default function BoysDashboard() {
   usePageTitle('أداء الأولاد')
@@ -22,6 +28,8 @@ export default function BoysDashboard() {
 
   const dash = useBoysDashboard()
   const {
+    section,
+    setSection,
     classes,
     classId,
     setClassId,
@@ -33,6 +41,11 @@ export default function BoysDashboard() {
     setTrendN,
     streakN,
     setStreakN,
+    streakFrom,
+    setStreakFrom,
+    streakTo,
+    setStreakTo,
+    hasRange,
     absentN,
     setAbsentN,
     showAll,
@@ -50,6 +63,36 @@ export default function BoysDashboard() {
     closeBoy,
   } = dash
 
+  const channels = [
+    { key: 'att', label: 'نسبة الحضور', icon: 'percent', count: byClass.length },
+    { key: 'curve', label: 'منحنى الحضور', icon: 'chart', count: d?.boys_trend?.length },
+    {
+      key: 'cover',
+      label: 'افتقاد الأولاد',
+      icon: 'heart',
+      count: cover ? cover.done_count + cover.todo_count : undefined,
+    },
+    {
+      key: 'late',
+      label: 'متأخرون عن الاعتراف',
+      icon: 'history',
+      count: late?.late_count,
+    },
+    { key: 'streak', label: 'المواظبون', icon: 'star', count: groupCount(d?.streaks) },
+    {
+      key: 'absent',
+      label: 'غياب آخر جمعة',
+      icon: 'alert',
+      count: d?.last_friday?.absent_count,
+    },
+    {
+      key: 'frequent',
+      label: 'الغياب المتكرر',
+      icon: 'clipboard',
+      count: groupCount(d?.frequent_absent),
+    },
+  ]
+
   return (
     <>
       <div className="page-head">
@@ -61,6 +104,27 @@ export default function BoysDashboard() {
               : 'مؤشرات الحضور والمواظبة'}
           </div>
         </div>
+      </div>
+
+      <div className="dash-channels" role="tablist" aria-label="أقسام أداء الأولاد">
+        {channels.map((channel) => (
+          <button
+            key={channel.key}
+            type="button"
+            role="tab"
+            aria-selected={section === channel.key}
+            className={`dash-channel${section === channel.key ? ' is-active' : ''}`}
+            onClick={() => setSection(channel.key)}
+          >
+            <span className="dash-channel__icon">
+              <Icon name={channel.icon} size={18} />
+            </span>
+            <span className="dash-channel__label">{channel.label}</span>
+            {channel.count !== undefined && (
+              <span className="dash-channel__count">{channel.count}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       <Toolbar>
@@ -87,14 +151,8 @@ export default function BoysDashboard() {
         <span className="small muted">آخر جمعة مسجلة: {d?.last_friday?.date || '—'}</span>
       </Toolbar>
 
-      {loading && !d ? (
-        <div style={{ marginTop: 'var(--sp-4)' }}>
-          <SkeletonRows rows={6} cols={4} />
-        </div>
-      ) : error ? (
-        <ErrorState error={error} onRetry={refetch} />
-      ) : d ? (
-        <div className="dash">
+      <div className="dash">
+        {a && (
           <KpiRow>
             <Kpi
               hero
@@ -111,26 +169,40 @@ export default function BoysDashboard() {
             <Kpi value={d.counts.boys} label="الأولاد" />
             <Kpi value={d.counts.fridays} label="جمع مسجلة" />
           </KpiRow>
+        )}
 
-          <BoysSections
-            data={d}
-            byClass={byClass}
-            cover={cover}
-            late={late}
-            coverGroups={coverGroups}
-            coverTab={coverTab}
-            setCoverTab={setCoverTab}
-            trendN={trendN}
-            setTrendN={setTrendN}
-            streakN={streakN}
-            setStreakN={setStreakN}
-            absentN={absentN}
-            setAbsentN={setAbsentN}
-            openBoy={openBoy}
-            classLabel={classLabel}
-          />
+        <div className="dash-view">
+          {error ? (
+            <ErrorState error={error} onRetry={refetch} />
+          ) : loading && !d ? (
+            <SkeletonRows rows={6} cols={4} />
+          ) : d ? (
+            <BoysSections
+              view={section}
+              data={d}
+              byClass={byClass}
+              cover={cover}
+              late={late}
+              coverGroups={coverGroups}
+              coverTab={coverTab}
+              setCoverTab={setCoverTab}
+              trendN={trendN}
+              setTrendN={setTrendN}
+              streakN={streakN}
+              setStreakN={setStreakN}
+              streakFrom={streakFrom}
+              setStreakFrom={setStreakFrom}
+              streakTo={streakTo}
+              setStreakTo={setStreakTo}
+              hasRange={hasRange}
+              absentN={absentN}
+              setAbsentN={setAbsentN}
+              openBoy={openBoy}
+              classLabel={classLabel}
+            />
+          ) : null}
         </div>
-      ) : null}
+      </div>
 
       <BoyProfileModal open={Boolean(boy)} boy={boy} onClose={closeBoy} />
     </>

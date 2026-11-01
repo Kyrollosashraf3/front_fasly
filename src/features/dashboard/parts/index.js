@@ -1,4 +1,12 @@
-export { shortDate, NField, PERIOD_OPTIONS, PeriodField, DATE_MODE_OPTIONS, DateModeField } from './fields'
+export {
+  shortDate,
+  NField,
+  PERIOD_OPTIONS,
+  PeriodField,
+  DATE_MODE_OPTIONS,
+  DateModeField,
+  StreakRangeField,
+} from './fields'
 export { Kpi, KpiRow } from './kpi'
 export { DashSection, DashCard } from './Section'
 export { TrendChart } from './TrendChart'

@@ -70,3 +70,44 @@ export function DateModeField({ value, onChange }) {
     </label>
   )
 }
+
+/**
+ * The Friday range the "المواظبون على الحضور" list is counted over, mirroring
+ * the backend's `streak_from` / `streak_to`. With no range the list falls back
+ * to the trailing streak, so the number-of-fridays control is passed through as
+ * `children` and only renders in that case.
+ */
+export function StreakRangeField({ options = [], from, to, onFrom, onTo, children }) {
+  return (
+    <div className="streak-range">
+      <label className="n-field">
+        من جمعة
+        <Select value={from} onChange={(e) => onFrom(e.target.value)} style={{ width: 130 }}>
+          <option value="">بدون فترة</option>
+          {options.map((d) => (
+            <option key={d} value={d}>
+              {shortDate(d)}
+            </option>
+          ))}
+        </Select>
+      </label>
+      <label className="n-field">
+        إلى جمعة
+        <Select
+          value={to}
+          onChange={(e) => onTo(e.target.value)}
+          disabled={!from}
+          style={{ width: 130 }}
+        >
+          <option value="">بدون فترة</option>
+          {options.map((d) => (
+            <option key={d} value={d}>
+              {shortDate(d)}
+            </option>
+          ))}
+        </Select>
+      </label>
+      {children}
+    </div>
+  )
+}

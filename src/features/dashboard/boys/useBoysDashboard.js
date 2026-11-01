@@ -8,13 +8,30 @@ import { useBoyDrawer } from '../parts'
 export function useBoysDashboard() {
   const { user, classes, can } = useAuth()
 
+  const [section, setSection] = useState('att')
   const [classId, setClassId] = useState('')
   const [dateMode, setDateMode] = useState('last_friday')
   const [streakN, setStreakN] = useState(4)
+  const [streakFrom, setStreakFromState] = useState('')
+  const [streakTo, setStreakToState] = useState('')
   const [absentN, setAbsentN] = useState(4)
   const [trendN, setTrendN] = useState(8)
   const [coverTab, setCoverTab] = useState('todo')
   const [boy, openBoy, closeBoy] = useBoyDrawer()
+
+  /** The range is one pair: an empty end takes the other's date, so a half-set
+   *  range is impossible and clearing either end drops back to the trailing
+   *  streak («عدد الجمع المتواصلة»). */
+  const setStreakFrom = (value) => {
+    setStreakFromState(value)
+    setStreakToState(!value || value > streakTo ? value : streakTo || value)
+  }
+  const setStreakTo = (value) => {
+    setStreakToState(value)
+    setStreakFromState(!value || value < streakFrom ? value : streakFrom || value)
+  }
+
+  const hasRange = Boolean(streakFrom && streakTo)
 
   const { data, loading, error, refetch } = useQuery(
     () =>
@@ -24,8 +41,9 @@ export function useBoysDashboard() {
         streak_n: streakN,
         absent_n: absentN,
         trend_n: trendN,
+        ...(hasRange ? { streak_from: streakFrom, streak_to: streakTo } : {}),
       }),
-    [classId, dateMode, streakN, absentN, trendN],
+    [classId, dateMode, streakN, streakFrom, streakTo, absentN, trendN],
   )
 
   const d = data
@@ -41,6 +59,8 @@ export function useBoysDashboard() {
   const coverGroups = coverTab === 'done' ? cover?.done : cover?.todo
 
   return {
+    section,
+    setSection,
     classes,
     classId,
     setClassId,
@@ -48,6 +68,11 @@ export function useBoysDashboard() {
     setDateMode,
     streakN,
     setStreakN,
+    streakFrom,
+    setStreakFrom,
+    streakTo,
+    setStreakTo,
+    hasRange,
     absentN,
     setAbsentN,
     trendN,
