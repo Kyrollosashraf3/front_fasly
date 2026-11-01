@@ -45,7 +45,7 @@ export function TeacherFormFields({ form, errors, set, classes, setForm, onSubmi
           <Input id="t-zone" placeholder="مثال: مصر الجديدة" value={form.zone} onChange={set('zone')} />
         </Field>
 
-        <Field label="أبونا الاعتراف" htmlFor="t-father">
+        <Field label="أب الاعتراف" htmlFor="t-father">
           <Select
             id="t-father"
             value={form.father_name}
@@ -96,7 +96,7 @@ export function TeacherFormFields({ form, errors, set, classes, setForm, onSubmi
           />
         </Field>
 
-        <Field label="آخر اعتراف / زيارة للأب" htmlFor="t-visit">
+        <Field label="آخر اعتراف" htmlFor="t-visit">
           <Input
             id="t-visit"
             type="date"

@@ -132,7 +132,7 @@ export function MyProfileDialog({ record, phone, classLabel, onClose, onSaved })
             />
           </Field>
 
-          <Field label="آخر اعتراف / زيارة للأب" htmlFor="me-visit">
+          <Field label="آخر اعتراف" htmlFor="me-visit">
             <Input
               id="me-visit"
               type="date"
@@ -142,7 +142,7 @@ export function MyProfileDialog({ record, phone, classLabel, onClose, onSaved })
             />
           </Field>
 
-          <Field label="أبونا الاعتراف" htmlFor="me-father">
+          <Field label="أب الاعتراف" htmlFor="me-father">
             <Select id="me-father" value={form.father_name} onChange={set('father_name')}>
               <option value="">— بدون —</option>
               {FATHERS.map((f) => (

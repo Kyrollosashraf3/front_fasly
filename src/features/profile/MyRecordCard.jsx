@@ -37,7 +37,7 @@ export function MyRecordCard({ record, loading, error, onRetry, onEdit }) {
             <DetailRow label="آخر اعتراف">
               {record.last_visit_date ? formatDate(record.last_visit_date) : 'لسه اتسجلش'}
             </DetailRow>
-            <DetailRow label="أبونا الاعتراف">{record.father_name || '—'}</DetailRow>
+            <DetailRow label="أب الاعتراف">{record.father_name || '—'}</DetailRow>
             <DetailRow label="المنطقة/الشارع">{record.zone || '—'}</DetailRow>
             <DetailRow label="عنوان المنزل">{record.address || '—'}</DetailRow>
             <DetailRow label="المهارات">

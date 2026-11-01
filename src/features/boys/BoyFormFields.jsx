@@ -108,7 +108,7 @@ export function BoyFormFields({ form, set, setForm, errors, classes, servants, a
           />
         </Field>
 
-        <Field label="أبونا الاعتراف" htmlFor="boy-father">
+        <Field label="أب الاعتراف" htmlFor="boy-father">
           <Select
             id="boy-father"
             value={form.father_name}
@@ -161,7 +161,7 @@ export function BoyFormFields({ form, set, setForm, errors, classes, servants, a
           </Field>
         )}
 
-        <Field label="آخر اعتراف / زيارة للأب" htmlFor="boy-visit">
+        <Field label="آخر اعتراف" htmlFor="boy-visit">
           <Input
             id="boy-visit"
             type="date"
