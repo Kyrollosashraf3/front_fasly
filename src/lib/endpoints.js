@@ -47,6 +47,10 @@ export const BoyAPI = {
 export const TeacherAPI = {
   list: (params) => api.get('/teachers', params),
   get: (id) => api.get(`/teachers/${id}`),
+  /** The logged-in servant's own record. */
+  me: () => api.get('/teachers/me'),
+  /** A servant editing himself — the phone and the class stay locked. */
+  updateMe: (body) => api.patch('/teachers/me', body),
   create: (body) => api.post('/teachers', body),
   update: (id, body) => api.patch(`/teachers/${id}`, body),
   remove: (id) => api.del(`/teachers/${id}`),

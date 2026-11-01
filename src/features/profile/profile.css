@@ -11,3 +11,8 @@
 .profile-grid .card__title {
   margin-bottom: var(--sp-3);
 }
+
+/* «بياناتي» sits under the grid as its own full-width card. */
+.my-record {
+  margin-top: var(--sp-4);
+}
