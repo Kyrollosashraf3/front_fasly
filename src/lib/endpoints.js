@@ -152,9 +152,19 @@ export const DashboardAPI = {
   /** The home screen's own numbers: last week and the season, already scoped
    *  to the login (a servant gets his group, an amin his class). */
   myPerformance: () => api.get('/dashboard/my-performance'),
-  /** «فحص اليوم»: today's liturgy boys, then today's reciters per competition. */
+  todayCheckTasks: (params) => api.get('/dashboard/today-check/tasks', params),
   todayCheck: (params) => api.get('/dashboard/today-check', params),
-  /** Every list of «فحص اليوم» as one block-per-list sheet. */
   exportTodayCheck: (params) =>
     download('/dashboard/today-check/export', params, 'today-check.xlsx'),
+}
+
+/* ------------------------------------------------------- notifications */
+/** Web push: this browser's subscription, and the amin's sends. */
+export const NotificationAPI = {
+  vapidKey: () => api.get('/notifications/vapid-key'),
+  subscribe: (body) => api.put('/notifications/subscription', body),
+  /** `class_id` narrows the counts to one audience; empty means every class. */
+  status: (params) => api.get('/notifications/status', params),
+  send: (body) => api.post('/notifications/send', body),
+  log: (params) => api.get('/notifications/log', params),
 }

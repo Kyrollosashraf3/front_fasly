@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { clearToken, getToken, setToken, setUnauthorizedHandler } from '../lib/api'
 import { AuthAPI, ClassAPI, BoyAPI, TeacherAPI } from '../lib/endpoints'
+import { listenForResubscribe, syncPush } from '../lib/push'
 import { can, isBoy, isManager, isServant, isSuperAdmin } from '../lib/roles'
 
 const AuthContext = createContext(null)
@@ -24,8 +25,7 @@ export function AuthProvider({ children }) {
    * Which class does this login belong to? (null = he sees every class)
    * Only a super_admin is class-less: an admin is attached to a servant and
    * a servant/boy to his own class, so the answer comes from the owner link.
-   */
-  const resolveMyClass = useCallback(async (me) => {
+   */  const resolveMyClass = useCallback(async (me) => {
     if (!me || isSuperAdmin(me)) return null
     try {
       if (me.teacher_id) {
@@ -76,6 +76,18 @@ export function AuthProvider({ children }) {
     },
     [syncClasses],
   )
+
+  /**
+   * A subscription belongs to the phone, not to the login: signing in here
+   * re-registers whichever browser this is under the account now using it, so a
+   * shared phone follows the servant holding it instead of the last one who did.
+   */
+  useEffect(() => {
+    if (user) syncPush().catch(() => {})
+  }, [user])
+
+  /** The push service rotated our subscription while the app was open. */
+  useEffect(() => listenForResubscribe(), [])
 
   /** Restore an existing session on first mount. */
   useEffect(() => {

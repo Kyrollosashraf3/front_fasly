@@ -115,6 +115,10 @@ export const can = {
   /** Register a boy's recitation and tick the طايو he collected. */
   writeRecitations: (user) => roleOf(user) !== ROLES.USER,
 
+  /** Send a notification to the servants' phones — his own class for an amin,
+   *  any class or every class for the general amin. */
+  sendNotifications: (user) => isManager(user),
+
   /** Grant the super_admin role. */
   grantSuperAdmin: (user) => roleOf(user) === ROLES.SUPER_ADMIN,
 }

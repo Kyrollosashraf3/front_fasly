@@ -20,9 +20,11 @@ import GroupsPage from '../features/groups/GroupsPage'
 import RevealPage from '../features/reveal/RevealPage'
 import ProfilePage from '../features/profile/ProfilePage'
 import BoysDashboard from '../features/dashboard/BoysDashboard'
+import TodayCheckPage from '../features/dashboard/boys/TodayCheckPage'
 import FollowUpPerformancePage from '../features/followup/FollowUpPerformancePage'
 import TeachersDashboard from '../features/dashboard/TeachersDashboard'
 import BirthdaysPage from '../features/birthdays/BirthdaysPage'
+import NotificationsPage from '../features/notifications/NotificationsPage'
 import NotFound from './NotFound'
 
 /** The whole route tree, under the three guards every screen leans on. */
@@ -60,6 +62,14 @@ export function AppRoutes() {
             element={
               <RoleGuard allow={(c, u) => c.seeBoysDashboard(u)}>
                 <BoysDashboard />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="dashboard/boys/today-check"
+            element={
+              <RoleGuard allow={(c, u) => c.seeBoysDashboard(u)}>
+                <TodayCheckPage />
               </RoleGuard>
             }
           />
@@ -196,6 +206,15 @@ export function AppRoutes() {
             element={
               <RoleGuard allow={(c, u) => c.seeChecks(u)}>
                 <TeacherCheckPage />
+              </RoleGuard>
+            }
+          />
+
+          <Route
+            path="notifications"
+            element={
+              <RoleGuard allow={(c, u) => c.sendNotifications(u)}>
+                <NotificationsPage />
               </RoleGuard>
             }
           />

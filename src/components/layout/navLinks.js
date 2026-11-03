@@ -39,6 +39,9 @@ export function rootLinks({ user, isBoy, can, classes = [] }) {
   if (can.seeTeachersDashboard(user)) {
     links.push({ to: '/dashboard/teachers', icon: 'star', label: 'أداء الخدام' })
   }
+  if (can.sendNotifications(user)) {
+    links.push({ to: '/notifications', icon: 'bell', label: 'إرسال إشعار' })
+  }
 
   return links
 }

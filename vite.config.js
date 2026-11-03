@@ -1,11 +1,11 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// The API lives on the FastAPI server (default :9002, see back_fasly/.env and
+// The API lives on the FastAPI server (port 9001 - back_fasly settings.PORT and
 // START_Fasly.bat). In dev we proxy the handful of route prefixes it exposes
 // so the browser stays same-origin and CORS never enters the picture.
 // Anything else (VITE_API_BASE) is for prod.
-const API_TARGET = process.env.VITE_API_TARGET || 'http://127.0.0.1:9002'
+const API_TARGET = process.env.VITE_API_TARGET || 'http://127.0.0.1:9001'
 
 const apiPrefixes = [
   '/auth',
@@ -21,6 +21,7 @@ const apiPrefixes = [
   '/subscriptions',
   '/tasks',
   '/task-values',
+  '/notifications',
 ]
 
 const proxy = Object.fromEntries(

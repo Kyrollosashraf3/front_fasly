@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { classIdFrom } from '../components/layout/navLinks'
 
@@ -93,11 +93,21 @@ export function useLastClassId(currentId) {
  * offered. On a global route (`/boys`, `/attendance`, …) a super admin gets an
  * in-page picker and may sit on "all classes" (`''`); a single-class login
  * quietly keeps his only class. `classId` is `''` only for the "all" choice.
+ * A `?class_id=` in the URL (a notification tapping straight into one class)
+ * opens as the picked class.
  */
 export function useClassScope() {
   const { pathname } = useLocation()
+  const [params] = useSearchParams()
   const { classes, classReady } = useAuth()
-  const [picked, setPicked] = useState('')
+
+  // A notification link (`#/followup?class_id=4`) is the class asked for.
+  const linkClassId = params.get('class_id') || ''
+  const [picked, setPicked] = useState(linkClassId)
+
+  useEffect(() => {
+    if (linkClassId) setPicked(linkClassId)
+  }, [linkClassId])
 
   const routeClassId = classIdFrom(pathname)
   const multi = classes.length > 1

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { BottomBar } from './BottomBar'
+import PushBanner from '../../features/notifications/PushBanner'
 import { TitleProvider } from '../../context/TitleContext'
 import { UnsavedChangesProvider } from '../../context/UnsavedChangesContext'
 
@@ -42,6 +43,7 @@ export function AppShell() {
           <div className="main-col">
             <Topbar onMenu={() => setDrawer((o) => !o)} />
             <main className="view" id="view">
+              <PushBanner />
               <Outlet />
             </main>
           </div>
