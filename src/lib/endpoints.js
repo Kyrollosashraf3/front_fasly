@@ -149,4 +149,7 @@ export const DashboardAPI = {
   boyProfile: (boyId) => api.get(`/dashboard/boys/${boyId}`),
   birthdays: (params) => api.get('/dashboard/birthdays', params),
   followUpPerformance: (params) => api.get('/dashboard/follow-up', params),
+  /** The home screen's own numbers: last week and the season, already scoped
+   *  to the login (a servant gets his group, an amin his class). */
+  myPerformance: () => api.get('/dashboard/my-performance'),
 }

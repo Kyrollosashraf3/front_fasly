@@ -128,6 +128,47 @@ export function analyticsModules({ can, user }) {
 /** Account links — identical everywhere they appear. */
 export const accountLinks = [{ to: '/profile', icon: 'user', label: 'الحساب' }]
 
+/**
+ * The whole app as one grid — what the phone's menu sheet and the home screen
+ * both show, so the two can never offer a different set of doors.
+ *
+ * Sections come back in reading order with absolute `to` hrefs, already
+ * permission-filtered and with any module that appeared higher up removed:
+ * «اكشفلي» is one tile, not three.
+ */
+export function menuSections({ can, user, isBoy, classes = [], myClassId }) {
+  const seen = new Set()
+  const fresh = (items) =>
+    items.filter((item) => item && !seen.has(item.to) && (seen.add(item.to) || true))
+
+  const sections = []
+
+  // A boy's whole app is his own file: every module here is a staff screen.
+  if (isBoy) return sections
+
+  // One «الوحدات» group, never two. A multi-class login gets the global routes
+  // and picks the class inside the page; a single-class login gets his own
+  // class. Titling that group after the class only repeated the title he is
+  // already looking at and duplicated every module under it.
+  const mods =
+    classes.length > 1
+      ? globalModules({ can, user })
+      : myClassId
+        ? classModules({ can, user }).map((m) => ({ ...m, to: classHref(myClassId, m.path) }))
+        : []
+
+  if (mods.length) sections.push({ label: 'الوحدات', items: fresh(mods) })
+
+  const analytics = fresh(analyticsModules({ can, user }))
+  if (analytics.length) sections.push({ label: 'تحليل', items: analytics })
+
+  // The home tab already is `/`, and the modules group above covers its links.
+  const fixed = fresh(rootLinks({ user, isBoy, can }).filter((l) => l.to !== '/'))
+  if (fixed.length) sections.push({ label: 'أقسام ثابتة', items: fixed })
+
+  return sections.filter((s) => s.items.length)
+}
+
 export const classHref = (classId, path) =>
   `/class/${classId}${path ? `/${path}` : ''}`
 

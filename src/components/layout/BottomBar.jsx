@@ -1,37 +1,29 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useLastClassId } from '../../hooks'
 import { Icon } from '../ui/Icon'
-import {
-  accountLinks,
-  analyticsModules,
-  classIdFrom,
-  classLinks,
-  classModules,
-  globalModules,
-  rootLinks,
-} from './navLinks'
+import { accountLinks, classIdFrom, menuSections } from './navLinks'
 import { Sheet } from './Sheet'
-import { AccountLinks, HomeSheetBody, MeSheetBody, MenuSheetBody } from './BottomSheets'
+import { MenuSheetBody, MeSheetBody } from './BottomSheets'
 
 const TABS = [
   { key: 'home', icon: 'home', label: 'الرئيسية' },
-  { key: 'menu', icon: 'menu', label: 'القائمة' },
+  { key: 'menu', icon: 'grid', label: 'القائمة' },
   { key: 'me', icon: 'user', label: 'الحساب' },
 ]
 
 /**
  * BottomBar — the mobile navigation.
  *
- * The desktop keeps its sidebar; a phone gets four icons under the thumb and
- * every one of them opens a sheet of choices instead of a hidden drawer.
+ * The desktop keeps its sidebar; a phone gets three things under the thumb:
+ * the home screen, one sheet holding every module as a tile, and the account.
  * Rendered by AppShell, hidden by CSS above the mobile breakpoint.
  */
 export function BottomBar() {
   const auth = useAuth()
-  const { user, logout, classes, classReady, isManager, canAccess } = auth
+  const { user, logout, classes, classReady, canAccess, can, isBoy } = auth
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const modal = useModal()
@@ -45,22 +37,17 @@ export function BottomBar() {
   }, [pathname])
 
   const classId = classIdFrom(pathname)
-  const single = classReady && classes.length === 1
-  // A super admin works across every class, so his sheets carry global modules
-  // instead of a class-scoped menu he would have to re-pick on every screen.
-  const multi = classes.length > 1
-  // On a global route a single-class login keeps his class's links alive.
+  // On a global route a single-class login keeps his class's tiles alive.
   const lastClass = useLastClassId(classId)
   const remembered = lastClass && classReady && canAccess(lastClass) ? lastClass : null
-  const myClassId = single ? String(classes[0].id) : classId || remembered
-  const routeTab =
-    pathname === '/profile' ? 'me' : pathname === '/' ? 'home' : classId ? 'menu' : 'home'
+  const myClassId = classReady && classes.length === 1 ? String(classes[0].id) : classId || remembered
+  const routeTab = pathname === '/profile' ? 'me' : pathname === '/' ? 'home' : 'menu'
   const active = sheet || routeTab
 
-  const roots = rootLinks(auth)
-  const mods = classModules(auth)
-  const gmods = globalModules(auth)
-  const analytics = analyticsModules(auth)
+  const sections = useMemo(
+    () => menuSections({ can, user, isBoy, classes, myClassId }),
+    [can, user, isBoy, classes, myClassId],
+  )
 
   const handleLogout = async () => {
     const ok = await modal.confirm({
@@ -75,54 +62,44 @@ export function BottomBar() {
     navigate('/login', { replace: true })
   }
 
-  const accountSection = (
-    <AccountLinks links={accountLinks} onLogout={handleLogout} close={close} />
-  )
-
   return (
     <>
       <nav className="tabbar" aria-label="التنقل السريع">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={`tabbar__btn${active === tab.key ? ' is-active' : ''}`}
-            aria-expanded={sheet === tab.key}
-            onClick={() => setSheet((current) => (current === tab.key ? null : tab.key))}
-          >
-            <span className="tabbar__icon">
-              <Icon name={tab.icon} size={20} />
-            </span>
-            <span className="tabbar__label">{tab.label}</span>
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const cls = `tabbar__btn${active === tab.key ? ' is-active' : ''}`
+          const inner = (
+            <>
+              <span className="tabbar__icon">
+                <Icon name={tab.icon} size={20} />
+              </span>
+              <span className="tabbar__label">{tab.label}</span>
+            </>
+          )
+
+          if (tab.key === 'home') {
+            return (
+              <Link key={tab.key} to="/" className={cls} aria-label={tab.label}>
+                {inner}
+              </Link>
+            )
+          }
+
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              className={cls}
+              aria-expanded={sheet === tab.key}
+              onClick={() => setSheet((current) => (current === tab.key ? null : tab.key))}
+            >
+              {inner}
+            </button>
+          )
+        })}
       </nav>
 
-      <Sheet open={sheet === 'home'} title="الرئيسية" onClose={close}>
-        <HomeSheetBody
-          multi={multi}
-          globalModules={gmods}
-          classModules={mods}
-          myClassId={myClassId}
-          analytics={analytics}
-          roots={roots}
-          account={accountSection}
-          close={close}
-        />
-      </Sheet>
-
       <Sheet open={sheet === 'menu'} title="القائمة" onClose={close}>
-        <MenuSheetBody
-          multi={multi}
-          globalModules={gmods}
-          roots={roots}
-          myClassId={myClassId}
-          single={single}
-          isManager={isManager}
-          classLinks={classLinks}
-          account={accountSection}
-          close={close}
-        />
+        <MenuSheetBody sections={sections} onLogout={handleLogout} close={close} />
       </Sheet>
 
       <Sheet open={sheet === 'me'} title="الحساب" onClose={close}>

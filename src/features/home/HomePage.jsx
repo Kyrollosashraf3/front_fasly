@@ -1,133 +1,76 @@
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { Icon } from '../../components/ui/Icon'
-import { SectionTitle } from '../../components/ui/Bits'
 import { Loading } from '../../components/ui/States'
-import { classHref, classModules, globalModules, analyticsModules } from '../../components/layout/navLinks'
+import { NavTileSection } from '../../components/layout/NavTiles'
+import { accountLinks, classHref } from '../../components/layout/navLinks'
+import { userLabel } from '../../lib/constants'
+import { ROLE_LABELS } from '../../lib/roles'
+import { HomeDashboard } from './HomeDashboard'
 import './home.css'
 
-/** One module tile — icon, title, one-line description. */
-function ModuleCard({ to, icon, label, desc }) {
+/** The day has three faces in Arabic; picking one makes the screen feel lived-in. */
+function greeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'صباح الخير'
+  if (hour < 17) return 'نهارك سعيد'
+  return 'مساء الخير'
+}
+
+/**
+ * HomeHero — who is looking, and at which class.
+ * The only chrome on this screen; everything else is numbers.
+ */
+function HomeHero({ name, role, className }) {
   return (
-    <Link to={to} className="module-card">
-      <span className="module-card__icon">
-        <Icon name={icon} size={24} />
-      </span>
-      <span className="module-card__text">
-        <span className="module-card__label">{label}</span>
-        {desc && <span className="module-card__desc">{desc}</span>}
-      </span>
-      <Icon name="chevron" size={16} className="module-card__go" />
-    </Link>
+    <section className="home-hero">
+      <div className="home-hero__hello">{greeting()}</div>
+      <div className="home-hero__name">{name}</div>
+      <div className="home-hero__meta">
+        {role && <span className="home-hero__chip">{role}</span>}
+        {className && (
+          <span className="home-hero__chip home-hero__chip--gold">
+            <Icon name="home" size={13} />
+            {className}
+          </span>
+        )}
+      </div>
+    </section>
   )
 }
 
 /**
- * HomePage — every module in one place.
+ * HomePage — the service, not the menu.
  *
- * An amin or a servant lands on his own class and gets the module tiles
- * straight away; the super admin picks a class first, then the whole grid
- * lights up. The same links are mirrored in the phone's bottom bar so nothing
- * is ever more than two taps away.
+ * A staff login lands on his own numbers: the week that just went and the
+ * church year so far, for his group as a servant or his class as an amin. The
+ * doors to every module live in the phone's «القائمة» sheet and the desktop
+ * sidebar, so the home screen never has to repeat them.
  */
 export default function HomePage() {
   usePageTitle('الرئيسية')
-  const { user, classes, classReady, can, isBoy, classLabel } = useAuth()
-
-  const multi = classReady && classes.length > 1
-
-  const mods = useMemo(() => classModules({ can, user }), [can, user])
-  const gmods = useMemo(() => globalModules({ can, user }), [can, user])
-  const analytics = useMemo(() => analyticsModules({ can, user }), [can, user])
-
-  if (isBoy) {
-    return (
-      <>
-        <div className="page-head">
-          <div>
-            <h1 className="page-head__title">الرئيسية</h1>
-            <div className="page-head__sub">حسابك</div>
-          </div>
-        </div>
-        <div className="module-grid">
-          <ModuleCard to="/profile" icon="user" label="حسابي" desc="بياناتك ومتابعتك" />
-        </div>
-      </>
-    )
-  }
+  const { user, classes, classReady, isBoy, classLabel } = useAuth()
 
   const single = classReady && classes.length === 1
+  const myClassId = single ? String(classes[0].id) : null
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1 className="page-head__title">الرئيسية</h1>
-          <div className="page-head__sub">
-            {multi
-              ? 'كل الوحدات في مكان واحد'
-              : `${classLabel(String(classes[0]?.id ?? ''))} · كل الوحدات في مكان واحد`}
-          </div>
-        </div>
-      </div>
+      <HomeHero
+        name={userLabel(user)}
+        role={ROLE_LABELS[user?.role] || ''}
+        className={myClassId ? classLabel(myClassId) : ''}
+      />
 
       {!classReady ? (
         <div className="home-loading">
-          <Loading label="جارٍ تحميل الوحدات..." />
+          <Loading label="جارٍ التحميل..." />
         </div>
-      ) : multi ? (
-        <>
-          <section className="home-section">
-            <SectionTitle>الوحدات</SectionTitle>
-            <div className="module-grid">
-              {gmods.map((m) => (
-                <ModuleCard key={m.to} to={m.to} icon={m.icon} label={m.label} desc={m.desc} />
-              ))}
-            </div>
-          </section>
-
-          {analytics.length > 0 && (
-            <section className="home-section">
-              <SectionTitle>تحليل</SectionTitle>
-              <div className="module-grid">
-                {analytics.map((m) => (
-                  <ModuleCard key={m.to} to={m.to} icon={m.icon} label={m.label} desc={m.desc} />
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      ) : single ? (
-        <>
-          <section className="home-section">
-            <SectionTitle>وحدات الفصل</SectionTitle>
-            <div className="module-grid">
-              {mods.map((m) => (
-                <ModuleCard
-                  key={m.path || 'overview'}
-                  to={classHref(classes[0].id, m.path)}
-                  icon={m.icon}
-                  label={m.label}
-                  desc={m.desc}
-                />
-              ))}
-            </div>
-          </section>
-
-          {analytics.length > 0 && (
-            <section className="home-section">
-              <SectionTitle>تحليل</SectionTitle>
-              <div className="module-grid">
-                {analytics.map((m) => (
-                  <ModuleCard key={m.to} to={m.to} icon={m.icon} label={m.label} desc={m.desc} />
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      ) : (
+      ) : isBoy ? (
+        <div className="home-sections">
+          <NavTileSection label="حسابي" items={accountLinks} />
+        </div>
+      ) : classes.length === 0 ? (
         <div className="state-block state-block--inline">
           <div className="state-block__icon">
             <Icon name="list" size={28} />
@@ -135,6 +78,8 @@ export default function HomePage() {
           <div className="state-block__title">مفيش فصول</div>
           <div className="state-block__msg">لسه مفيش فصول متاحة لحسابك.</div>
         </div>
+      ) : (
+        <HomeDashboard followUpHref={myClassId ? classHref(myClassId, 'followup') : '/followup'} />
       )}
     </>
   )

@@ -62,7 +62,3 @@ export function SheetButton({ icon, label, onClick, danger }) {
     </button>
   )
 }
-
-export function SheetLabel({ children }) {
-  return <div className="sheet__label">{children}</div>
-}

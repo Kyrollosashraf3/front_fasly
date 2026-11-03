@@ -1,0 +1,162 @@
+/* ==========================================================================
+   Nav tiles — the grid of doors shown on the home screen and inside the
+   phone's menu sheet. Three across under a thumb; the wider the screen, the
+   more columns, and the one-line descriptions only appear once there is room
+   for them.
+   ========================================================================== */
+
+.nav-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+
+.nav-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 92px;
+  padding: var(--sp-3) var(--sp-2);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  color: var(--navy);
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-tile:active {
+  transform: scale(0.96);
+}
+
+.nav-tile__icon {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--navy-soft);
+  color: var(--navy);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.nav-tile__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nav-tile__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  line-height: 1.25;
+  color: var(--navy);
+}
+
+/* A phone tile is too narrow for a second sentence; a desk screen is not. */
+.nav-tile__desc {
+  display: none;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.nav-tile.is-active {
+  background: var(--gold-soft);
+  border-color: var(--gold-border);
+}
+
+.nav-tile.is-active .nav-tile__icon {
+  background: var(--gold);
+  color: var(--navy-dark);
+  box-shadow: var(--shadow-gold);
+}
+
+.nav-tile--danger {
+  color: var(--danger);
+}
+
+.nav-tile--danger .nav-tile__label {
+  color: var(--danger);
+}
+
+.nav-tile--danger .nav-tile__icon {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+@media (hover: hover) {
+  .nav-tile:hover {
+    border-color: var(--gold-border);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+  }
+
+  .nav-tile:hover .nav-tile__icon {
+    background: var(--gold-soft);
+    color: var(--gold-hover);
+  }
+
+  .nav-tile--danger:hover {
+    border-color: var(--danger-border);
+  }
+
+  .nav-tile--danger:hover .nav-tile__icon {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+}
+
+/* One titled block of tiles. */
+.nav-group + .nav-group {
+  margin-top: var(--sp-4);
+}
+
+.nav-group__label {
+  padding: 0 var(--sp-1) var(--sp-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}
+
+@media (min-width: 560px) {
+  .nav-tiles {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .nav-tile {
+    min-height: 104px;
+    padding: var(--sp-4) var(--sp-3);
+  }
+}
+
+@media (min-width: 900px) {
+  .nav-tiles {
+    grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  }
+
+  .nav-tile {
+    align-items: flex-start;
+    text-align: start;
+    gap: var(--sp-3);
+  }
+
+  .nav-tile__desc {
+    display: block;
+  }
+}
