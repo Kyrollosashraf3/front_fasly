@@ -4,9 +4,11 @@
 
 .today-check__filters {
   display: grid;
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  /* Four filters, but they wrap to fewer columns on a narrow screen instead of
+     overflowing the toolbar. */
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: var(--sp-3);
-  width: min(100%, 720px);
+  width: min(100%, 1000px);
 }
 
 .today-check__status {

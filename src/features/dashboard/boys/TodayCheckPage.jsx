@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { usePageTitle } from '../../../context/TitleContext'
-import { useQuery } from '../../../hooks'
+import { useDebounced, useQuery } from '../../../hooks'
 import { ClassAPI, DashboardAPI } from '../../../lib/endpoints'
 import { formatDate } from '../../../lib/format'
+import { normalizeSearch } from '../../../lib/search'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
-import { Field, Select } from '../../../components/ui/Field'
+import { Field, SearchInput, Select } from '../../../components/ui/Field'
 import { Icon } from '../../../components/ui/Icon'
 import { Table } from '../../../components/ui/Table'
 import { Tabs, Toolbar, ToolbarSpacer } from '../../../components/ui/Toolbar'
@@ -70,6 +71,11 @@ export default function TodayCheckPage() {
   const [classId, setClassId] = useState('')
   const [taskId, setTaskId] = useState('')
   const [status, setStatus] = useState('all')
+  // The sheet is read one gender at a time, and a class is either boys or girls
+  // in practice, so boys is the default rather than a third "both" view.
+  const [gender, setGender] = useState('m')
+  const [search, setSearch] = useState('')
+  const query = useDebounced(search, 200)
 
   const classesQuery = useQuery(() => ClassAPI.list(), [])
   const tasksQuery = useQuery(
@@ -78,8 +84,8 @@ export default function TodayCheckPage() {
     { enabled: Boolean(classId) },
   )
   const checkQuery = useQuery(
-    () => DashboardAPI.todayCheck({ class_id: classId, task_id: taskId }),
-    [classId, taskId],
+    () => DashboardAPI.todayCheck({ class_id: classId, task_id: taskId, gender }),
+    [classId, taskId, gender],
     { enabled: Boolean(classId && taskId) },
   )
 
@@ -87,17 +93,23 @@ export default function TodayCheckPage() {
   const tasks = classId && !tasksQuery.loading ? tasksQuery.data || [] : []
   const data = classId && taskId && !checkQuery.loading ? checkQuery.data : null
   const boys = data?.boys || []
-  const rows = boys.filter((boy) => status === 'all' || boy.complete === (status === 'complete'))
-  const completeCount = boys.filter((boy) => boy.complete).length
+  const needle = normalizeSearch(query)
+  const named = needle
+    ? boys.filter((boy) => normalizeSearch(boy.boy_name).includes(needle))
+    : boys
+  const rows = named.filter((boy) => status === 'all' || boy.complete === (status === 'complete'))
+  const completeCount = named.filter((boy) => boy.complete).length
 
   const selectClass = (value) => {
     setClassId(value)
     setTaskId('')
     setStatus('all')
+    setSearch('')
   }
   const selectTask = (value) => {
     setTaskId(value)
     setStatus('all')
+    setSearch('')
   }
 
   let content
@@ -126,7 +138,13 @@ export default function TodayCheckPage() {
       <EmptyState
         icon="boys"
         title={boys.length ? 'لا توجد نتائج' : 'لا يوجد أولاد'}
-        message={boys.length ? 'لا يوجد أولاد مطابقون لهذا الفلتر.' : 'لا توجد أسماء أولاد في هذا الفصل.'}
+        message={
+          boys.length
+            ? needle
+              ? `مفيش اسم فيه «${query}» ضمن الأسماء المعروضة.`
+              : 'لا يوجد أولاد مطابقون لهذا الفلتر.'
+            : 'لا توجد أسماء أولاد في هذا الفصل.'
+        }
       />
     )
   } else {
@@ -143,7 +161,9 @@ export default function TodayCheckPage() {
             <span>فحص اليوم</span>
           </nav>
           <div className="page-head__sub">
-            {data ? `${data.class_name} — ${data.task_name} — ${formatDate(data.date)}` : 'حضور وقداس وتسميع النهاردة'}
+            {data
+              ? `${data.class_name} — ${data.task_name} — ${formatDate(data.date)}`
+              : 'حضور وقداس آخر جمعة، وتسميع المسابقة'}
           </div>
         </div>
         <Link className="btn btn-secondary" to="/dashboard/boys">
@@ -188,13 +208,34 @@ export default function TodayCheckPage() {
               ))}
             </Select>
           </Field>
+          <Field label="النوع">
+            <Select value={gender} onChange={(event) => setGender(event.target.value)}>
+              <option value="m">أولاد</option>
+              <option value="f">بنات</option>
+            </Select>
+          </Field>
+          <Field label="ابحث بالاسم">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="ابحث باسم الولد..."
+            />
+          </Field>
         </div>
         <ToolbarSpacer />
         <Button
           variant="primary"
           icon={<Icon name="download" size={16} />}
           disabled={!data || checkQuery.loading}
-          onClick={() => DashboardAPI.exportTodayCheck({ class_id: classId, task_id: taskId, status })}
+          onClick={() =>
+            DashboardAPI.exportTodayCheck({
+              class_id: classId,
+              task_id: taskId,
+              status,
+              gender,
+              search: query || undefined,
+            })
+          }
         >
           تنزيل شيت Excel
         </Button>
@@ -206,9 +247,9 @@ export default function TodayCheckPage() {
             value={status}
             onChange={setStatus}
             options={[
-              { value: 'all', label: 'الكل', count: boys.length },
+              { value: 'all', label: 'الكل', count: named.length },
               { value: 'complete', label: 'مكتمل', count: completeCount },
-              { value: 'incomplete', label: 'غير مكتمل', count: boys.length - completeCount },
+              { value: 'incomplete', label: 'غير مكتمل', count: named.length - completeCount },
             ]}
           />
         </div>
