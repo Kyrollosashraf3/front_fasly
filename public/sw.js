@@ -112,15 +112,23 @@ function payload(text) {
 self.addEventListener('push', (event) => {
   const data = payload(event.data && event.data.text())
   event.waitUntil(
-    self.registration.showNotification(data.title || 'فصلي', {
-      body: data.body || '',
-      tag: data.tag,
-      icon: ICON,
-      badge: BADGE,
-      lang: 'ar',
-      dir: 'rtl',
-      data: { url: data.url },
-    }),
+    self.registration
+      .showNotification(data.title || 'فصلي', {
+        body: data.body || '',
+        tag: data.tag,
+        icon: ICON,
+        badge: BADGE,
+        lang: 'ar',
+        dir: 'rtl',
+        data: { url: data.url },
+      })
+      // The app keeps its own copy of every message in the header bell, so an
+      // open tab is told to re-read it instead of waiting for its next minute.
+      .then(() =>
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) =>
+          Promise.all(windows.map((window) => window.postMessage({ type: 'push:received' }))),
+        ),
+      ),
   )
 })
 

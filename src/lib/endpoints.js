@@ -165,6 +165,12 @@ export const NotificationAPI = {
   subscribe: (body) => api.put('/notifications/subscription', body),
   /** `class_id` narrows the counts to one audience; empty means every class. */
   status: (params) => api.get('/notifications/status', params),
+  /** `teacher_ids` narrows the send to named servants of the chosen class. */
   send: (body) => api.post('/notifications/send', body),
   log: (params) => api.get('/notifications/log', params),
+  /** The header bell — every message written for *this* login. */
+  inbox: (params) => api.get('/notifications/inbox', params),
+  unread: () => api.get('/notifications/inbox/unread'),
+  markRead: (id) => api.patch(`/notifications/inbox/${id}/read`),
+  markAllRead: () => api.patch('/notifications/inbox/read-all'),
 }

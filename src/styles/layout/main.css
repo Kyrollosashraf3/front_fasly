@@ -75,6 +75,177 @@
   max-width: 260px;
 }
 
+/* ------------------------------------------------------------- the bell */
+
+.notif-bell {
+  position: relative;
+}
+
+.notif-bell__btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  color: var(--navy);
+}
+
+.notif-bell__btn:hover,
+.notif-bell__btn.is-open {
+  background: var(--navy-soft);
+}
+
+.notif-bell__count {
+  position: absolute;
+  inset-block-start: -3px;
+  inset-inline-end: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--weight-extrabold);
+  line-height: 1;
+  border: 2px solid var(--surface);
+}
+
+.notif-bell__panel {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: min(360px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.notif-bell__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--surface-border);
+  background: var(--bg-soft);
+}
+
+.notif-bell__title {
+  font-weight: var(--weight-extrabold);
+  color: var(--navy);
+}
+
+.notif-bell__all {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--info);
+}
+
+.notif-bell__list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.notif-bell__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  text-align: start;
+  color: var(--text);
+}
+
+.notif-bell__item:hover {
+  background: var(--navy-soft);
+}
+
+.notif-bell__kind {
+  flex: none;
+  margin-top: 2px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+  color: var(--gold-ink);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+
+.notif-bell__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.notif-bell__row-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--navy);
+}
+
+.notif-bell__body {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notif-bell__time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* An unread message is heavier and carries a dot; read ones settle back. */
+.notif-bell__item.is-unread .notif-bell__row-title {
+  font-weight: var(--weight-extrabold);
+}
+
+.notif-bell__mark {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.notif-bell__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-6) var(--sp-4);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .notif-bell__panel {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+  }
+}
+
 .user-chip__name {
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);

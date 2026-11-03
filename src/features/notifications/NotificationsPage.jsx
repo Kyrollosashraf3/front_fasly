@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useToast } from '../../context/ToastContext'
-import { useQuery } from '../../hooks'
-import { NotificationAPI } from '../../lib/endpoints'
-import { Field, Input, Select, Textarea } from '../../components/ui/Field'
+import { useDebounced, useQuery } from '../../hooks'
+import { NotificationAPI, TeacherAPI } from '../../lib/endpoints'
+import { Field, Input, SearchInput, Select, Textarea } from '../../components/ui/Field'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { Table } from '../../components/ui/Table'
@@ -37,9 +37,13 @@ const LINK_OPTIONS = [
 /**
  * NotificationsPage — «إرسال إشعار».
  *
- * The general amin writes one message for every servant or for one class; a
- * class amin only ever reaches his own, and the server pins that whatever this
- * screen sends, so a wrong audience here cannot reach another class.
+ * The general amin writes one message for every servant, for one class, or for
+ * named servants inside a class; a class amin only ever reaches his own, and
+ * the server pins that whatever this screen sends, so a wrong audience here
+ * cannot reach another class.
+ *
+ * Every recipient also gets a copy in his own bell in the header, so a servant
+ * who never switched web push on still reads the message in the app.
  *
  * The counts are the reason this page asks before it sends: a notification only
  * lands on a phone that switched it on, so an amin sees how many servants he is
@@ -53,10 +57,14 @@ export default function NotificationsPage() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [classId, setClassId] = useState('')
+  const [picked, setPicked] = useState([])
+  const [search, setSearch] = useState('')
   const [link, setLink] = useState('')
   const [sending, setSending] = useState(false)
 
   const audience = isSuperAdmin ? (classId ? Number(classId) : null) : null
+  const teacherIds = picked.length ? picked : null
+  const debouncedSearch = useDebounced(search, 200)
 
   const {
     data: status,
@@ -70,9 +78,33 @@ export default function NotificationsPage() {
     [],
   )
 
+  /** The servants this send may name - the same audience the server pins to. */
+  const { data: servants } = useQuery(() => TeacherAPI.list({ class_id: audience }), [audience])
+
+  // A servant of the class that just left is no longer a valid name.
+  useEffect(() => {
+    setPicked([])
+  }, [audience])
+
+  const visibleServants = useMemo(() => {
+    const list = Array.isArray(servants) ? servants : []
+    const needle = debouncedSearch.trim()
+    if (!needle) return list
+    return list.filter((t) => t.teacher_name?.includes(needle))
+  }, [servants, debouncedSearch])
+
   const myClassName = classes.length === 1 ? classes[0].name : null
   const canSend = title.trim().length >= 3 && body.trim().length > 0 && !sending
   const notSubscribed = status ? Math.max(0, status.staff - status.devices) : 0
+  const pickedNames = useMemo(
+    () => new Map((Array.isArray(servants) ? servants : []).map((t) => [t.id, t.teacher_name])),
+    [servants],
+  )
+
+  const toggleServant = (id) =>
+    setPicked((current) =>
+      current.includes(id) ? current.filter((v) => v !== id) : [...current, id],
+    )
 
   const send = async () => {
     setSending(true)
@@ -81,15 +113,17 @@ export default function NotificationsPage() {
         title: title.trim(),
         body: body.trim(),
         class_id: audience,
+        teacher_ids: teacherIds,
         link: link || null,
       })
       toast.success(
         sent.devices
-          ? `الرسالة اتبعت لـ ${sent.devices} تليفون.`
-          : 'الرسالة اتسجلت، لكن مفيش تليفون مفعّل يستلمها.',
+          ? `الرسالة اتبعت لـ ${sent.devices} تليفون، و اتسجلت لـ ${sent.recipients} خادم.`
+          : `الرسالة اتسجلت في إشعارات ${sent.recipients} خادم، لكن مفيش تليفون مفعّل يستلمها.`,
       )
       setTitle('')
       setBody('')
+      setPicked([])
       refetchLog()
       refetchStatus()
     } catch (err) {
@@ -105,8 +139,8 @@ export default function NotificationsPage() {
         <div>
           <div className="page-head__sub">
             {isSuperAdmin
-              ? 'رسالة توصل تليفونات الخدام والتطبيق مقفول.'
-              : `توصل خدام فصلك${myClassName ? ` - ${myClassName}` : ''}.`}
+              ? 'رسالة توصل تليفونات الخدام وجرس الإشعارات جوه التطبيق.'
+              : `توصل خدام فصلك${myClassName ? ` - ${myClassName}` : ''} على التليفون وفي الإشعارات.`}
           </div>
         </div>
       </div>
@@ -120,7 +154,8 @@ export default function NotificationsPage() {
           <div className="push-off">
             <Icon name="alert" size={16} />
             <span>
-              الإشعارات مقفولة من السيرفر (مفيش مفاتيح VAPID). صاحب السيرفر يشغّلها عشان الرسايل توصل.
+              الإشعارات على التليفون مقفولة من السيرفر (مفيش مفاتيح VAPID). الرسايل هتفضل توصل
+              جرس الإشعارات جوه التطبيق، وصاحب السيرفر يشغّل التليفونات عشان توصل برضه.
             </span>
           </div>
         )
@@ -191,13 +226,69 @@ export default function NotificationsPage() {
             </Field>
           </div>
 
+          <Field
+            label="خدام مختارين (اختياري)"
+            hint={
+              picked.length
+                ? `${picked.length} خادم يستلم لوحده - غير كده كل خدام ${
+                    audience ? classLabel(audience) : 'الشغل'
+                  }`
+                : 'سيبه فاضي عشان يوصل كل الخدام، أو اختار أسماء بعينها.'
+            }
+          >
+            <div className="push-pick">
+              <SearchInput value={search} onChange={setSearch} placeholder="ابحث باسم الخادم..." />
+              {picked.length > 0 && (
+                <div className="push-pick__chosen">
+                  {picked.map((id) => (
+                    <button
+                      type="button"
+                      key={id}
+                      className="chip chip--on"
+                      aria-pressed="true"
+                      onClick={() => toggleServant(id)}
+                    >
+                      {pickedNames.get(id) || `خادم ${id}`} ×
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="push-pick__list">
+                {!servants ? (
+                  <span className="small muted">جارٍ التحميل...</span>
+                ) : !visibleServants.length ? (
+                  <span className="small muted">مفيش خادم بالاسم ده.</span>
+                ) : (
+                  visibleServants.map((t) => (
+                    <label
+                      key={t.id}
+                      className={`push-pick__row${picked.includes(t.id) ? ' is-on' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={picked.includes(t.id)}
+                        onChange={() => toggleServant(t.id)}
+                      />
+                      <span>{t.teacher_name}</span>
+                      {t.class_id != null && !audience && (
+                        <span className="small muted">{classLabel(t.class_id)}</span>
+                      )}
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          </Field>
+
           <div className="push-send__foot">
             {status && (
               <span className="small muted">
-                {status.devices
-                  ? `${status.devices} تليفون من ${status.staff} خادم`
-                  : `مفيش تليفون مفعّل من ${status.staff} خادم`}
-                {notSubscribed > 0 && status.devices > 0 && (
+                {picked.length
+                  ? `${picked.length} خادم مختار`
+                  : status.devices
+                    ? `${status.devices} تليفون من ${status.staff} خادم`
+                    : `مفيش تليفون مفعّل من ${status.staff} خادم`}
+                {!picked.length && notSubscribed > 0 && status.devices > 0 && (
                   <> · {notSubscribed} لسه مفعلش الإشعارات</>
                 )}
               </span>
@@ -266,7 +357,11 @@ export default function NotificationsPage() {
                   mobile: 'لمين',
                   width: 130,
                   render: (row) =>
-                    row.audience === 'all' ? 'كل الخدام' : classLabel(row.class_id),
+                    row.audience === 'all'
+                      ? 'كل الخدام'
+                      : row.audience === 'servants'
+                        ? `خدام مختارين${row.class_id ? ` - ${classLabel(row.class_id)}` : ''}`
+                        : classLabel(row.class_id),
                 },
                 {
                   key: 'sent',

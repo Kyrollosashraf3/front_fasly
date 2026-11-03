@@ -3,6 +3,7 @@ import { useTopbarTitle } from '../../context/TitleContext'
 import { userLabel } from '../../lib/constants'
 import { Avatar } from '../ui/Avatar'
 import { Icon } from '../ui/Icon'
+import { NotificationsBell } from './NotificationsBell'
 
 /** Topbar — page title on the leading side, identity chip on the trailing.
  *  It is the only place a page name is shown, so the name lives here. */
@@ -21,6 +22,7 @@ export function Topbar({ onMenu }) {
       </div>
 
       <div className="topbar__right">
+        <NotificationsBell />
         <span className="user-chip">
           <Avatar name={name} size="sm" />
           <span className="user-chip__name">{name}</span>
