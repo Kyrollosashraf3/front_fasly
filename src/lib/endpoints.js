@@ -146,7 +146,7 @@ export const DashboardAPI = {
   /** "تفاصيل الخدام" as a plain .xlsx, in the order the screen shows it. */
   exportTeachers: (params) =>
     download('/dashboard/teachers/export', params, 'servants-details.xlsx'),
-  boyProfile: (boyId, params) => api.get(`/dashboard/boys/${boyId}`, params),
+  boyProfile: (boyId) => api.get(`/dashboard/boys/${boyId}`),
   birthdays: (params) => api.get('/dashboard/birthdays', params),
   followUpPerformance: (params) => api.get('/dashboard/follow-up', params),
   /** The home screen's own numbers: last week and the season, already scoped

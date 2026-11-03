@@ -163,8 +163,6 @@ export default function FollowUpPage() {
       <BoyProfileModal
         open={Boolean(detailsBoy)}
         boy={detailsBoy}
-        nameOfTeacher={nameOfTeacher}
-        showClassHistory
         onClose={() => setDetailsBoy(null)}
       />
     </>

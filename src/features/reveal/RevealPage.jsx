@@ -58,13 +58,6 @@ export default function RevealPage() {
 
   const showPicker = can.seeServants(user)
 
-  /** The boy's own timeline names whoever recorded each visit. A servant only
-      ever resolves himself here; a peer's name comes with the class log. */
-  const nameOfTeacher = useMemo(() => {
-    const byId = new Map((data?.teachers || []).map((t) => [t.id, t.teacher_name]))
-    return (id) => byId.get(id)
-  }, [data])
-
   const changeClass = (next) => {
     setClassPicked(next)
     setPicked(null)
@@ -148,8 +141,6 @@ export default function RevealPage() {
       <BoyProfileModal
         open={Boolean(picked)}
         boy={picked ? { ...picked, class_id: picked.class_id || Number(classId) } : null}
-        nameOfTeacher={nameOfTeacher}
-        showClassHistory
         onClose={() => setPicked(null)}
       />
     </>

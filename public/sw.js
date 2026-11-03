@@ -11,7 +11,7 @@
  * which is the only place the browser wakes the app up for a message.
  */
 
-const VERSION = 'fasly-shell-v2'
+const VERSION = 'fasly-shell-v3'
 const SHELL = './index.html'
 const ICON = './icons/icon-192.png?v=2'
 const BADGE = './icons/icon-192.png?v=2'
@@ -134,7 +134,11 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const target = new URL(event.notification.data?.url || './', self.location)
+  /* A notification link is a hash route of the app, so it resolves against the
+     app's scope. Resolving it against `self.location` would land it on this
+     worker's own file - `/sw.js#/followup` - because that URL is the base. */
+  const base = self.registration?.scope || new URL('./', self.location).href
+  const target = new URL(event.notification.data?.url || './', base)
   event.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
