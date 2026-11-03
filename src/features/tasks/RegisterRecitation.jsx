@@ -5,7 +5,7 @@ import { Checkbox, Field, Input } from '../../components/ui/Field'
 import { Icon } from '../../components/ui/Icon'
 import { BoyAPI, TaskValueAPI } from '../../lib/endpoints'
 import { normalizeSearch } from '../../lib/search'
-import { todayISO } from '../../lib/format'
+import { formatShort, todayISO } from '../../lib/format'
 import './tasks.css'
 
 /**
@@ -20,7 +20,9 @@ export default function RegisterRecitation({ task, onSaved, onClose }) {
   const toast = useToast()
 
   const [boys, setBoys] = useState([])
-  const [recitedBoyIds, setRecitedBoyIds] = useState(() => new Set())
+  // boy_id -> the date he recited *this* task, so the block reads as this
+  // competition's own record and never as "he recited somewhere else".
+  const [recitedDates, setRecitedDates] = useState(() => new Map())
   const [loadingBoys, setLoadingBoys] = useState(true)
   const [query, setQuery] = useState('')
   const [selectedBoy, setSelectedBoy] = useState(null)
@@ -38,8 +40,10 @@ export default function RegisterRecitation({ task, onSaved, onClose }) {
       .then(([boysData, valuesData]) => {
         if (cancelled) return
         setBoys(Array.isArray(boysData) ? boysData : [])
-        setRecitedBoyIds(
-          new Set((Array.isArray(valuesData) ? valuesData : []).map((v) => v.boy_id)),
+        setRecitedDates(
+          new Map(
+            (Array.isArray(valuesData) ? valuesData : []).map((v) => [v.boy_id, v.action_date]),
+          ),
         )
       })
       .catch(() => {
@@ -61,7 +65,7 @@ export default function RegisterRecitation({ task, onSaved, onClose }) {
   }, [boys, query, selectedBoy])
 
   const selectBoy = (boy) => {
-    if (recitedBoyIds.has(boy.id)) return
+    if (recitedDates.has(boy.id)) return
     setSelectedBoy(boy)
     setQuery(boy.boy_name)
   }
@@ -116,17 +120,21 @@ export default function RegisterRecitation({ task, onSaved, onClose }) {
           {matches.length > 0 && (
             <div className="tasks__search-list">
               {matches.map((b) => {
-                const done = recitedBoyIds.has(b.id)
+                const recitedOn = recitedDates.get(b.id)
                 return (
                   <button
                     key={b.id}
                     type="button"
                     className="tasks__search-item"
-                    disabled={done}
+                    disabled={recitedOn !== undefined}
                     onClick={() => selectBoy(b)}
                   >
                     <span>{b.boy_name}</span>
-                    {done && <span className="tasks__search-done">سمّع بالفعل</span>}
+                    {recitedOn !== undefined && (
+                      <span className="tasks__search-done">
+                        سمّع هنا من قبل — {formatShort(recitedOn)}
+                      </span>
+                    )}
                   </button>
                 )
               })}

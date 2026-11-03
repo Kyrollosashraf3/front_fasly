@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { usePageTitle } from '../../context/TitleContext'
 import { Button } from '../../components/ui/Button'
-import { Badge } from '../../components/ui/Badge'
 import { Icon } from '../../components/ui/Icon'
 import { Modal } from '../../components/ui/Modal'
 import { ErrorState, Loading } from '../../components/ui/States'
 import { TripAPI } from '../../lib/endpoints'
-import { formatDate, num } from '../../lib/format'
+import { num } from '../../lib/format'
 import RegisterSubscription from './RegisterSubscription'
 import SubscriptionAnalysis from './SubscriptionAnalysis'
 import TripStatus from './TripStatus'
@@ -93,16 +92,6 @@ export default function TripActionsPage() {
             <Icon name="chevronStart" size={15} />
             رحلتي
           </Button>
-          {trip && (
-            <div className="page-head__sub mytrip__trip-meta">
-              <Badge kind={trip.status === 'inactive' ? 'neutral' : 'green'}>
-                {String(trip.status || 'active').toUpperCase()}
-              </Badge>
-              <span>
-                {formatDate(trip.created_at)} — {num(trip.cost)} جنيه للولد
-              </span>
-            </div>
-          )}
         </div>
       </div>
 

@@ -3,12 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { usePageTitle } from '../../context/TitleContext'
 import { useAuth } from '../../context/AuthContext'
 import { Button } from '../../components/ui/Button'
-import { Badge } from '../../components/ui/Badge'
 import { Icon } from '../../components/ui/Icon'
 import { Modal } from '../../components/ui/Modal'
 import { ErrorState, Loading } from '../../components/ui/States'
 import { TaskAPI } from '../../lib/endpoints'
-import { formatDate } from '../../lib/format'
 import RegisterRecitation from './RegisterRecitation'
 import TaskDues from './TaskDues'
 import './tasks.css'
@@ -81,16 +79,6 @@ export default function TaskActionsPage() {
             <Icon name="chevronStart" size={15} />
             المسابقات
           </Button>
-          {task && (
-            <div className="page-head__sub tasks__task-meta">
-              <Badge kind={task.status === 'inactive' ? 'neutral' : 'green'}>
-                {String(task.status || 'active').toUpperCase()}
-              </Badge>
-              <span>
-                {formatDate(task.created_at)} — {task.value} طايو للتسميع
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
