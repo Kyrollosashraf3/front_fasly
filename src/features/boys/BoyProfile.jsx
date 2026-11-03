@@ -132,20 +132,82 @@ function SeasonGrid({ fridays = [], editable = false, busyDate = null, onPick })
   )
 }
 
+/** How many class rows the section shows before it offers the rest. */
+const CLASS_LOG_PREVIEW = 12
+
+/**
+ * ClassFollowUps — «افتقادات خدام الفصل».
+ *
+ * Every follow-up the class's servants wrote this season, so a servant can see
+ * that a boy was already reached - or never was. The server sends the rows for
+ * the whole class and keeps each note with the servant who wrote it, so a
+ * colleague's line here is the date, the kind and the name only.
+ */
+function ClassFollowUps({ rows }) {
+  const [showAll, setShowAll] = useState(false)
+  if (!rows?.length) return null
+
+  const visible = showAll ? rows : rows.slice(0, CLASS_LOG_PREVIEW)
+  return (
+    <div className="profile__class">
+      <div className="profile__class__head">
+        <span className="small bold">
+          افتقادات خدام الفصل — {rows.length} من بداية الموسم
+        </span>
+        {rows.length > CLASS_LOG_PREVIEW && (
+          <button
+            type="button"
+            className="profile__class__more"
+            onClick={() => setShowAll((v) => !v)}
+          >
+            {showAll ? 'أقل' : 'أظهر الكل'}
+          </button>
+        )}
+      </div>
+
+      <ul className="profile__class__list">
+        {visible.map((r) => (
+          <li key={r.id} className={r.own ? 'is-own' : undefined}>
+            <span className="bold">{r.boy_name}</span>
+            <Badge kind="blue">{followLabel(r.status)}</Badge>
+            <span className="xsmall muted">
+              {r.teacher_name}
+              {r.own ? ' (أنت)' : ''}
+            </span>
+            <span className="xsmall muted">{formatDate(r.action_date)}</span>
+            {r.note && <span className="small muted truncate">{r.note}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /**
  * BoyProfileModal — the full drill-down (details + season + follow-ups).
  * Used from Boys, Groups and both dashboards so it exists exactly once.
  * Loads GET /dashboard/boys/{id} for the history.
+ *
+ * `showClassHistory` additionally asks for the class's own follow-up log
+ * (`class_followups`) and renders it under the boy's timeline. Only the
+ * follow-up sheet and «اكشفلي» switch it on.
  */
-export function BoyProfileModal({ open, boy, onClose, nameOfTeacher, onChanged }) {
+export function BoyProfileModal({
+  open,
+  boy,
+  onClose,
+  nameOfTeacher,
+  onChanged,
+  showClassHistory = false,
+}) {
   const { classLabel, isBoy, isServant, can, user } = useAuth()
   const toast = useToast()
   const modal = useModal()
   const [busyDate, setBusyDate] = useState(null)
 
   const { data, loading, error, refetch } = useQuery(
-    () => DashboardAPI.boyProfile(boy.id),
-    [boy?.id],
+    () => DashboardAPI.boyProfile(boy.id, showClassHistory ? { class_history: true } : undefined),
+    [boy?.id, showClassHistory],
     { enabled: open && Boolean(boy) },
   )
 
@@ -266,7 +328,7 @@ export function BoyProfileModal({ open, boy, onClose, nameOfTeacher, onChanged }
                 <BoyDetails boy={boy} classLabel={classLabel} showServant={!isServant} />
               </section>
 
-                            <section>
+              <section>
                 <h4 className="profile__h">سجل الافتقاد</h4>
                 {profile.followups?.length ? (
                   <ul className="profile__timeline">
@@ -295,8 +357,9 @@ export function BoyProfileModal({ open, boy, onClose, nameOfTeacher, onChanged }
                     {isBoy ? 'مفيش افتقاد مسجّل.' : 'لسه مفيش افتقاد مسجّل.'}
                   </p>
                 )}
-              </section>
 
+                {showClassHistory && <ClassFollowUps rows={profile.class_followups} />}
+              </section>
 
               {profile.notes?.length > 0 && (
                 <section>

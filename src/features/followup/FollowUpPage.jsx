@@ -164,6 +164,7 @@ export default function FollowUpPage() {
         open={Boolean(detailsBoy)}
         boy={detailsBoy}
         nameOfTeacher={nameOfTeacher}
+        showClassHistory
         onClose={() => setDetailsBoy(null)}
       />
     </>
