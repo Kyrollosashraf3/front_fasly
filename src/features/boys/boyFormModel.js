@@ -85,8 +85,13 @@ export function validateBoy(form, isEdit = false) {
   return next
 }
 
-/** The API payload: string trims, numbers, and the explicit nulls PATCH needs. */
-export function boyPayload(form) {
+/** The API payload: string trims, numbers, and the explicit nulls PATCH needs.
+ *
+ * `assignServant: false` leaves `teacher_id` out of the body completely. PATCH
+ * only obeys a field it receives, so the boy keeps the servant on file - which
+ * is what a servant login gets, since he must not be able to unfile him.
+ */
+export function boyPayload(form, { assignServant = true } = {}) {
   const { custom, name_parts, ...rest } = form
   // The typed «أخرى» skill lives inside the same `skills` array.
   const customText = custom.trim()
@@ -111,7 +116,8 @@ export function boyPayload(form) {
   })
   // Kept out of `compact` on purpose: `null` means "no servant", which is a
   // real instruction when editing (it unfiles him from his group).
-  payload.teacher_id = form.teacher_id ? Number(form.teacher_id) : null
+  if (assignServant) payload.teacher_id = form.teacher_id ? Number(form.teacher_id) : null
+  else delete payload.teacher_id
   // Same for the optional enums: "" means "clear it", and PATCH only
   // obeys an explicit null.
   payload.father_name = form.father_name || null

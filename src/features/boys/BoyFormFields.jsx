@@ -20,6 +20,7 @@ export function BoyFormFields({
   age,
   isEdit,
   nameNote,
+  showServant = true,
   onSubmit,
 }) {
   return (
@@ -83,27 +84,31 @@ export function BoyFormFields({
           </Select>
         </Field>
 
-        <Field
-          label="الخادم"
-          htmlFor="boy-servant"
-          error={errors.teacher_id}
-          hint="الخادم المسئول عن افتقاده"
-        >
-          <Select
-            id="boy-servant"
-            value={form.teacher_id}
-            onChange={set('teacher_id')}
-            searchable
-            searchPlaceholder="ابحث باسم الخادم..."
+        {/* Filing a boy under a servant is the amin's job: a servant login
+            never sees this, so he cannot clear or move the assignment. */}
+        {showServant && (
+          <Field
+            label="الخادم"
+            htmlFor="boy-servant"
+            error={errors.teacher_id}
+            hint="الخادم المسئول عن افتقاده"
           >
-            <option value="">— من غير خادم —</option>
-            {(servants || []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.teacher_name}
-              </option>
-            ))}
-          </Select>
-        </Field>
+            <Select
+              id="boy-servant"
+              value={form.teacher_id}
+              onChange={set('teacher_id')}
+              searchable
+              searchPlaceholder="ابحث باسم الخادم..."
+            >
+              <option value="">— من غير خادم —</option>
+              {(servants || []).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.teacher_name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <Field label="التليفون" htmlFor="boy-phone">
           <Input

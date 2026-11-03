@@ -92,7 +92,6 @@ export default function TasksPage() {
     <>
       <div className="page-head tasks__head">
         <div>
-          <h1 className="page-head__title">المسابقات</h1>
           <div className="page-head__sub">
             {countLabel}
             {isSuperAdmin && activeClass ? ` — ${activeClass.name}` : ''}

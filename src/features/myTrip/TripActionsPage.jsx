@@ -93,7 +93,6 @@ export default function TripActionsPage() {
             <Icon name="chevronStart" size={15} />
             رحلتي
           </Button>
-          <h1 className="page-head__title">{trip?.name || 'رحلتي'}</h1>
           {trip && (
             <div className="page-head__sub mytrip__trip-meta">
               <Badge kind={trip.status === 'inactive' ? 'neutral' : 'green'}>

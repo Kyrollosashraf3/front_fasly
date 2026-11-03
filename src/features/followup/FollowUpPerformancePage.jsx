@@ -72,7 +72,6 @@ export default function FollowUpPerformancePage() {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">أداء الافتقاد</h1>
           <div className="page-head__sub">
             {data ? `نسبة الافتقاد من ${fromLabel}` : 'نسب الافتقاد وأداء الخدام'}
           </div>

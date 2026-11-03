@@ -104,7 +104,6 @@ export default function TeachersDashboard() {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">أداء الخدام</h1>
           <div className="page-head__sub">
             {d ? `${d.counts.teachers} خادم · ${totalChecks} متابعة` : 'مؤشرات المواظبة والافتقاد'}
           </div>

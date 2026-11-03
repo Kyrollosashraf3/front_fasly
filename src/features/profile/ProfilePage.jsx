@@ -64,7 +64,6 @@ export default function ProfilePage() {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">الحساب</h1>
           <div className="page-head__sub">{handleOf(user)}</div>
         </div>
       </div>

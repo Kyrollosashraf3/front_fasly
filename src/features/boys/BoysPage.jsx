@@ -101,7 +101,6 @@ export default function BoysPage() {
               </>
             )}
           </nav>
-          <h1 className="page-head__title">بيانات الأولاد</h1>
           <div className="page-head__sub">
             {boys?.length ?? 0} ولد {allClasses ? '' : `في ${label}`}{' '}
             {flaggedCount > 0 && `· ${flaggedCount} محتاجين متابعة`}

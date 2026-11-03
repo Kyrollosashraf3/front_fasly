@@ -90,8 +90,18 @@
   min-width: 0;
 }
 
-.week-card__hint {
+.week-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
   margin-top: var(--sp-2);
+}
+
+.week-card__hint {
+  flex: 1 1 120px;
+  min-width: 0;
   font-size: var(--text-xs);
   color: var(--text-secondary);
 }
@@ -136,75 +146,6 @@
 
 .week-stat--ok .week-stat__num {
   color: var(--success);
-}
-
-/* Who is still pending, and the one door to fix it. */
-.week-pending {
-  margin-top: var(--sp-3);
-  padding: var(--sp-4);
-  background: var(--gold-soft);
-  border: 1px solid var(--gold-border);
-  border-radius: var(--radius-lg);
-}
-
-.week-pending__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  color: var(--navy);
-}
-
-.week-pending__count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  margin-inline-start: var(--sp-2);
-  border-radius: var(--radius-pill);
-  background: var(--navy);
-  color: #fff;
-  font-size: var(--text-xs);
-  vertical-align: middle;
-}
-
-.week-pending__go {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  color: var(--gold-ink);
-  font-weight: var(--weight-bold);
-  font-size: var(--text-xs);
-  white-space: nowrap;
-}
-
-.week-pending__go:hover {
-  color: var(--gold-hover);
-}
-
-.week-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: var(--sp-3);
-}
-
-.week-chip {
-  padding: 5px 10px;
-  border: 1px solid var(--gold-border);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--navy);
-}
-
-.week-chip--more {
-  border-style: dashed;
-  color: var(--text-secondary);
-  direction: ltr;
 }
 
 /* ------------------------------------------------------------- the season */
@@ -270,5 +211,36 @@
   .home-dash__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
+  }
+}
+
+/* On a phone the gauge beside the meter leaves the sentence almost no room,
+   so the card stacks: the number on its own line, then the bar, the sentence
+   and the button together. */
+@media (max-width: 560px) {
+  .week-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-3);
+  }
+
+  .week-card__gauge {
+    flex-direction: row;
+    justify-content: center;
+    align-items: baseline;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  .week-card__foot {
+    flex-wrap: nowrap;
+  }
+
+  .week-card__hint {
+    flex: 1 1 auto;
+  }
+
+  .week-card__foot .btn {
+    flex: 0 0 auto;
   }
 }

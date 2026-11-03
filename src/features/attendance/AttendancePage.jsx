@@ -60,7 +60,6 @@ export default function AttendancePage() {
               </>
             )}
           </nav>
-          <h1 className="page-head__title">تسجيل الحضور</h1>
           <div className="page-head__sub">
             {formatDate(date)}{label ? ` · ${label}` : ''}
           </div>

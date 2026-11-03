@@ -81,7 +81,6 @@ export default function TaskActionsPage() {
             <Icon name="chevronStart" size={15} />
             المسابقات
           </Button>
-          <h1 className="page-head__title">{task?.task_name || 'المسابقات'}</h1>
           {task && (
             <div className="page-head__sub tasks__task-meta">
               <Badge kind={task.status === 'inactive' ? 'neutral' : 'green'}>

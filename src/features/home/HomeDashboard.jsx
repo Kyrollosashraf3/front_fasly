@@ -14,9 +14,6 @@ const COVERAGE_CAPTION = {
   all: 'تغطية الافتقاد لكل الفصول',
 }
 
-/** Names shown before the list says "and N more". */
-const PENDING_SHOWN = 12
-
 /** Counts that read as Arabic, not as a number glued to a dual. */
 const fridays = (n) => (n === 1 ? 'جمعة واحدة' : n === 2 ? 'جمعتين' : `${n} جمع`)
 const reviews = (n) => (n === 1 ? 'متابعة واحدة' : n === 2 ? 'متابعتين' : `${n} متابعات`)
@@ -70,7 +67,6 @@ export function HomeDashboard({ followUpHref }) {
   const scope = data?.scope
   const week = data?.week
   const season = data?.season
-  const pending = data?.pending || []
   const scopeWord = SCOPE_WORD[scope?.kind] || ''
 
   return (
@@ -91,18 +87,25 @@ export function HomeDashboard({ followUpHref }) {
               </div>
               <div className="week-card__meter">
                 <Progress value={week.follow} />
-                <div className="week-card__hint">
-                  {scope.boys ? (
-                    `${week.followed_boys} من ${scope.boys} ${boysWord(
-                      scope.boys,
-                    )} اتافتقدوا الأسبوع ده`
-                  ) : (
-                    <>
-                      لسه مفيش أولاد في مجموعتك.{' '}
-                      <Link to="/groups" className="week-card__link">
-                        رتّب المجموعات
-                      </Link>
-                    </>
+                <div className="week-card__foot">
+                  <div className="week-card__hint">
+                    {scope.boys ? (
+                      `${week.followed_boys} من ${scope.boys} ${boysWord(
+                        scope.boys,
+                      )} اتافتقدوا الأسبوع ده`
+                    ) : (
+                      <>
+                        لسه مفيش أولاد في مجموعتك.{' '}
+                        <Link to="/groups" className="week-card__link">
+                          رتّب المجموعات
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                  {scope.boys > 0 && (
+                    <Link to={followUpHref} className="btn btn-accent btn-sm">
+                      سجّل الافتقاد
+                    </Link>
                   )}
                 </div>
               </div>
@@ -117,32 +120,6 @@ export function HomeDashboard({ followUpHref }) {
               <Stat value={week.follow_ups} label="افتقادات مسجلة" />
               <Stat value={scope.boys} label={`أولاد ${scopeWord}`} />
             </div>
-
-            {pending.length > 0 && (
-              <div className="week-pending">
-                <div className="week-pending__head">
-                  <span>
-                    أولاد محتاجين افتقاد
-                    <span className="week-pending__count">{pending.length}</span>
-                  </span>
-                  <Link to={followUpHref} className="week-pending__go">
-                    سجّل الافتقاد
-                  </Link>
-                </div>
-                <div className="week-chips">
-                  {pending.slice(0, PENDING_SHOWN).map((boy) => (
-                    <span key={boy.boy_id} className="week-chip">
-                      {boy.boy_name}
-                    </span>
-                  ))}
-                  {pending.length > PENDING_SHOWN && (
-                    <span className="week-chip week-chip--more">
-                      +{pending.length - PENDING_SHOWN}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="home-dash__col">

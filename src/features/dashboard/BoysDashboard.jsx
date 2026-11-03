@@ -1,12 +1,15 @@
+import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { Icon } from '../../components/ui/Icon'
+import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
 import { BoyProfileModal } from '../boys/BoyProfile'
 import { DateModeField, Kpi, KpiRow } from './parts'
 import { BoysSections } from './boys/BoysSections'
+import { TodayCheckModal } from './boys/TodayCheckModal'
 import { useBoysDashboard } from './boys/useBoysDashboard'
 import './dashboard.css'
 
@@ -25,6 +28,7 @@ const groupCount = (groups) =>
 export default function BoysDashboard() {
   usePageTitle('أداء الأولاد')
   const { classLabel } = useAuth()
+  const [checkOpen, setCheckOpen] = useState(false)
 
   const dash = useBoysDashboard()
   const {
@@ -97,7 +101,6 @@ export default function BoysDashboard() {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">أداء الأولاد</h1>
           <div className="page-head__sub">
             {d
               ? `${d.counts.boys} ولد · ${d.counts.fridays} جمعة مسجلة`
@@ -147,6 +150,13 @@ export default function BoysDashboard() {
           </Select>
         )}
         <DateModeField value={dateMode} onChange={setDateMode} />
+        <Button
+          variant="secondary"
+          icon={<Icon name="check" size={15} />}
+          onClick={() => setCheckOpen(true)}
+        >
+          فحص اليوم
+        </Button>
         <ToolbarSpacer />
         <span className="small muted">آخر جمعة مسجلة: {d?.last_friday?.date || '—'}</span>
       </Toolbar>
@@ -205,6 +215,7 @@ export default function BoysDashboard() {
       </div>
 
       <BoyProfileModal open={Boolean(boy)} boy={boy} onClose={closeBoy} />
+      <TodayCheckModal open={checkOpen} onClose={() => setCheckOpen(false)} classId={classId} />
     </>
   )
 }

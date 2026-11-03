@@ -91,7 +91,6 @@ export default function MyTripPage() {
     <>
       <div className="page-head mytrip__head">
         <div>
-          <h1 className="page-head__title">رحلتي</h1>
           <div className="page-head__sub">
             {countLabel}
             {isSuperAdmin && activeClass ? ` — ${activeClass.name}` : ''}

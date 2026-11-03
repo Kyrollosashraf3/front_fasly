@@ -152,4 +152,9 @@ export const DashboardAPI = {
   /** The home screen's own numbers: last week and the season, already scoped
    *  to the login (a servant gets his group, an amin his class). */
   myPerformance: () => api.get('/dashboard/my-performance'),
+  /** «فحص اليوم»: today's liturgy boys, then today's reciters per competition. */
+  todayCheck: (params) => api.get('/dashboard/today-check', params),
+  /** Every list of «فحص اليوم» as one block-per-list sheet. */
+  exportTodayCheck: (params) =>
+    download('/dashboard/today-check/export', params, 'today-check.xlsx'),
 }

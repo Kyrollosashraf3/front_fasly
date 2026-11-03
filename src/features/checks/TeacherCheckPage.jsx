@@ -56,7 +56,6 @@ export default function TeacherCheckPage() {
               </>
             )}
           </nav>
-          <h1 className="page-head__title">متابعة الخدام</h1>
           <div className="page-head__sub">{formatDate(date)}</div>
         </div>
         <Link className="btn btn-secondary" to={`/class/${classId}/teachers`}>

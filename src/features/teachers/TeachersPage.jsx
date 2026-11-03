@@ -63,7 +63,6 @@ export default function TeachersPage() {
               </>
             )}
           </nav>
-          <h1 className="page-head__title">دليل الخدام</h1>
           <div className="page-head__sub">
             {teachers?.length ?? 0} خادم {allClasses ? 'في كل الفصول' : `مسند لـ ${label}`}
           </div>

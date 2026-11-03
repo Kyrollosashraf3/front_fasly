@@ -67,7 +67,6 @@ export default function RevealPage() {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">اكشفلي</h1>
           <div className="page-head__sub">اختر الفصل ثم الولد لعرض ملفه كامل من بداية الموسم.</div>
         </div>
       </div>

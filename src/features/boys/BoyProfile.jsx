@@ -16,7 +16,7 @@ import { BoyNameEdit } from './BoyName'
 import './boy-profile.css'
 
 /** Read-only key/value block — reused by the list, groups and dashboards. */
-export function BoyDetails({ boy, classLabel }) {
+export function BoyDetails({ boy, classLabel, showServant = true }) {
   return (
     <div className="details">
       <DetailRow label="الاسم">{boy.boy_name}</DetailRow>
@@ -29,7 +29,9 @@ export function BoyDetails({ boy, classLabel }) {
             : '—'}
       </DetailRow>
       <DetailRow label="الفصل">{classLabel ? classLabel(boy.class_id) : boy.class_id}</DetailRow>
-      <DetailRow label="الخادم">{boy.teacher_name || '—'}</DetailRow>
+      {/* The assignment is the amin's; showing it to a servant only invites
+          him to wonder why his edit changed it. */}
+      {showServant && <DetailRow label="الخادم">{boy.teacher_name || '—'}</DetailRow>}
       <DetailRow label="التليفون">
         {boy.phone ? (
           <a className="row ltr" style={{ gap: 6, justifyContent: 'flex-end' }} href={`tel:${boy.phone}`}>
@@ -136,7 +138,7 @@ function SeasonGrid({ fridays = [], editable = false, busyDate = null, onPick })
  * Loads GET /dashboard/boys/{id} for the history.
  */
 export function BoyProfileModal({ open, boy, onClose, nameOfTeacher, onChanged }) {
-  const { classLabel, isBoy, can, user } = useAuth()
+  const { classLabel, isBoy, isServant, can, user } = useAuth()
   const toast = useToast()
   const modal = useModal()
   const [busyDate, setBusyDate] = useState(null)
@@ -261,7 +263,7 @@ export function BoyProfileModal({ open, boy, onClose, nameOfTeacher, onChanged }
 
               <section>
                 <h4 className="profile__h">البيانات</h4>
-                <BoyDetails boy={boy} classLabel={classLabel} />
+                <BoyDetails boy={boy} classLabel={classLabel} showServant={!isServant} />
               </section>
 
                             <section>

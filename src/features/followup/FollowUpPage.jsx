@@ -87,7 +87,6 @@ export default function FollowUpPage() {
               </>
             )}
           </nav>
-          <h1 className="page-head__title">الافتقاد الأسبوعي</h1>
           <div className="page-head__sub">
             {formatDate(date)} · {counts.done} من {counts.total} اتعلّموا
           </div>

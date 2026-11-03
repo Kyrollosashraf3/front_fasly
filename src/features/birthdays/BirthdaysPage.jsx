@@ -86,7 +86,6 @@ export default function BirthdaysPage() {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">أعياد الميلاد</h1>
           <div className="page-head__sub">
             {d ? `${d.count} مناسبة · ${scopeLabel}` : 'مواليد قريبين'}
           </div>

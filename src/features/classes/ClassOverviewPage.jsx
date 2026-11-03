@@ -54,7 +54,6 @@ export default function ClassOverviewPage() {
             <span aria-hidden="true">/</span>
             <span>{label}</span>
           </nav>
-          <h1 className="page-head__title">{label}</h1>
           <div className="page-head__sub">
             {cls?.academic_year || '—'}
             {flagged > 0 && ` · ${flagged} محتاجين متابعة`}

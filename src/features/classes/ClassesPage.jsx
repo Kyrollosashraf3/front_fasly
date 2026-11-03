@@ -22,7 +22,6 @@ export default function ClassesPage() {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-head__title">الفصول</h1>
           <div className="page-head__sub">{classReady ? `${classes.length} فصل` : ' '}</div>
         </div>
         {isMgr && <ClassDialog />}

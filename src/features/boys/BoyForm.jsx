@@ -92,9 +92,14 @@ function NameClashNote({ clash, busy, onConfirm, onGoTo }) {
  *   <BoyForm open onClose={fn} boy={row|null} defaultClassId={n} onSaved={fn} />
  */
 export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
-  const { classes } = useAuth()
+  const { classes, user, isServant: servantLogin } = useAuth()
   const toast = useToast()
   const modal = useModal()
+
+  // Re-filing a boy under another servant is the amin's job. A servant login
+  // gets no field and no `teacher_id` in the request, so the assignment on
+  // file cannot be cleared or moved by accident while he fixes a phone number.
+  const assignsServant = !servantLogin
 
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
@@ -109,9 +114,11 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
     setErrors({})
     setClash(null)
     const next = formStateFor(boy, defaultClassId, classes)
+    // A new boy a servant is adding is his own, without him choosing.
+    if (!boy && servantLogin && user?.teacher_id) next.teacher_id = String(user.teacher_id)
     setInitial(JSON.stringify(next))
     setForm(next)
-  }, [open, boy, defaultClassId, classes])
+  }, [open, boy, defaultClassId, classes, servantLogin, user])
 
   const isEdit = Boolean(boy)
   const dirty = open && JSON.stringify(form) !== initial
@@ -133,10 +140,11 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
   const { data: servants, loading: servantsLoading } = useQuery(
     () => (form.class_id ? TeacherAPI.list({ class_id: form.class_id }) : Promise.resolve([])),
     [open, form.class_id],
-    { enabled: open },
+    { enabled: open && assignsServant },
   )
 
   useEffect(() => {
+    if (!assignsServant) return
     // Only trust a list that has actually arrived for this class. On the render
     // where `form.class_id` first becomes the boy's class, the query still
     // holds the previous (empty) result and `servantsLoading` is stale-false;
@@ -149,7 +157,7 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
     ) {
       setForm((f) => ({ ...f, teacher_id: '' }))
     }
-  }, [open, servants, servantsLoading, form.teacher_id])
+  }, [open, servants, servantsLoading, form.teacher_id, assignsServant])
 
   const performSave = async ({ confirmSimilar = false } = {}) => {
     const nextErrors = validateBoy(form, isEdit)
@@ -158,7 +166,9 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
     setBusy(true)
 
     try {
-      const payload = boyPayload(form)
+      // Adding a boy still files him (under the servant himself); editing an
+      // existing boy never touches the assignment for a servant login.
+      const payload = boyPayload(form, { assignServant: assignsServant || !isEdit })
       if (isEdit) await BoyAPI.update(boy.id, payload)
       else await BoyAPI.create({ ...payload, confirm_similar: confirmSimilar })
       setClash(null)
@@ -255,6 +265,7 @@ export function BoyForm({ open, onClose, boy, defaultClassId, onSaved }) {
         errors={errors}
         classes={classes}
         servants={servants}
+        showServant={assignsServant}
         age={age}
         isEdit={isEdit}
         nameNote={
