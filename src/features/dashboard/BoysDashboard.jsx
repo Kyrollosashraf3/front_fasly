@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { Icon } from '../../components/ui/Icon'
@@ -8,7 +8,6 @@ import { ErrorState, SkeletonRows } from '../../components/ui/States'
 import { BoyProfileModal } from '../boys/BoyProfile'
 import { DateModeField, Kpi, KpiRow } from './parts'
 import { BoysSections } from './boys/BoysSections'
-import { TodayCheckModal } from './boys/TodayCheckModal'
 import { useBoysDashboard } from './boys/useBoysDashboard'
 import './dashboard.css'
 
@@ -27,7 +26,7 @@ const ALL_CLASSES = 'all'
 export default function BoysDashboard() {
   usePageTitle('أداء الأولاد')
   const { classLabel } = useAuth()
-  const [checkOpen, setCheckOpen] = useState(false)
+  const navigate = useNavigate()
 
   const dash = useBoysDashboard()
   const {
@@ -132,9 +131,11 @@ export default function BoysDashboard() {
           ))}
         </div>
 
-        {/* «فحص اليوم» is a dialog, not a section, so it opens on click instead
-            of swapping the view. */}
-        <button type="button" className="dash-channel" onClick={() => setCheckOpen(true)}>
+        <button
+          type="button"
+          className="dash-channel"
+          onClick={() => navigate('/dashboard/boys/today-check')}
+        >
           <span className="dash-channel__icon">
             <Icon name="check" size={18} />
           </span>
@@ -198,7 +199,6 @@ export default function BoysDashboard() {
       </div>
 
       <BoyProfileModal open={Boolean(boy)} boy={boy} onClose={closeBoy} />
-      <TodayCheckModal open={checkOpen} onClose={() => setCheckOpen(false)} classId={classId} />
     </>
   )
 }

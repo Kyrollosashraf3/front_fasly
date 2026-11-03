@@ -7,10 +7,13 @@ import { normalizeSearch } from '../../lib/search'
 import { num } from '../../lib/format'
 import './myTrip.css'
 
-// الأولاد الذين دفعوا فقط — دايمًا
+// الأولاد اللي لهم اسم في الرحلة — المدفوع أو المحجوز بـ 0
 // فلتر الحالة: all | complete | remaining
 const statusOf = (r) =>
   (r.remaining ?? 0) <= 0 ? 'complete' : 'remaining'
+
+// حجز اسم بس: له حركة في الرحلة ولمسه جنيه لحد دلوقتي.
+const isReserved = (r) => (r.total_paid ?? 0) <= 0
 
 export default function SubscriptionAnalysis({ tripId }) {
   const [rows, setRows] = useState([])
@@ -41,8 +44,8 @@ export default function SubscriptionAnalysis({ tripId }) {
   const filtered = useMemo(() => {
     const q = normalizeSearch(nameFilter)
     return rows.filter((r) => {
-      // دايمًا نعرض الذين دفعوا فقط
-      if ((r.total_paid ?? 0) <= 0) return false
+      // دايمًا نعرض اللي لهم اسم في الرحلة (مدفوع أو محجوز)
+      if (!r.registered) return false
       // فلتر الحالة
       if (statusFilter !== 'all' && statusOf(r) !== statusFilter) return false
       // فلتر الاسم
@@ -114,12 +117,13 @@ export default function SubscriptionAnalysis({ tripId }) {
         <div className="mytrip__analysis-list">
           {filtered.map((r) => {
             const complete = (r.remaining ?? 0) <= 0
+            const reserved = isReserved(r)
             return (
               <div key={r.boy_id} className="mytrip__analysis-card">
                 <div className="mytrip__analysis-card-name">
                   {r.boy_name}
-                  <Badge kind={complete ? 'green' : 'gold'}>
-                    {complete ? 'مكتمل' : 'جزئي'}
+                  <Badge kind={complete ? 'green' : reserved ? 'neutral' : 'gold'}>
+                    {complete ? 'مكتمل' : reserved ? 'حجز اسم' : 'جزئي'}
                   </Badge>
                 </div>
                 <div className="mytrip__analysis-card-amounts">

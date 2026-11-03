@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
@@ -58,10 +59,18 @@ export default function BirthdaysPage() {
   usePageTitle('أعياد الميلاد')
   const { user, classes, can, isServant } = useAuth()
 
+  const [params] = useSearchParams()
+  /** A birthday notification names his class: the page opens already filtered. */
+  const linkClassId = params.get('class_id') || ''
+
   const [kind, setKind] = useState('boys')
   const [window, setWindow] = useState('twoweeks')
   const [month, setMonth] = useState('')
-  const [classId, setClassId] = useState('')
+  const [classId, setClassId] = useState(linkClassId)
+
+  useEffect(() => {
+    if (linkClassId) setClassId(linkClassId)
+  }, [linkClassId])
 
   const kindOptions = isServant ? [KIND_OPTIONS[0]] : KIND_OPTIONS
   const showAll = can.manageClasses(user) && classes.length > 1

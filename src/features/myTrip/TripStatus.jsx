@@ -7,9 +7,10 @@ import './myTrip.css'
 /**
  * TripStatus — the "حالة الرحلة" action.
  *
- * Counts the boys who subscribed (paid anything) in this trip and compares
- * `count × the trip cost` with what was actually collected so far, as values
- * and as two bars. The class size is extra context, not part of the expected.
+ * Counts the boys who are on this trip — paid, or only reserved their name with
+ * 0 — and compares `count × the trip cost` with what was actually collected so
+ * far, as values and as two bars. The class size is extra context, not part of
+ * the expected.
  */
 export default function TripStatus({ tripId, tripCost, tripName }) {
   const [rows, setRows] = useState([])
@@ -39,7 +40,7 @@ export default function TripStatus({ tripId, tripCost, tripName }) {
 
   const stats = useMemo(() => {
     const boys = rows.length
-    const subscribed = rows.filter((r) => (r.total_paid ?? 0) > 0).length
+    const subscribed = rows.filter((r) => r.registered).length
     const collected = rows.reduce((sum, r) => sum + (r.total_paid ?? 0), 0)
     const expected = subscribed * tripCost
     const remaining = Math.max(0, expected - collected)

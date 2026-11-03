@@ -32,7 +32,7 @@ export default function BoyAccount({ tripId }) {
       .then(([summary, subs, users]) => {
         if (cancelled) return
         const list = Array.isArray(summary) ? summary : []
-        setBoys(list.filter((b) => (b.total_paid ?? 0) > 0))
+        setBoys(list.filter((b) => b.registered))
         setPayments(Array.isArray(subs) ? subs : [])
         // بناء map: id → name
         const map = {}
@@ -148,8 +148,14 @@ export default function BoyAccount({ tripId }) {
               {/* اسم + حالة */}
               <div className="mytrip__account-card-name">
                 {boy.boy_name}
-                <Badge kind={(boy.remaining ?? 0) <= 0 ? 'green' : 'gold'}>
-                  {(boy.remaining ?? 0) <= 0 ? 'مكتمل' : 'جزئي'}
+                <Badge
+                  kind={(boy.remaining ?? 0) <= 0 ? 'green' : (boy.total_paid ?? 0) <= 0 ? 'neutral' : 'gold'}
+                >
+                  {(boy.remaining ?? 0) <= 0
+                    ? 'مكتمل'
+                    : (boy.total_paid ?? 0) <= 0
+                      ? 'حجز اسم'
+                      : 'جزئي'}
                 </Badge>
               </div>
 

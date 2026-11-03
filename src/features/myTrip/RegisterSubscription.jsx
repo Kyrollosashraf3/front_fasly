@@ -77,8 +77,14 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
 
   const remaining = summary?.remaining
   const totalCharged = summary?.total_charged ?? 0
-  const overBalance = remaining > 0 && type === 'charge' && Number(value) > remaining
-  const overRecover = type === 'recover' && Number(value) > totalCharged
+  const amount = Number(value)
+  // A charge of 0 is allowed on purpose: it reserves the boy's name, and the
+  // money is added from this same screen later. A "سحب" of 0 would be noise.
+  const reserving = type === 'charge' && amount === 0
+  const invalidAmount =
+    value === '' || !Number.isFinite(amount) || amount < 0 || (type === 'recover' && amount <= 0)
+  const overBalance = remaining > 0 && type === 'charge' && amount > remaining
+  const overRecover = type === 'recover' && amount > totalCharged
 
   const selectBoy = (boy) => {
     setSelectedBoy(boy)
@@ -97,9 +103,8 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
       toast.error('اختر ولدًا من القائمة.')
       return
     }
-    const amount = Number(value)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error('أدخل قيمة صحيحة أكبر من صفر.')
+    if (invalidAmount) {
+      toast.error('أدخل قيمة صحيحة.')
       return
     }
     setBusy(true)
@@ -112,7 +117,11 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
         date,
         note: note.trim() || undefined,
       })
-      toast.success(`تم تسجيل ${num(amount)} جنيه لـ ${selectedBoy.boy_name}.`)
+      toast.success(
+        reserving
+          ? `تم حجز اسم ${selectedBoy.boy_name} - المبلغ يتسجل بعدين.`
+          : `تم تسجيل ${num(amount)} جنيه لـ ${selectedBoy.boy_name}.`,
+      )
       onSaved?.()
     } catch (err) {
       toast.error(err)
@@ -173,13 +182,15 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
         required
         htmlFor="reg-value"
         hint={
-          remaining !== undefined
-            ? type === 'recover'
-              ? `يتم خصم المبلغ من المبلغ المستحق للولد.`
-              : `دفع ${num(summary?.total_paid ?? 0)} جنيه، والباقي عليه ${num(
-                  Math.max(0, remaining),
-                )} جنيه.`
-            : undefined
+          reserving
+            ? 'صفر = حجز اسمه في الرحلة فقط، والمبلغ يتسجيل هنا بعدين.'
+            : remaining !== undefined
+              ? type === 'recover'
+                ? `يتم خصم المبلغ من المبلغ المستحق للولد.`
+                : `دفع ${num(summary?.total_paid ?? 0)} جنيه، والباقي عليه ${num(
+                    Math.max(0, remaining),
+                  )} جنيه.`
+              : undefined
         }
       >
         <Input
@@ -267,9 +278,9 @@ export default function RegisterSubscription({ trip, onSaved, onClose }) {
           variant="primary"
           type="submit"
           loading={busy}
-          disabled={!selectedBoy || !value || Number(value) <= 0 || overBalance || overRecover}
+          disabled={!selectedBoy || invalidAmount || overBalance || overRecover}
         >
-          {type === 'recover' ? 'سحب الاشتراك' : 'تسجيل الدفعة'}
+          {type === 'recover' ? 'سحب الاشتراك' : reserving ? 'حجز الاسم' : 'تسجيل الدفعة'}
         </Button>
       </div>
     </form>
