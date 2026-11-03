@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { Icon } from '../../components/ui/Icon'
-import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -13,18 +12,18 @@ import { TodayCheckModal } from './boys/TodayCheckModal'
 import { useBoysDashboard } from './boys/useBoysDashboard'
 import './dashboard.css'
 
-/** Names across the class groups of a section, for its channel count. */
-const groupCount = (groups) =>
-  Object.values(groups || {}).reduce((n, rows) => n + rows.length, 0)
-
 /**
  * BoysDashboard — "أداء الأولاد".
  *
  * One GET /dashboard/summary drives every card and seven channel buttons swap
  * the section underneath them, so only one section is open at a time (the same
- * shape as «أداء الخدام»). The class picker and the period are query params, so
- * changing one re-requests; the streak section adds its own Friday range.
+ * shape as «أداء الخدام»). The class picker, the period and «فحص اليوم» are the
+ * first thing on the screen and drive every section, and the summary numbers
+ * belong to «نسبة الحضور» alone. (The buttons no longer carry count badges.)
  */
+/** The picker's «كل الفصول» choice; as a query param it is no class at all. */
+const ALL_CLASSES = 'all'
+
 export default function BoysDashboard() {
   usePageTitle('أداء الأولاد')
   const { classLabel } = useAuth()
@@ -68,37 +67,42 @@ export default function BoysDashboard() {
   } = dash
 
   const channels = [
-    { key: 'att', label: 'نسبة الحضور', icon: 'percent', count: byClass.length },
-    { key: 'curve', label: 'منحنى الحضور', icon: 'chart', count: d?.boys_trend?.length },
-    {
-      key: 'cover',
-      label: 'افتقاد الأولاد',
-      icon: 'heart',
-      count: cover ? cover.done_count + cover.todo_count : undefined,
-    },
-    {
-      key: 'late',
-      label: 'متأخرون عن الاعتراف',
-      icon: 'history',
-      count: late?.late_count,
-    },
-    { key: 'streak', label: 'المواظبون', icon: 'star', count: groupCount(d?.streaks) },
-    {
-      key: 'absent',
-      label: 'غياب آخر جمعة',
-      icon: 'alert',
-      count: d?.last_friday?.absent_count,
-    },
-    {
-      key: 'frequent',
-      label: 'الغياب المتكرر',
-      icon: 'clipboard',
-      count: groupCount(d?.frequent_absent),
-    },
+    { key: 'att', label: 'نسبة الحضور', icon: 'percent' },
+    { key: 'curve', label: 'منحنى الحضور', icon: 'chart' },
+    { key: 'cover', label: 'افتقاد الأولاد', icon: 'heart' },
+    { key: 'late', label: 'متأخرون عن الاعتراف', icon: 'history' },
+    { key: 'streak', label: 'المواظبون', icon: 'star' },
+    { key: 'absent', label: 'غياب آخر جمعة', icon: 'alert' },
+    { key: 'frequent', label: 'الغياب المتكرر', icon: 'clipboard' },
   ]
 
   return (
     <>
+      {/* First thing on the screen: one class + period choice, and it drives
+          every section below without having to be repeated. */}
+      <Toolbar className="toolbar--dash">
+        {classes.length > 1 && (
+          <Select
+            value={classId === '' ? ALL_CLASSES : classId}
+            onChange={(e) => setClassId(e.target.value === ALL_CLASSES ? '' : e.target.value)}
+            className="select--plain"
+            aria-label="اختيار الفصل"
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
+          >
+            {showAll && <option value={ALL_CLASSES}>كل الفصول</option>}
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
+        <DateModeField value={dateMode} onChange={setDateMode} />
+        <ToolbarSpacer />
+        <span className="small muted">آخر جمعة مسجلة: {d?.last_friday?.date || '—'}</span>
+      </Toolbar>
+
       <div className="page-head">
         <div>
           <div className="page-head__sub">
@@ -109,78 +113,57 @@ export default function BoysDashboard() {
         </div>
       </div>
 
-      <div className="dash-channels" role="tablist" aria-label="أقسام أداء الأولاد">
-        {channels.map((channel) => (
-          <button
-            key={channel.key}
-            type="button"
-            role="tab"
-            aria-selected={section === channel.key}
-            className={`dash-channel${section === channel.key ? ' is-active' : ''}`}
-            onClick={() => setSection(channel.key)}
-          >
-            <span className="dash-channel__icon">
-              <Icon name={channel.icon} size={18} />
-            </span>
-            <span className="dash-channel__label">{channel.label}</span>
-            {channel.count !== undefined && (
-              <span className="dash-channel__count">{channel.count}</span>
-            )}
-          </button>
-        ))}
+      <div className="dash-channels">
+        <div className="dash-channels__tabs" role="tablist" aria-label="أقسام أداء الأولاد">
+          {channels.map((channel) => (
+            <button
+              key={channel.key}
+              type="button"
+              role="tab"
+              aria-selected={section === channel.key}
+              className={`dash-channel${section === channel.key ? ' is-active' : ''}`}
+              onClick={() => setSection(channel.key)}
+            >
+              <span className="dash-channel__icon">
+                <Icon name={channel.icon} size={18} />
+              </span>
+              <span className="dash-channel__label">{channel.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* «فحص اليوم» is a dialog, not a section, so it opens on click instead
+            of swapping the view. */}
+        <button type="button" className="dash-channel" onClick={() => setCheckOpen(true)}>
+          <span className="dash-channel__icon">
+            <Icon name="check" size={18} />
+          </span>
+          <span className="dash-channel__label">فحص اليوم</span>
+        </button>
       </div>
 
-      <Toolbar>
-        {classes.length > 1 && (
-          <Select
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className="select--plain"
-            style={{ minWidth: 190 }}
-            aria-label="اختيار الفصل"
-            searchable
-            searchPlaceholder="ابحث باسم الفصل..."
-          >
-            {showAll && <option value="">كل الفصول</option>}
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        )}
-        <DateModeField value={dateMode} onChange={setDateMode} />
-        <Button
-          variant="secondary"
-          icon={<Icon name="check" size={15} />}
-          onClick={() => setCheckOpen(true)}
-        >
-          فحص اليوم
-        </Button>
-        <ToolbarSpacer />
-        <span className="small muted">آخر جمعة مسجلة: {d?.last_friday?.date || '—'}</span>
-      </Toolbar>
+      {/* The summary numbers are the attendance section's own analysis, so they
+          appear only under «نسبة الحضور». */}
+      {section === 'att' && a && (
+        <KpiRow>
+          <Kpi
+            hero
+            value={`${a.percent}%`}
+            label="نسبة حضور الأولاد"
+            progress={a.percent}
+            sub={`حاضر ${a.present} • غائب ${a.absent} • الكل ${a.total}`}
+          />
+          <Kpi
+            value={`${a.liturgy_percent}%`}
+            label="حضور القداس"
+            sub={`قداس ${a.liturgy_present} من ${a.total}`}
+          />
+          <Kpi value={d.counts.boys} label="الأولاد" />
+          <Kpi value={d.counts.fridays} label="جمع مسجلة" />
+        </KpiRow>
+      )}
 
       <div className="dash">
-        {a && (
-          <KpiRow>
-            <Kpi
-              hero
-              value={`${a.percent}%`}
-              label="نسبة حضور الأولاد"
-              progress={a.percent}
-              sub={`حاضر ${a.present} • غائب ${a.absent} • الكل ${a.total}`}
-            />
-            <Kpi
-              value={`${a.liturgy_percent}%`}
-              label="حضور القداس"
-              sub={`قداس ${a.liturgy_present} من ${a.total}`}
-            />
-            <Kpi value={d.counts.boys} label="الأولاد" />
-            <Kpi value={d.counts.fridays} label="جمع مسجلة" />
-          </KpiRow>
-        )}
-
         <div className="dash-view">
           {error ? (
             <ErrorState error={error} onRetry={refetch} />

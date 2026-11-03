@@ -7,6 +7,12 @@
   margin: 0 0 var(--sp-3);
 }
 
+/* The section buttons are a tablist, but the grid holds one more tile that is
+   not a tab («فحص اليوم»), so the list itself stays out of the layout. */
+.dash-channels__tabs {
+  display: contents;
+}
+
 .dash-channel {
   display: flex;
   align-items: center;
@@ -59,20 +65,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.dash-channel__count {
-  margin-inline-start: auto;
-  padding: 1px 8px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-
-.dash-channel.is-active .dash-channel__count {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
 }
 
 /* --------------------------------------------------------- curve filters */

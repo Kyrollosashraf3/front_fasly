@@ -25,6 +25,9 @@ import './dashboard.css'
  * Score = true flags summed across checks
  * (attend + prepare + liturgy + follow + teachers_meeting), max 5 per friday.
  */
+/** The picker's «كل الفصول» choice; as a query param it is no class at all. */
+const ALL_CLASSES = 'all'
+
 export default function TeachersDashboard() {
   usePageTitle('أداء الخدام')
   const { classLabel } = useAuth()
@@ -74,34 +77,39 @@ export default function TeachersDashboard() {
   } = dash
 
   const channels = [
-    {
-      key: 'perf',
-      label: 'أداء الخدام',
-      icon: 'chart',
-      count: d?.servants?.length,
-    },
-    {
-      key: 'top',
-      label: 'أفضل الخدام',
-      icon: 'star',
-      count: d?.top_servants?.length,
-    },
-    {
-      key: 'absent',
-      label: 'خدام غابوا',
-      icon: 'servant',
-      count: absentServants.length,
-    },
-    {
-      key: 'late',
-      label: 'متأخرون عن الاعتراف',
-      icon: 'history',
-      count: late?.late_count,
-    },
+    { key: 'perf', label: 'أداء الخدام', icon: 'chart' },
+    { key: 'top', label: 'أفضل الخدام', icon: 'star' },
+    { key: 'absent', label: 'خدام غابوا', icon: 'servant' },
+    { key: 'late', label: 'متأخرون عن الاعتراف', icon: 'history' },
   ]
 
   return (
     <>
+      {/* First thing on the screen: the class + period filters drive every
+          channel below. */}
+      <Toolbar className="toolbar--dash">
+        {classes.length > 1 && (
+          <Select
+            value={classId === '' ? ALL_CLASSES : classId}
+            onChange={(e) => setClassId(e.target.value === ALL_CLASSES ? '' : e.target.value)}
+            className="select--plain"
+            aria-label="اختيار الفصل"
+            searchable
+            searchPlaceholder="ابحث باسم الفصل..."
+          >
+            {showAll && <option value={ALL_CLASSES}>كل الفصول</option>}
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
+        {view !== 'absent' && <DateModeField value={dateMode} onChange={setDateMode} />}
+        <ToolbarSpacer />
+        <span className="small muted">النقاط من 5 لكل جمعة</span>
+      </Toolbar>
+
       <div className="page-head">
         <div>
           <div className="page-head__sub">
@@ -124,36 +132,9 @@ export default function TeachersDashboard() {
               <Icon name={channel.icon} size={18} />
             </span>
             <span className="dash-channel__label">{channel.label}</span>
-            {channel.count !== undefined && (
-              <span className="dash-channel__count">{channel.count}</span>
-            )}
           </button>
         ))}
       </div>
-
-      <Toolbar>
-        {classes.length > 1 && (
-          <Select
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className="select--plain"
-            style={{ minWidth: 190 }}
-            aria-label="اختيار الفصل"
-            searchable
-            searchPlaceholder="ابحث باسم الفصل..."
-          >
-            {showAll && <option value="">كل الفصول</option>}
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        )}
-        {view !== 'absent' && <DateModeField value={dateMode} onChange={setDateMode} />}
-        <ToolbarSpacer />
-        <span className="small muted">النقاط من 5 لكل جمعة</span>
-      </Toolbar>
 
       <div className="dash-view">
         {view === 'absent' ? (

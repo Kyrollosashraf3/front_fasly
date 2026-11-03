@@ -1,5 +1,21 @@
 /* ------------------------------------------------------------- responsive */
 
+/* The dashboards open with their filters, so those stay one step smaller than a
+   list toolbar to keep the whole row on screen. */
+.toolbar.toolbar--dash {
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.toolbar.toolbar--dash :is(.n-field, .small) {
+  font-size: 11px;
+}
+
+.toolbar.toolbar--dash :is(.input, .select) {
+  padding-block: 7px;
+  font-size: 11.2px;
+}
+
 @media (max-width: 900px) {
   .dash-channels {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7,15 +23,92 @@
 }
 
 @media (max-width: 640px) {
-  .dash-kpis {
-    grid-template-columns: 1fr;
+  /* Four buttons per row, and the summary numbers as two rows of two cards. */
+  .dash-channels {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--sp-1);
   }
 
-  .dash-channels {
-    grid-template-columns: 1fr;
+  .dash-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-2);
+  }
+
+  .dash-kpi {
+    gap: 2px;
+    padding: var(--sp-2);
+    border-radius: var(--radius-md);
+  }
+
+  .dash-kpi .kpi-num {
+    font-size: var(--text-xl);
+  }
+
+  .dash-kpi .kpi-label,
+  .dash-kpi .kpi-sub {
+    font-size: var(--text-xs);
+    line-height: 1.3;
+  }
+
+  .dash-kpi .kpi-num,
+  .dash-kpi.hero .kpi-sub {
+    text-align: start;
+  }
+
+  /* A button becomes a small tile: icon above a name allowed a second line,
+     instead of a row the phone has no room for. */
+  .dash-channel {
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: var(--sp-2) 2px;
+    text-align: center;
+    border-radius: var(--radius-md);
+  }
+
+  .dash-channel__icon {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+  }
+
+  .dash-channel__label {
+    overflow: visible;
+    white-space: normal;
+    font-size: 10px;
+    line-height: 1.25;
   }
 
   .chart-val {
     display: none;
+  }
+
+  /* The dashboard toolbar is the first thing on the screen, so it keeps to a
+     few short rows instead of one stretched control per row. */
+  .toolbar.toolbar--dash {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .toolbar.toolbar--dash .toolbar__spacer {
+    display: none;
+  }
+
+  /* Class + period share one row; the «آخر جمعة مسجلة» note drops below them. */
+  .toolbar.toolbar--dash > .search-select.select--plain,
+  .toolbar.toolbar--dash > .n-field {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+
+  .toolbar.toolbar--dash > .n-field select {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+
+  .toolbar.toolbar--dash > .small.muted {
+    flex: 1 1 100%;
   }
 }
