@@ -151,6 +151,11 @@ export function UnsavedChangesProvider({ children }) {
 
     const onPop = () => {
       if (Date.now() < suppressRef.current) return
+      // A hash change the provider started itself (a discard, or the revert in
+      // case 3) also lands here before its `hashchange`. Leave it to that
+      // listener — it owns the flag — otherwise this trap would read our own
+      // jump as a back press and replace the pending link with a `go(-2)`.
+      if (allowNextRef.current) return
       const guard = activeGuard()
       if (!guard) {
         lastHashRef.current = window.location.hash

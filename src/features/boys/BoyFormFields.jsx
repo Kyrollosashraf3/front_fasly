@@ -1,20 +1,51 @@
 import { Checkbox, ChipSelect, Field, Input, Select, Textarea } from '../../components/ui/Field'
 import { FATHERS, SKILLS } from '../../lib/constants'
 
+/** The three parts a boy's name is filed by. */
+const PARTS = [
+  { label: 'الاسم', id: 'boy-name', placeholder: 'مينا' },
+  { label: 'اسم الأب', id: 'boy-father-name', placeholder: 'فؤاد' },
+  { label: 'اسم الجد', id: 'boy-grandfather-name', placeholder: 'سعيد' },
+]
+
 /** Every field of the boy form, bound to `form` through `set`. */
-export function BoyFormFields({ form, set, setForm, errors, classes, servants, age, onSubmit }) {
+export function BoyFormFields({
+  form,
+  set,
+  setForm,
+  setNamePart,
+  errors,
+  classes,
+  servants,
+  age,
+  isEdit,
+  nameNote,
+  onSubmit,
+}) {
   return (
     <form className="stack" onSubmit={onSubmit} noValidate>
       <div className="grid-2">
-        <Field label="اسم الولد" required htmlFor="boy-name" error={errors.boy_name}>
-          <Input
-            id="boy-name"
-            placeholder="مثال: مينا فؤاد"
-            value={form.boy_name}
-            error={errors.boy_name}
-            onChange={set('boy_name')}
-          />
-        </Field>
+        <div className="name-parts">
+          {PARTS.map((part, index) => (
+            <Field
+              key={part.id}
+              label={part.label}
+              required={index === 0 || !isEdit}
+              htmlFor={part.id}
+              error={errors[`name_${index}`]}
+            >
+              <Input
+                id={part.id}
+                placeholder={part.placeholder}
+                value={form.name_parts[index]}
+                error={errors[`name_${index}`]}
+                onChange={setNamePart(index)}
+              />
+            </Field>
+          ))}
+        </div>
+
+        {nameNote}
 
         <Field label="النوع" required htmlFor="boy-gender" error={errors.gender}>
           <Select id="boy-gender" value={form.gender} error={errors.gender} onChange={set('gender')}>

@@ -70,6 +70,29 @@
   line-height: 1;
 }
 
+/* A Friday the file can correct is a button, so it sheds the default
+   browser button look and keeps the cell's own colours. */
+button.friday-cell {
+  font-family: inherit;
+  font-size: var(--text-xs);
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.friday-cell.is-pickable:hover:not(:disabled) {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-soft);
+}
+
+.friday-cell:disabled {
+  cursor: default;
+}
+
+.profile__hint {
+  margin: calc(-1 * var(--sp-2)) 0 var(--sp-2);
+}
+
 .profile__notes {
   display: flex;
   flex-direction: column;
@@ -111,4 +134,9 @@
   background: var(--navy);
   border: 2px solid var(--surface);
   box-shadow: 0 0 0 2px var(--gold);
+}
+
+/* The trash sits at the far end of the row, away from the note. */
+.profile__timeline .btn-icon {
+  margin-inline-start: auto;
 }

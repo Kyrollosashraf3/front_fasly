@@ -1,5 +1,6 @@
 import { BoyAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
+import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { SearchInput } from '../../components/ui/Field'
 import { Tabs, Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
@@ -18,10 +19,12 @@ export function BoysToolbar({
   setFlag,
   boys,
   flaggedCount,
+  canManageBoys,
   canWrite,
   setImportResult,
   refetch,
   toast,
+  onOpenDuplicates,
 }) {
   return (
     <>
@@ -75,6 +78,11 @@ export function BoysToolbar({
             },
           ].filter(Boolean)}
         />
+        {canManageBoys && (
+          <Button variant="secondary" icon={<Icon name="alert" size={15} />} onClick={onOpenDuplicates}>
+            أسماء متكررة
+          </Button>
+        )}
         <a className="btn btn-secondary" href={classId ? `#/class/${classId}/attendance` : '#/attendance'}>
           <Icon name="calendar" size={15} />
           الحضور

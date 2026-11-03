@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useModal } from '../../context/ModalContext'
 import { useToast } from '../../context/ToastContext'
@@ -26,6 +26,10 @@ export function useBoysList() {
   const [editing, setEditing] = useState(null)
   const [viewing, setViewing] = useState(null)
   const [importResult, setImportResult] = useState(null)
+  const [dupsOpen, setDupsOpen] = useState(false)
+  // Bumped with every write to the directory, so the duplicate scan re-runs on
+  // the next look rather than showing a boy who has since been merged or deleted.
+  const [dupsVersion, setDupsVersion] = useState(0)
 
   const debounced = useDebounced(search, 220)
 
@@ -33,6 +37,20 @@ export function useBoysList() {
     () => BoyAPI.list({ class_id: classId || undefined }),
     [classId],
   )
+
+  // Moving to another class keeps this page instance alive, so an open dialog
+  // from the old one would stay on screen holding the old class's data.
+  useEffect(() => {
+    setFormOpen(false)
+    setEditing(null)
+    setViewing(null)
+    setDupsOpen(false)
+  }, [classId])
+
+  const reload = () => {
+    refetch()
+    setDupsVersion((v) => v + 1)
+  }
 
   const rows = useMemo(() => {
     const q = normalizeSearch(debounced)
@@ -70,7 +88,7 @@ export function useBoysList() {
     try {
       await BoyAPI.remove(boy.id)
       toast.success('تم حذف الولد.')
-      refetch()
+      reload()
     } catch (err) {
       toast.error(err.message)
     }
@@ -99,6 +117,10 @@ export function useBoysList() {
     setViewing,
     importResult,
     setImportResult,
+    dupsOpen,
+    setDupsOpen,
+    dupsVersion,
+    reload,
     boys,
     loading,
     error,

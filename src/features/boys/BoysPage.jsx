@@ -1,12 +1,16 @@
+import { useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usePageTitle } from '../../context/TitleContext'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { Table } from '../../components/ui/Table'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { ImportResult } from '../../components/ui/ImportResult'
+import { BoyAPI } from '../../lib/endpoints'
 import { BoyForm } from './BoyForm'
 import { BoyProfileModal } from './BoyProfile'
 import { BoysToolbar } from './BoysToolbar'
+import { DuplicateNamesModal } from './DuplicateNamesModal'
 import { boysColumns } from './boysColumns'
 import { useBoysList } from './useBoysList'
 import './boys.css'
@@ -36,6 +40,10 @@ export default function BoysPage() {
     setViewing,
     importResult,
     setImportResult,
+    dupsOpen,
+    setDupsOpen,
+    dupsVersion,
+    reload,
     boys,
     loading,
     error,
@@ -49,6 +57,21 @@ export default function BoysPage() {
 
   usePageTitle(`الأولاد — ${label}`)
 
+  // A duplicate-name note on another screen sends you here with the boy to
+  // open: ?boy=ID is read once, the card opens and the address is cleaned up.
+  const [params, setParams] = useSearchParams()
+  const openId = params.get('boy')
+
+  useEffect(() => {
+    if (!openId) return
+    const rest = new URLSearchParams(params)
+    rest.delete('boy')
+    setParams(rest, { replace: true })
+    BoyAPI.get(openId)
+      .then(setViewing)
+      .catch((err) => toast.error(err.message))
+  }, [openId, params, setParams, setViewing, toast])
+
   const columns = boysColumns({
     classId,
     multi,
@@ -58,7 +81,7 @@ export default function BoysPage() {
     setViewing,
     openEdit,
     remove,
-    refetch,
+    refetch: reload,
   })
 
   return (
@@ -104,10 +127,12 @@ export default function BoysPage() {
         setFlag={setFlag}
         boys={boys}
         flaggedCount={flaggedCount}
+        canManageBoys={canManageBoys}
         canWrite={canWrite}
         setImportResult={setImportResult}
         refetch={refetch}
         toast={toast}
+        onOpenDuplicates={() => setDupsOpen(true)}
       />
 
       <div style={{ marginTop: 'var(--sp-4)' }}>
@@ -139,15 +164,34 @@ export default function BoysPage() {
         )}
       </div>
 
+      <DuplicateNamesModal
+        open={dupsOpen}
+        onClose={() => setDupsOpen(false)}
+        classId={classId}
+        label={label}
+        version={dupsVersion}
+        canManageBoys={canManageBoys}
+        canWrite={canWrite}
+        toast={toast}
+        openEdit={openEdit}
+        setViewing={setViewing}
+        remove={remove}
+      />
+
       <BoyForm
         open={formOpen}
         onClose={() => setFormOpen(false)}
         boy={editing}
         defaultClassId={classId ? Number(classId) : undefined}
-        onSaved={refetch}
+        onSaved={reload}
       />
 
-      <BoyProfileModal open={Boolean(viewing)} boy={viewing} onClose={() => setViewing(null)} />
+      <BoyProfileModal
+        open={Boolean(viewing)}
+        boy={viewing}
+        onClose={() => setViewing(null)}
+        onChanged={reload}
+      />
 
       <ImportResult
         open={Boolean(importResult)}

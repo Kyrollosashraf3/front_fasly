@@ -6,6 +6,211 @@
   gap: var(--sp-2);
 }
 
+/* The three boxes a boy's name is filed by, across the whole form. */
+.name-parts {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+/* A name the directory already knows, shown where it was typed. */
+.clash {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-md);
+  background: var(--gold-soft);
+}
+
+.clash--taken {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+}
+
+.clash__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--navy);
+}
+
+.clash--taken .clash__head {
+  color: var(--danger);
+}
+
+.clash__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clash__row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.clash__name {
+  color: var(--navy);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline dotted var(--gold-hover);
+  text-underline-offset: 3px;
+}
+
+.clash__name:hover {
+  color: var(--gold-hover);
+}
+
+.clash__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+@media (max-width: 560px) {
+  .name-parts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Duplicate-names modal: one card per group of look-alike boys. */
+
+.dup__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.dup {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.dup__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.dup__score {
+  flex: none;
+  min-width: 58px;
+  padding: 4px 10px;
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-pill);
+  background: var(--gold-soft);
+  color: var(--gold-ink);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  text-align: center;
+}
+
+.dup__why {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dup__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dup__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-4);
+}
+
+.dup__row + .dup__row {
+  border-top: 1px solid var(--surface-border);
+}
+
+.dup__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 45%;
+  min-width: 0;
+}
+
+/* The name is the shortcut to the editable file card. */
+.dup__name {
+  color: var(--navy);
+  font-weight: var(--weight-bold);
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+  text-decoration: underline dotted var(--gold-hover);
+  text-underline-offset: 3px;
+}
+
+.dup__name:hover {
+  color: var(--gold-hover);
+}
+
+.dup__name:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.dup__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: 0 1 auto;
+}
+
+.dup__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .dup__row {
+    flex-wrap: wrap;
+  }
+
+  .dup__meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dup__head {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 768px) {
   .table th,
   .table td {

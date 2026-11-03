@@ -38,6 +38,8 @@ export const BoyAPI = {
   create: (body) => api.post('/boys', body),
   update: (id, body) => api.patch(`/boys/${id}`, body),
   remove: (id) => api.del(`/boys/${id}`),
+  /** Boys whose names look alike: { threshold, scope, class_id }. */
+  duplicates: (params) => api.get('/boys/duplicate-names', params),
   import: (file) => api.upload('/boys/import', file),
   template: () => download('/boys/template', null, 'boys-template.xlsx'),
   export: (classId) => download('/boys/export', { class_id: classId }, 'boys.xlsx'),
