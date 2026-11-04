@@ -4,7 +4,9 @@ import { usePageTitle } from '../../context/TitleContext'
 import { useToast } from '../../context/ToastContext'
 import { useDebounced, useQuery } from '../../hooks'
 import { NotificationAPI, TeacherAPI } from '../../lib/endpoints'
+import { classesForStage } from '../../lib/stages'
 import { Field, Input, SearchInput, Select, Textarea } from '../../components/ui/Field'
+import { StageSelect } from '../../components/ui/StageSelect'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { Table } from '../../components/ui/Table'
@@ -58,6 +60,18 @@ export default function NotificationsPage() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [classId, setClassId] = useState('')
+  // The stage filter narrows the audience menu to the classes of one stage.
+  // A send always names one concrete class, so picking a stage selects its
+  // first class instead of leaving "everyone" selected by mistake.
+  const [stage, setStage] = useState('')
+  const visibleClasses = useMemo(() => classesForStage(classes, stage), [classes, stage])
+  const pickStage = (next) => {
+    setStage(next)
+    if (next) {
+      const narrowed = classesForStage(classes, next)
+      setClassId(narrowed.length ? String(narrowed[0].id) : '')
+    }
+  }
   const [picked, setPicked] = useState([])
   const [search, setSearch] = useState('')
   const [link, setLink] = useState('')
@@ -198,21 +212,24 @@ export default function NotificationsPage() {
           <div className="push-send__row">
             {canPickClass ? (
               <Field label="مين يستلم">
-                <Select
-                  value={classId}
-                  onChange={(e) => setClassId(e.target.value)}
-                  className="select--plain"
-                  aria-label="اختيار الفصل"
-                  searchable
-                  searchPlaceholder="ابحث باسم الفصل..."
-                >
-                  {isSuperAdmin && <option value="">كل الخدام</option>}
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
+                <div className="stage-filters">
+                  <Select
+                    value={classId}
+                    onChange={(e) => setClassId(e.target.value)}
+                    className="select--plain"
+                    aria-label="اختيار الفصل"
+                    searchable
+                    searchPlaceholder="ابحث باسم الفصل..."
+                  >
+                    {isSuperAdmin && !stage && <option value="">كل الخدام</option>}
+                    {visibleClasses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                  {isSuperAdmin && <StageSelect value={stage} onChange={pickStage} />}
+                </div>
               </Field>
             ) : (
               <Field label="مين يستلم">

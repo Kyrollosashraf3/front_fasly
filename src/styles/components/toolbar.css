@@ -41,3 +41,20 @@
 .toolbar-search-sticky {
   display: none;
 }
+
+/* ---------------------------------------------- class + stage filters
+   The class picker and the stage picker share one compact row — two small
+   rectangles side by side instead of two wide controls. Used inside toolbars
+   and page filter bars alike. */
+.stage-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.stage-filters .search-select,
+.stage-filters .select {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 150px;
+}

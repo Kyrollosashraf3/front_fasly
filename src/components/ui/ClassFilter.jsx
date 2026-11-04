@@ -21,7 +21,6 @@ export function ClassFilter({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="select--plain"
-      style={{ minWidth: 190 }}
       aria-label={ariaLabel}
       searchable
       searchPlaceholder="ابحث باسم الفصل..."

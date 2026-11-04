@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { useQuery } from '../../../hooks'
 import { DashboardAPI, CheckAPI, TeacherAPI } from '../../../lib/endpoints'
+import { classesForStage } from '../../../lib/stages'
 import { lastFridayISO, todayISO } from '../../../lib/format'
 
 /** The metric filter of the «أداء الخدام» curve. */
@@ -41,6 +42,7 @@ export function useTeachersDashboard() {
 
   const [view, setView] = useState('perf')
   const [classId, setClassId] = useState('')
+  const [stage, setStage] = useState('')
   const [dateMode, setDateMode] = useState('last_friday')
   const [topN, setTopN] = useState(5)
   const [trendN, setTrendN] = useState(8)
@@ -51,15 +53,40 @@ export function useTeachersDashboard() {
   const [perfRank, setPerfRank] = useState('best')
   const [perfOrder, setPerfOrder] = useState('desc')
 
+  // A stage narrows the class menu itself and, with no specific class picked,
+  // scopes the whole page to that stage's classes.
+  const visibleClasses = useMemo(() => classesForStage(classes, stage), [classes, stage])
+  const stageIds = stage ? visibleClasses.map((c) => c.id).join(',') : ''
+  const pickStage = (next) => {
+    setStage(next)
+    setClassId('')
+  }
+
+  /** One class to query, the stage's classes, or null = every class. */
+  const scopedClassIds = useMemo(() => {
+    if (classId) return [String(classId)]
+    if (stage) return visibleClasses.map((c) => String(c.id))
+    return null
+  }, [classId, stage, visibleClasses])
+
+  /** A list endpoint over the current scope: one call, or one per class. */
+  const across = async (apiFn, extra = {}) => {
+    if (!scopedClassIds) return apiFn({ ...extra }).catch(() => [])
+    const lists = await Promise.all(
+      scopedClassIds.map((id) => apiFn({ ...extra, class_id: id }).catch(() => [])),
+    )
+    return lists.flat()
+  }
+
   const { data, loading, error, refetch } = useQuery(
     () =>
       DashboardAPI.summary({
-        ...(classId ? { class_id: classId } : {}),
+        ...(classId ? { class_id: classId } : stageIds ? { class_ids: stageIds } : {}),
         date_mode: dateMode,
         top_n: topN,
         teacher_trend_n: trendN,
       }),
-    [classId, dateMode, topN, trendN],
+    [classId, stageIds, dateMode, topN, trendN],
   )
 
   // «خدام غابوا» has its own day: today or the most recent Friday. It is
@@ -68,15 +95,12 @@ export function useTeachersDashboard() {
   const absentQuery = useQuery(
     async () => {
       const [checks, teachers] = await Promise.all([
-        CheckAPI.list({
-          ...(classId ? { class_id: classId } : {}),
-          action_date: absentDate,
-        }),
-        TeacherAPI.list({ ...(classId ? { class_id: classId } : {}) }).catch(() => []),
+        across(CheckAPI.list, { action_date: absentDate }),
+        across(TeacherAPI.list),
       ])
       return { checks, teachers }
     },
-    [classId, absentDate],
+    [scopedClassIds, absentDate],
   )
 
   const d = data
@@ -178,6 +202,9 @@ export function useTeachersDashboard() {
     setView,
     classId,
     setClassId,
+    stage,
+    pickStage,
+    visibleClasses,
     dateMode,
     setDateMode,
     topN,

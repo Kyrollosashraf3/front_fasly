@@ -157,7 +157,9 @@ export function PerformanceView({
     date_mode: data.scope.date_mode,
     metric: perfMetric,
     order: perfOrder,
-    ...(data.scope.single_class ? { class_id: data.scope.classes[0] } : {}),
+    ...(data.scope.single_class
+      ? { class_id: data.scope.classes[0] }
+      : { class_ids: data.scope.classes.join(',') }),
   }
 
   return (

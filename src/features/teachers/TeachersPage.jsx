@@ -17,9 +17,11 @@ export default function TeachersPage() {
     classLabel,
     classId,
     multi,
-    classes,
     picked,
     setPicked,
+    stage,
+    pickStage,
+    visibleClasses,
     toast,
     allClasses,
     label,
@@ -84,9 +86,11 @@ export default function TeachersPage() {
       <TeachersToolbar
         classId={classId}
         multi={multi}
-        classes={classes}
         picked={picked}
         setPicked={setPicked}
+        stage={stage}
+        pickStage={pickStage}
+        visibleClasses={visibleClasses}
         search={search}
         setSearch={setSearch}
         canWrite={canWrite}

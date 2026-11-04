@@ -3,6 +3,7 @@ import { useAuth } from '../../../context/AuthContext'
 import { useQuery } from '../../../hooks'
 import { DashboardAPI, TeacherAPI } from '../../../lib/endpoints'
 import { normalizeSearch } from '../../../lib/search'
+import { classesForStage } from '../../../lib/stages'
 import { formatShort } from '../../../lib/format'
 
 /** Filters, queries and derived rows behind «أداء الافتقاد». */
@@ -10,6 +11,7 @@ export function usePerformance() {
   const { user, classes, can, canPickClass, allClassesLabel } = useAuth()
 
   const [classId, setClassId] = useState('')
+  const [stage, setStage] = useState('')
   const [period, setPeriod] = useState('month')
   const [teacherId, setTeacherId] = useState('')
   const [search, setSearch] = useState('')
@@ -30,19 +32,42 @@ export function usePerformance() {
   const showServantFilter = can.seeTeachersDashboard(user)
   const showAll = canPickClass
 
+  // A stage narrows the class menu itself and, with no specific class picked,
+  // scopes the whole page to that stage's classes (the servant filter resets).
+  const visibleClasses = useMemo(() => classesForStage(classes, stage), [classes, stage])
+  const stageIds = stage ? visibleClasses.map((c) => c.id).join(',') : ''
+  const pickStage = (next) => {
+    setStage(next)
+    setClassId('')
+    setTeacherId('')
+  }
+
+  /** One class to query, the stage's classes, or null = every class. */
+  const scopedClassIds = useMemo(() => {
+    if (classId) return [String(classId)]
+    if (stage) return visibleClasses.map((c) => String(c.id))
+    return null
+  }, [classId, stage, visibleClasses])
+
   const { data, loading, error, refetch } = useQuery(
     () =>
       DashboardAPI.followUpPerformance({
-        ...(classId ? { class_id: classId } : {}),
+        ...(classId ? { class_id: classId } : stageIds ? { class_ids: stageIds } : {}),
         period,
         ...(teacherId ? { teacher_id: teacherId } : {}),
       }),
-    [classId, period, teacherId],
+    [classId, stageIds, period, teacherId],
   )
 
   const { data: teachers } = useQuery(
-    () => TeacherAPI.list({ ...(classId ? { class_id: classId } : {}) }),
-    [classId],
+    async () => {
+      if (!scopedClassIds) return TeacherAPI.list({})
+      const lists = await Promise.all(
+        scopedClassIds.map((id) => TeacherAPI.list({ class_id: id }).catch(() => [])),
+      )
+      return lists.flat()
+    },
+    [scopedClassIds],
     { enabled: showServantFilter },
   )
 
@@ -77,6 +102,9 @@ export function usePerformance() {
     classes,
     classId,
     setClassId,
+    stage,
+    pickStage,
+    visibleClasses,
     period,
     setPeriod,
     teacherId,

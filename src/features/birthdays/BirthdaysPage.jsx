@@ -4,7 +4,9 @@ import { useAuth } from '../../context/AuthContext'
 import { usePageTitle } from '../../context/TitleContext'
 import { useQuery } from '../../hooks'
 import { DashboardAPI } from '../../lib/endpoints'
+import { classesForStage, stageLabel } from '../../lib/stages'
 import { Select } from '../../components/ui/Field'
+import { StageSelect } from '../../components/ui/StageSelect'
 import { Toolbar, ToolbarSpacer, Tabs } from '../../components/ui/Toolbar'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
 import { Avatar } from '../../components/ui/Avatar'
@@ -57,7 +59,7 @@ function countdown(days) {
  */
 export default function BirthdaysPage() {
   usePageTitle('أعياد الميلاد')
-  const { classes, canPickClass, isServant, allClassesLabel } = useAuth()
+  const { classes, canPickClass, isServant, isSuperAdmin, allClassesLabel } = useAuth()
 
   const [params] = useSearchParams()
   /** A birthday notification names his class: the page opens already filtered. */
@@ -67,6 +69,7 @@ export default function BirthdaysPage() {
   const [window, setWindow] = useState('twoweeks')
   const [month, setMonth] = useState('')
   const [classId, setClassId] = useState(linkClassId)
+  const [stage, setStage] = useState('')
 
   useEffect(() => {
     if (linkClassId) setClassId(linkClassId)
@@ -75,15 +78,35 @@ export default function BirthdaysPage() {
   const kindOptions = isServant ? [KIND_OPTIONS[0]] : KIND_OPTIONS
   const showAll = canPickClass
 
+  // A stage choice narrows the class menu and, with no class picked, applies
+  // itself to the whole page: every class of the stage answers at once.
+  const visibleClasses = classesForStage(classes, stage)
+  const stageIds = stage && !classId ? visibleClasses.map((c) => c.id) : []
+  const pickStage = (next) => {
+    setStage(next)
+    setClassId('')
+  }
+
   const { data, loading, error, refetch } = useQuery(
-    () =>
-      DashboardAPI.birthdays({
+    () => {
+      const params = {
         kind,
         // A chosen month replaces the quick window on the server.
         ...(month ? { month } : { window }),
-        ...(classId ? { class_id: classId } : {}),
-      }),
-    [kind, window, month, classId],
+      }
+      if (stageIds.length) {
+        return Promise.all(
+          stageIds.map((id) => DashboardAPI.birthdays({ ...params, class_id: id })),
+        ).then((results) => ({
+          count: results.reduce((sum, r) => sum + r.count, 0),
+          items: results
+            .flatMap((r) => r.items)
+            .sort((a, b) => a.days_until - b.days_until),
+        }))
+      }
+      return DashboardAPI.birthdays({ ...params, ...(classId ? { class_id: classId } : {}) })
+    },
+    [kind, window, month, classId, stageIds.join(',')],
   )
 
   const d = data
@@ -127,22 +150,26 @@ export default function BirthdaysPage() {
         </Select>
         <ToolbarSpacer />
         {classes.length > 1 && (
-          <Select
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className="select--plain"
-            style={{ minWidth: 170 }}
-            aria-label="اختيار الفصل"
-            searchable
-            searchPlaceholder="ابحث باسم الفصل..."
-          >
-            {showAll && <option value="">{allClassesLabel}</option>}
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+          <div className="stage-filters">
+            <Select
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className="select--plain"
+              aria-label="اختيار الفصل"
+              searchable
+              searchPlaceholder="ابحث باسم الفصل..."
+            >
+              {showAll && (
+                <option value="">{stage ? `كل ${stageLabel(stage)}` : allClassesLabel}</option>
+              )}
+              {visibleClasses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            {isSuperAdmin && <StageSelect value={stage} onChange={pickStage} />}
+          </div>
         )}
       </Toolbar>
 

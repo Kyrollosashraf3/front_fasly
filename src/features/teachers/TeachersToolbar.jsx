@@ -1,6 +1,8 @@
 import { TeacherAPI } from '../../lib/endpoints'
 import { useAuth } from '../../context/AuthContext'
+import { stageLabel } from '../../lib/stages'
 import { ClassFilter } from '../../components/ui/ClassFilter'
+import { StageSelect } from '../../components/ui/StageSelect'
 import { SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { FileMenu } from '../../components/ui/FileMenu'
@@ -9,9 +11,11 @@ import { FileMenu } from '../../components/ui/FileMenu'
 export function TeachersToolbar({
   classId,
   multi,
-  classes,
   picked,
   setPicked,
+  stage,
+  pickStage,
+  visibleClasses,
   search,
   setSearch,
   canWrite,
@@ -19,18 +23,21 @@ export function TeachersToolbar({
   refetch,
   toast,
 }) {
-  const { allClassesLabel } = useAuth()
+  const { allClassesLabel, isSuperAdmin } = useAuth()
 
   return (
     <>
       <Toolbar className="toolbar--scroll">
         {multi && (
-          <ClassFilter
-            value={picked}
-            onChange={setPicked}
-            classes={classes}
-            allLabel={allClassesLabel}
-          />
+          <div className="stage-filters">
+            <ClassFilter
+              value={picked}
+              onChange={setPicked}
+              classes={visibleClasses}
+              allLabel={stage ? `كل ${stageLabel(stage)}` : allClassesLabel}
+            />
+            {isSuperAdmin && <StageSelect value={stage} onChange={pickStage} />}
+          </div>
         )}
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون أو العنوان..." />
         <ToolbarSpacer />

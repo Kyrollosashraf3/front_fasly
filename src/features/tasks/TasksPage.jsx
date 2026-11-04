@@ -5,8 +5,10 @@ import { usePageTitle } from '../../context/TitleContext'
 import { Icon } from '../../components/ui/Icon'
 import { Button, IconButton } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Field'
+import { StageSelect } from '../../components/ui/StageSelect'
 import { EmptyState, ErrorState, Loading } from '../../components/ui/States'
 import { TaskAPI } from '../../lib/endpoints'
+import { classesForStage, stageLabel } from '../../lib/stages'
 import { TaskDialog } from './TaskDialog'
 import './tasks.css'
 
@@ -21,7 +23,7 @@ import './tasks.css'
  */
 export default function TasksPage() {
   usePageTitle('المسابقات')
-  const { classes, isManager, canPickClass, allClassesLabel } = useAuth()
+  const { classes, isManager, canPickClass, isSuperAdmin, allClassesLabel } = useAuth()
   const navigate = useNavigate()
 
   const [tasks, setTasks] = useState([])
@@ -33,6 +35,15 @@ export default function TasksPage() {
   // A class filter only appears for an amin whose reach holds several classes;
   // '' means every class he answers for.
   const [classId, setClassId] = useState('')
+  // A stage choice narrows the class menu and, with no class picked, applies
+  // itself to the whole page: every class of the stage answers at once.
+  const [stage, setStage] = useState('')
+  const visibleClasses = useMemo(() => classesForStage(classes, stage), [classes, stage])
+  const stageKey = stage && !classId ? visibleClasses.map((c) => c.id).join(',') : ''
+  const pickStage = (next) => {
+    setStage(next)
+    setClassId('')
+  }
 
   const [formOpen, setFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
@@ -44,14 +55,22 @@ export default function TasksPage() {
     try {
       const params = { status }
       if (classId) params.class_id = classId
-      setTasks(await TaskAPI.list(params))
+      const ids = stageKey ? stageKey.split(',').map(Number) : []
+      if (ids.length) {
+        const lists = await Promise.all(
+          ids.map((id) => TaskAPI.list({ ...params, class_id: id })),
+        )
+        setTasks(lists.flat())
+      } else {
+        setTasks(await TaskAPI.list(params))
+      }
       setError(null)
     } catch (err) {
       setError(err)
     } finally {
       setLoading(false)
     }
-  }, [status, classId])
+  }, [status, classId, stageKey])
 
   useEffect(() => {
     refetch()
@@ -116,14 +135,19 @@ export default function TasksPage() {
               searchable
               searchPlaceholder="ابحث باسم الفصل..."
             >
-              <option value="">{allClassesLabel}</option>
-              {classes.map((c) => (
+              <option value="">{stage ? `كل ${stageLabel(stage)}` : allClassesLabel}</option>
+              {visibleClasses.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </Select>
           </label>
+          {isSuperAdmin && (
+            <div className="stage-filters">
+              <StageSelect value={stage} onChange={pickStage} />
+            </div>
+          )}
         </div>
       )}
 

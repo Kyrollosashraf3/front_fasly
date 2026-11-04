@@ -4,7 +4,8 @@ import { Icon } from '../../components/ui/Icon'
 import { Select } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
-import { DateModeField, StageField, useStagePick } from './parts'
+import { stageLabel } from '../../lib/stages'
+import { DateModeField, StageField } from './parts'
 import { AbsentServantsList } from './teachers/AbsentServantsList'
 import {
   LateConfessionView,
@@ -39,6 +40,9 @@ export default function TeachersDashboard() {
     setView,
     classId,
     setClassId,
+    stage,
+    pickStage,
+    visibleClasses,
     dateMode,
     setDateMode,
     topN,
@@ -76,12 +80,6 @@ export default function TeachersDashboard() {
     perfAllSorted,
   } = dash
 
-  // The stage lines (حضانة … اخري) filter the class menu itself - only the
-  // church-wide amin gets them, and a stage change drops «كل الفصول» back in.
-  const { stage, pickStage, visibleClasses } = useStagePick(classes, classId, () =>
-    setClassId(''),
-  )
-
   const channels = [
     { key: 'perf', label: 'أداء الخدام', icon: 'chart' },
     { key: 'top', label: 'أفضل الخدام', icon: 'star' },
@@ -95,24 +93,28 @@ export default function TeachersDashboard() {
           channel below. */}
       <Toolbar className="toolbar--dash">
         {classes.length > 1 && (
-          <Select
-            value={classId === '' ? ALL_CLASSES : classId}
-            onChange={(e) => setClassId(e.target.value === ALL_CLASSES ? '' : e.target.value)}
-            className="select--plain"
-            aria-label="اختيار الفصل"
-            searchable
-            searchPlaceholder="ابحث باسم الفصل..."
-          >
-            {showAll && <option value={ALL_CLASSES}>{allClassesLabel}</option>}
-            {visibleClasses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        )}
-        {isSuperAdmin && classes.length > 1 && (
-          <StageField value={stage} onChange={pickStage} />
+          <div className="dash-filters">
+            <Select
+              value={classId === '' ? ALL_CLASSES : classId}
+              onChange={(e) => setClassId(e.target.value === ALL_CLASSES ? '' : e.target.value)}
+              className="select--plain"
+              aria-label="اختيار الفصل"
+              searchable
+              searchPlaceholder="ابحث باسم الفصل..."
+            >
+              {showAll && (
+                <option value={ALL_CLASSES}>
+                  {stage ? `كل ${stageLabel(stage)}` : allClassesLabel}
+                </option>
+              )}
+              {visibleClasses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            {isSuperAdmin && <StageField value={stage} onChange={pickStage} />}
+          </div>
         )}
         {view !== 'absent' && <DateModeField value={dateMode} onChange={setDateMode} />}
         <ToolbarSpacer />

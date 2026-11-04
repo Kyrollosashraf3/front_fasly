@@ -5,7 +5,8 @@ import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolb
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
 import { Button } from '../../components/ui/Button'
 import { BoyProfileModal } from '../boys/BoyProfile'
-import { DashSection, Kpi, KpiRow, StageField, useBoyDrawer, useStagePick } from '../dashboard/parts'
+import { stageLabel } from '../../lib/stages'
+import { DashSection, Kpi, KpiRow, StageField, useBoyDrawer } from '../dashboard/parts'
 import { PERIOD_OPTIONS } from './performance/constants'
 import { boyColumns } from './performance/columns'
 import { ServantsSection } from './performance/ServantsSection'
@@ -32,6 +33,9 @@ export default function FollowUpPerformancePage() {
     classes,
     classId,
     setClassId,
+    stage,
+    pickStage,
+    visibleClasses,
     period,
     setPeriod,
     teacherId,
@@ -60,11 +64,6 @@ export default function FollowUpPerformancePage() {
     fromLabel,
   } = perf
 
-  const { stage, pickStage, visibleClasses } = useStagePick(classes, classId, () => {
-    setClassId('')
-    setTeacherId('')
-  })
-
   const [boy, openBoy, closeBoy] = useBoyDrawer()
 
   const columns = boyColumns({
@@ -87,28 +86,31 @@ export default function FollowUpPerformancePage() {
 
       <Toolbar className="toolbar--scroll">
         {classes.length > 1 && (
-          <Select
-            value={classId}
-            onChange={(e) => {
-              setClassId(e.target.value)
-              setTeacherId('')
-            }}
-            className="select--plain"
-            style={{ minWidth: 190 }}
-            aria-label="اختيار الفصل"
-            searchable
-            searchPlaceholder="ابحث باسم الفصل..."
-          >
-            {showAll && <option value="">{perf.allClassesLabel}</option>}
-            {visibleClasses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        )}
-        {isSuperAdmin && classes.length > 1 && (
-          <StageField value={stage} onChange={pickStage} />
+          <div className="dash-filters">
+            <Select
+              value={classId}
+              onChange={(e) => {
+                setClassId(e.target.value)
+                setTeacherId('')
+              }}
+              className="select--plain"
+              aria-label="اختيار الفصل"
+              searchable
+              searchPlaceholder="ابحث باسم الفصل..."
+            >
+              {showAll && (
+                <option value="">
+                  {stage ? `كل ${stageLabel(stage)}` : perf.allClassesLabel}
+                </option>
+              )}
+              {visibleClasses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            {isSuperAdmin && <StageField value={stage} onChange={pickStage} />}
+          </div>
         )}
 
         <label className="n-field">

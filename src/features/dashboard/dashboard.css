@@ -11,3 +11,22 @@
 @import './css/chart.css';
 @import './css/today-check.css';
 @import './css/responsive.css';
+
+/* -------------------------------------------------------- stage + class
+   الفصل والمرحلة — مستطيلان صغيران جنب بعض بدل ما يملا الشاشة. */
+.toolbar .dash-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /* The base .dash-filters (channels.css) keeps a bottom margin for the
+     section curves; in a toolbar line that margin pushes every neighbour
+     filter 6px down. */
+  margin-bottom: 0;
+}
+
+.toolbar .dash-filters .search-select,
+.toolbar .dash-filters .select {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 150px;
+}

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { useQuery } from '../../../hooks'
 import { DashboardAPI } from '../../../lib/endpoints'
+import { classesForStage } from '../../../lib/stages'
 import { useBoyDrawer } from '../parts'
 
 /** State + query for «أداء الأولاد». */
@@ -10,6 +11,7 @@ export function useBoysDashboard() {
 
   const [section, setSection] = useState('att')
   const [classId, setClassId] = useState('')
+  const [stage, setStage] = useState('')
   const [dateMode, setDateMode] = useState('last_friday')
   const [streakN, setStreakN] = useState(4)
   const [streakFrom, setStreakFromState] = useState('')
@@ -33,17 +35,26 @@ export function useBoysDashboard() {
 
   const hasRange = Boolean(streakFrom && streakTo)
 
+  // The stage lines (حضانة … اخري) narrow the class menu itself and, with no
+  // specific class picked, scope the whole page to that stage's classes.
+  const visibleClasses = useMemo(() => classesForStage(classes, stage), [classes, stage])
+  const stageIds = stage ? visibleClasses.map((c) => c.id).join(',') : ''
+  const pickStage = (next) => {
+    setStage(next)
+    setClassId('')
+  }
+
   const { data, loading, error, refetch } = useQuery(
     () =>
       DashboardAPI.summary({
-        ...(classId ? { class_id: classId } : {}),
+        ...(classId ? { class_id: classId } : stageIds ? { class_ids: stageIds } : {}),
         date_mode: dateMode,
         streak_n: streakN,
         absent_n: absentN,
         trend_n: trendN,
         ...(hasRange ? { streak_from: streakFrom, streak_to: streakTo } : {}),
       }),
-    [classId, dateMode, streakN, streakFrom, streakTo, absentN, trendN],
+    [classId, stageIds, dateMode, streakN, streakFrom, streakTo, absentN, trendN],
   )
 
   const d = data
@@ -64,6 +75,9 @@ export function useBoysDashboard() {
     classes,
     classId,
     setClassId,
+    stage,
+    pickStage,
+    visibleClasses,
     dateMode,
     setDateMode,
     streakN,

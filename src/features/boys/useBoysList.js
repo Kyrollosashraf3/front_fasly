@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { BoyAPI } from '../../lib/endpoints'
 import { normalizeSearch } from '../../lib/search'
+import { classesForStage } from '../../lib/stages'
 
 /** Query, filters and dialogs for the boys list page. */
 export function useBoysList() {
@@ -31,11 +32,28 @@ export function useBoysList() {
   // the next look rather than showing a boy who has since been merged or deleted.
   const [dupsVersion, setDupsVersion] = useState(0)
 
+  // A stage choice narrows the class menu and, with no class picked, applies
+  // itself to the whole page: every class of the stage answers at once.
+  const [stage, setStage] = useState('')
+  const visibleClasses = useMemo(() => classesForStage(classes, stage), [classes, stage])
+  const stageIds = stage && !classId ? visibleClasses.map((c) => c.id) : []
+  const pickStage = (next) => {
+    setStage(next)
+    setPicked('')
+  }
+
   const debounced = useDebounced(search, 220)
 
   const { data: boys, loading, error, refetch } = useQuery(
-    () => BoyAPI.list({ class_id: classId || undefined }),
-    [classId],
+    () => {
+      if (stageIds.length) {
+        return Promise.all(stageIds.map((id) => BoyAPI.list({ class_id: id }))).then((lists) =>
+          lists.flat(),
+        )
+      }
+      return BoyAPI.list({ class_id: classId || undefined })
+    },
+    [classId, stageIds.join(',')],
   )
 
   // Moving to another class keeps this page instance alive, so an open dialog
@@ -101,6 +119,9 @@ export function useBoysList() {
     classes,
     picked,
     setPicked,
+    stage,
+    pickStage,
+    visibleClasses,
     toast,
     allClasses,
     label,

@@ -39,3 +39,9 @@ export function classesForStage(classes, stageKey) {
   if (!stageKey) return classes
   return classes.filter((c) => stageOf(c?.name) === stageKey)
 }
+
+/** The Arabic label of a stage key ('' for the no-filter choice). */
+export function stageLabel(stageKey) {
+  if (!stageKey) return ''
+  return STAGES.find((s) => s.key === stageKey)?.label || ''
+}

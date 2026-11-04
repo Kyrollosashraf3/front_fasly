@@ -4,9 +4,11 @@ import { usePageTitle } from '../../context/TitleContext'
 import { useClassScope, useDebounced, useQuery } from '../../hooks'
 import { BoyAPI, TeacherAPI } from '../../lib/endpoints'
 import { normalizeSearch } from '../../lib/search'
+import { classesForStage, stageLabel } from '../../lib/stages'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
 import { ClassFilter } from '../../components/ui/ClassFilter'
+import { StageSelect } from '../../components/ui/StageSelect'
 import { SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { EmptyState, ErrorState, SkeletonRows } from '../../components/ui/States'
@@ -26,7 +28,7 @@ import './reveal.css'
  */
 export default function RevealPage() {
   usePageTitle('اكشفلي')
-  const { isBoy, user, can } = useAuth()
+  const { isBoy, user, can, isSuperAdmin } = useAuth()
   const scope = useClassScope()
   const { multi, classes, classReady, firstClassId, setPicked: setClassPicked } = scope
   // اكشفلي always needs one class: fall back to the first until picked.
@@ -35,17 +37,35 @@ export default function RevealPage() {
   const [search, setSearch] = useState('')
   const [picked, setPicked] = useState(null)
 
+  // A stage choice narrows the class menu and, with no class picked, applies
+  // itself to the whole page: the candidates of every class of the stage.
+  const [stage, setStage] = useState('')
+  const visibleClasses = useMemo(() => classesForStage(classes, stage), [classes, stage])
+  const stageIds = stage && !scope.classId ? visibleClasses.map((c) => c.id) : []
+  const pickStage = (next) => {
+    setStage(next)
+    setClassPicked('')
+    setPicked(null)
+  }
+
   const debounced = useDebounced(search, 200)
 
   const { data, loading, error, refetch } = useQuery(
     async () => {
-      const boys = await BoyAPI.list(classId ? { class_id: classId } : {})
+      const ids = stageIds.length ? stageIds : [classId]
+      const boys = (
+        await Promise.all(ids.map((id) => BoyAPI.list({ class_id: id })))
+      ).flat()
       const teachers = isBoy
         ? []
-        : await TeacherAPI.list({ class_id: classId }).catch(() => [])
+        : (
+            await Promise.all(
+              ids.map((id) => TeacherAPI.list({ class_id: id }).catch(() => [])),
+            )
+          ).flat()
       return { boys, teachers }
     },
-    [classId, isBoy],
+    [classId, stageIds.join(','), isBoy],
     { enabled: Boolean(classReady) },
   )
 
@@ -73,7 +93,15 @@ export default function RevealPage() {
 
       <Toolbar className="toolbar--scroll">
         {multi && (
-          <ClassFilter value={classId} onChange={changeClass} classes={classes} />
+          <div className="stage-filters">
+            <ClassFilter
+              value={stage && !scope.classId ? '' : classId}
+              onChange={changeClass}
+              classes={visibleClasses}
+              allLabel={stage ? `كل ${stageLabel(stage)}` : undefined}
+            />
+            {isSuperAdmin && <StageSelect value={stage} onChange={pickStage} />}
+          </div>
         )}
 
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم..." />
@@ -121,7 +149,7 @@ export default function RevealPage() {
                 {boy.issue_flag && <Badge kind="red" dot />}
                 <BoyNameEdit
                   boy={boy}
-                  classId={classId}
+                  classId={boy.class_id || classId}
                   onSaved={refetch}
                   label={`تعديل بيانات ${boy.boy_name}`}
                 />
