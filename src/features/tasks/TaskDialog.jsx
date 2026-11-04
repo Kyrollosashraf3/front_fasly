@@ -13,8 +13,9 @@ import { todayISO } from '../../lib/format'
  * TaskDialog — open a competition or edit an existing one.
  *
  * The parent mounts it only while open and keys it by the edited task, so the
- * form always starts from the right values. Servants and class amins are
- * pinned to their own class; only a super admin picks which class it is for.
+ * form always starts from the right values. Servants and amins of a single
+ * class are pinned to that class; an amin who answers for several picks which
+ * one the competition is for.
  */
 export function TaskDialog({ task, classes, canChooseClass, onClose, onSaved }) {
   const toast = useToast()

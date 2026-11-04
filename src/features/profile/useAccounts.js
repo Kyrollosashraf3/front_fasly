@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { useDebounced, useQuery } from '../../hooks'
 import { AuthAPI, BoyAPI, TeacherAPI } from '../../lib/endpoints'
 import { normalizeSearch } from '../../lib/search'
-import { accountName, attachedBoy, attachedTeacher, handleOf, linkedLabel } from './accountHelpers'
+import { accountName, attachedBoy, attachedTeacher, handleOf, linkedLabel, managedLabel } from './accountHelpers'
 
 /** The manager-only «الحسابات» data: people, logins, filters and actions. */
 export function useAccounts(isMgr) {
@@ -54,6 +54,7 @@ export function useAccounts(isMgr) {
   /** The class an account belongs to ("كل الفصول" for the global admin). */
   const classOf = (u) => {
     if (u?.role === 'super_admin') return 'كل الفصول'
+    if (u?.role === 'general_admin') return managedLabel(u, classLabel)
     const t = attachedTeacher(teachers, u)
     const b = attachedBoy(boys, u)
     const cid = t?.class_id ?? b?.class_id
@@ -69,7 +70,12 @@ export function useAccounts(isMgr) {
       if (classFilter) {
         const t = attachedTeacher(teachers, u)
         const b = attachedBoy(boys, u)
-        if (String(t?.class_id ?? b?.class_id ?? '') !== String(classFilter)) return false
+        // A stage amin belongs to every class he answers for, not to one.
+        const owned =
+          u.role === 'general_admin'
+            ? (u.managed_class_ids || []).map(String)
+            : [String(t?.class_id ?? b?.class_id ?? '')]
+        if (!owned.includes(String(classFilter))) return false
       }
       if (q && !normalizeSearch(accountName(teachers, boys, u)).includes(q)) return false
       return true

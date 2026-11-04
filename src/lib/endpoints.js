@@ -14,12 +14,15 @@ export const AuthAPI = {
 
   updateUser: (id, body) => api.patch(`/auth/users/${id}`, body),
   deleteUser: (id) => api.del(`/auth/users/${id}`),
+  /** Register a login: phone + role + whoever it is attached to. */
+  createUser: (body) => api.post('/auth/users', body),
+  /** The classes a stage amin answers for - the whole list, every time. */
+  setUserClasses: (id, classIds) =>
+    api.put(`/auth/users/${id}/classes`, { class_ids: classIds }),
   /** Does this phone belong to an account that still needs a password? */
   signupCheck: (phone) => api.post('/auth/signup/check', { phone }),
   /** Set the password of a phone-registered account. Returns a Token. */
   signup: (body) => api.post('/auth/signup', body),
-  /** Bulk-create accounts from a sheet: phone | class_name | name | role. */
-
 }
 
 /* --------------------------------------------------------------- classes */

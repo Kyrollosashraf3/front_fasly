@@ -8,13 +8,13 @@ import { normalizeSearch } from '../../lib/search'
 
 /** Query, filters and dialogs for the boys list page. */
 export function useBoysList() {
-  const { classLabel, can, user } = useAuth()
+  const { classLabel, can, user, allClassesLabel } = useAuth()
   const { classId, multi, classes, picked, setPicked } = useClassScope()
   const toast = useToast()
   const modal = useModal()
 
   const allClasses = !classId
-  const label = allClasses ? 'كل الفصول' : classLabel(classId)
+  const label = allClasses ? allClassesLabel : classLabel(classId)
 
   // Staff may add/edit boys; only managers may delete or bulk-import them.
   const canManageBoys = can.writeBoys(user)

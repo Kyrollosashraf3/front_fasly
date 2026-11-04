@@ -90,8 +90,9 @@ export function useLastClassId(currentId) {
  * useClassScope — which class is this module showing?
  *
  * On a class route (`/class/:id/boys`) the URL owns the answer and no picker is
- * offered. On a global route (`/boys`, `/attendance`, …) a super admin gets an
- * in-page picker and may sit on "all classes" (`''`); a single-class login
+ * offered. On a global route (`/boys`, `/attendance`, …) a multi-class login —
+ * super admin or stage amin — gets an in-page picker and may sit on "all"
+ * (`''`), which for a stage amin means his own group; a single-class login
  * quietly keeps his only class. `classId` is `''` only for the "all" choice.
  * A `?class_id=` in the URL (a notification tapping straight into one class)
  * opens as the picked class.
@@ -120,9 +121,9 @@ export function useClassScope() {
     classes,
     classReady,
     firstClassId,
-    picked, // '' == "كل الفصول"
+    picked, // '' == "all classes", or a stage amin's whole group
     setPicked,
-    classId: routeClassId ?? picked, // '' == "كل الفصول"
+    classId: routeClassId ?? picked, // '' == "all classes"
   }
 }
 

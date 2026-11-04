@@ -1,4 +1,5 @@
 import { TeacherAPI } from '../../lib/endpoints'
+import { useAuth } from '../../context/AuthContext'
 import { ClassFilter } from '../../components/ui/ClassFilter'
 import { SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
@@ -18,6 +19,8 @@ export function TeachersToolbar({
   refetch,
   toast,
 }) {
+  const { allClassesLabel } = useAuth()
+
   return (
     <>
       <Toolbar className="toolbar--scroll">
@@ -26,7 +29,7 @@ export function TeachersToolbar({
             value={picked}
             onChange={setPicked}
             classes={classes}
-            allLabel="كل الفصول"
+            allLabel={allClassesLabel}
           />
         )}
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون أو العنوان..." />

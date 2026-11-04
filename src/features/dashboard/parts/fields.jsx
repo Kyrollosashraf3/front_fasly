@@ -1,4 +1,50 @@
+import { useMemo, useState } from 'react'
 import { Select } from '../../../components/ui/Field'
+import { STAGES, classesForStage } from '../../../lib/stages'
+
+/** The stage-line filter (حضانة … اخري) sits beside the class picker. Only the
+ *  church-wide amin sees it: a choice narrows the class menu itself to the
+ *  classes whose name carries the stage — «اعدادي» shows أولي اعدادي، تانية
+ *  اعدادي، تالتة اعدادي — and a fresh class name falls into its line without
+ *  any configuration. */
+export function StageField({ value, onChange }) {
+  return (
+    <Select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="select--plain"
+      style={{ minWidth: 140 }}
+      aria-label="اختيار المرحلة"
+    >
+      <option value="">كل المراحل</option>
+      {STAGES.map((stage) => (
+        <option key={stage.key} value={stage.key}>
+          {stage.label}
+        </option>
+      ))}
+    </Select>
+  )
+}
+
+/** Stage state + the class menu the stage allows, shared by the three
+ *  dashboards. Switching to a stage that keeps none of the class the page is
+ *  currently showing calls ``onDrop`` so the page falls back to «كل الفصول»
+ *  (and drops every filter chained to the class, e.g. the servant one). */
+export function useStagePick(classes, classId, onDrop) {
+  const [stage, setStage] = useState('')
+
+  const pickStage = (next) => {
+    setStage(next)
+    const kept = classesForStage(classes, next)
+    if (classId && !kept.some((c) => String(c.id) === classId)) onDrop?.()
+  }
+
+  const visibleClasses = useMemo(
+    () => classesForStage(classes, stage),
+    [classes, stage],
+  )
+  return { stage, pickStage, visibleClasses }
+}
 
 export const shortDate = (iso) => {
   const p = String(iso || '').split('-')

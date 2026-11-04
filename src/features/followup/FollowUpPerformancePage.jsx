@@ -1,10 +1,11 @@
 import { usePageTitle } from '../../context/TitleContext'
+import { useAuth } from '../../context/AuthContext'
 import { Select, SearchInput } from '../../components/ui/Field'
 import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
 import { Button } from '../../components/ui/Button'
 import { BoyProfileModal } from '../boys/BoyProfile'
-import { DashSection, Kpi, KpiRow, useBoyDrawer } from '../dashboard/parts'
+import { DashSection, Kpi, KpiRow, StageField, useBoyDrawer, useStagePick } from '../dashboard/parts'
 import { PERIOD_OPTIONS } from './performance/constants'
 import { boyColumns } from './performance/columns'
 import { ServantsSection } from './performance/ServantsSection'
@@ -25,6 +26,7 @@ import './followup.css'
 export default function FollowUpPerformancePage() {
   usePageTitle('أداء الافتقاد')
 
+  const { isSuperAdmin } = useAuth()
   const perf = usePerformance()
   const {
     classes,
@@ -57,6 +59,11 @@ export default function FollowUpPerformancePage() {
     servantRows,
     fromLabel,
   } = perf
+
+  const { stage, pickStage, visibleClasses } = useStagePick(classes, classId, () => {
+    setClassId('')
+    setTeacherId('')
+  })
 
   const [boy, openBoy, closeBoy] = useBoyDrawer()
 
@@ -92,13 +99,16 @@ export default function FollowUpPerformancePage() {
             searchable
             searchPlaceholder="ابحث باسم الفصل..."
           >
-            {showAll && <option value="">كل الفصول</option>}
-            {classes.map((c) => (
+            {showAll && <option value="">{perf.allClassesLabel}</option>}
+            {visibleClasses.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </Select>
+        )}
+        {isSuperAdmin && classes.length > 1 && (
+          <StageField value={stage} onChange={pickStage} />
         )}
 
         <label className="n-field">

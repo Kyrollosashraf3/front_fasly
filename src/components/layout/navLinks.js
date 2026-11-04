@@ -11,7 +11,8 @@
  *
  * The class catalogue is only linked when there is a choice to make: an amin,
  * a servant or a boy belongs to exactly one class, so `/` would just repeat
- * that class's title — he starts on the class itself instead.
+ * that class's title — he starts on the class itself instead. A super admin and
+ * a stage amin both see several classes, so they get the picker.
  */
 export function rootLinks({ user, isBoy, can, classes = [] }) {
   const links = []
@@ -89,14 +90,14 @@ export function classModules({ can, user }) {
 }
 
 /**
- * The class modules as global routes — for a super admin who sees every class
- * at once. The class is picked inside the page (a filter), never in the nav.
- * Single-class logins keep the class-scoped `classModules` above.
+ * The multi-class login's modules — global routes, each with its own class
+ * filter. No class is picked here: that lives inside every page. A super admin
+ * filters across the church's classes, a stage amin across his own group.
  */
-export function globalModules({ can, user }) {
+export function globalModules({ can, user, allClassesLabel }) {
   return [
     can.manageClasses(user) && { to: '/classes', icon: 'list', label: 'الفصول', desc: 'إدارة الفصول الدراسية' },
-    { to: '/boys', icon: 'boys', label: 'بيانات الأولاد', desc: 'كل الأولاد في كل الفصول' },
+    { to: '/boys', icon: 'boys', label: 'بيانات الأولاد', desc: `كل الأولاد في ${allClassesLabel}` },
     { to: '/attendance', icon: 'calendar', label: 'الحضور', desc: 'حضور جمعة الأسبوع' },
     { to: '/followup', icon: 'heart', label: 'الافتقاد', desc: 'متابعة الأولاد' },
     can.seeServants(user) && { to: '/teachers', icon: 'servant', label: 'دليل الخدام', desc: 'كل الخدام' },

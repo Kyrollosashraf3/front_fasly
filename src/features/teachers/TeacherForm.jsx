@@ -12,7 +12,7 @@ import { EMPTY, buildPayload, formStateFor } from './teacherFormModel'
 
 /** Create / edit one servant. Managers only. */
 export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved }) {
-  const { classes } = useAuth()
+  const { classes, isSuperAdmin } = useAuth()
   const toast = useToast()
   const modal = useModal()
   const [form, setForm] = useState(EMPTY)
@@ -24,18 +24,26 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
   useEffect(() => {
     if (!open) return
     setErrors({})
-    const next = formStateFor(teacher, defaultClassId, classes)
+    // A class-less servant (أمين مرحلة / أدمن عام لاحقًا) starts blank for the
+    // super admin - he is the only one who may save one without a class.
+    const next = formStateFor(teacher, isSuperAdmin ? '' : defaultClassId, classes)
     setInitial(JSON.stringify(next))
     setForm(next)
-  }, [open, teacher, defaultClassId, classes])
+  }, [open, teacher, defaultClassId, classes, isSuperAdmin])
 
   const isEdit = Boolean(teacher)
   const dirty = open && JSON.stringify(form) !== initial
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  /** Only the church-wide amin saves a servant outside every class. */
+  const canSkipClass = isSuperAdmin
 
   const performSave = async () => {
     if (!form.teacher_name.trim()) {
       setErrors({ teacher_name: 'اسم الخادم مطلوب.' })
+      return false
+    }
+    if (!canSkipClass && !form.class_id) {
+      setErrors({ class_id: 'اختار الفصل اللي الخادم هيتبقى معاه.' })
       return false
     }
     setBusy(true)
@@ -104,6 +112,7 @@ export function TeacherForm({ open, onClose, teacher, defaultClassId, onSaved })
         set={set}
         classes={classes}
         setForm={setForm}
+        canSkipClass={canSkipClass}
         onSubmit={submit}
       />
     </Modal>

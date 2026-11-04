@@ -7,7 +7,7 @@ import { formatShort } from '../../../lib/format'
 
 /** Filters, queries and derived rows behind «أداء الافتقاد». */
 export function usePerformance() {
-  const { user, classes, can } = useAuth()
+  const { user, classes, can, canPickClass, allClassesLabel } = useAuth()
 
   const [classId, setClassId] = useState('')
   const [period, setPeriod] = useState('month')
@@ -28,7 +28,7 @@ export function usePerformance() {
   }, [user, initialized, teacherId])
 
   const showServantFilter = can.seeTeachersDashboard(user)
-  const showAll = can.manageClasses(user) && classes.length > 1
+  const showAll = canPickClass
 
   const { data, loading, error, refetch } = useQuery(
     () =>
@@ -95,6 +95,7 @@ export function usePerformance() {
     setHistoryBoy,
     showServantFilter,
     showAll,
+    allClassesLabel,
     data: d,
     totals,
     teachers,

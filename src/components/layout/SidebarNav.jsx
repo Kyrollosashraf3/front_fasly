@@ -28,8 +28,9 @@ export function RootNav({ onNavigate }) {
 }
 
 /**
- * The super admin's modules — global routes, each with its own class filter.
- * No class is picked here: that lives inside every page.
+ * The multi-class login's modules (super admin, stage amin) — global routes,
+ * each with its own class filter. No class is picked here: that lives inside
+ * every page.
  */
 export function GlobalNav({ onNavigate }) {
   const auth = useAuth()
@@ -45,7 +46,7 @@ export function GlobalNav({ onNavigate }) {
 
 /** The class-scoped group: overview / boys / attendance / servants / follow-up. */
 export function ClassNav({ classId, onNavigate }) {
-  const { isManager, classLabel, classOf, classes } = useAuth()
+  const { isManager, classLabel, classOf, classes, allClassesLabel } = useAuth()
   const cls = classOf(classId)
   const multi = classes.length > 1
 
@@ -56,7 +57,7 @@ export function ClassNav({ classId, onNavigate }) {
           <span className="nav-link__icon">
             <Icon name="chevronStart" size={15} />
           </span>
-          كل الفصول
+          {allClassesLabel}
         </NavLink>
       )}
 

@@ -4,7 +4,7 @@ import { Icon } from '../../components/ui/Icon'
 import { Select } from '../../components/ui/Field'
 import { Toolbar, ToolbarSpacer } from '../../components/ui/Toolbar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
-import { DateModeField } from './parts'
+import { DateModeField, StageField, useStagePick } from './parts'
 import { AbsentServantsList } from './teachers/AbsentServantsList'
 import {
   LateConfessionView,
@@ -30,7 +30,7 @@ const ALL_CLASSES = 'all'
 
 export default function TeachersDashboard() {
   usePageTitle('أداء الخدام')
-  const { classLabel } = useAuth()
+  const { classLabel, allClassesLabel, isSuperAdmin } = useAuth()
 
   const dash = useTeachersDashboard()
   const {
@@ -76,6 +76,12 @@ export default function TeachersDashboard() {
     perfAllSorted,
   } = dash
 
+  // The stage lines (حضانة … اخري) filter the class menu itself - only the
+  // church-wide amin gets them, and a stage change drops «كل الفصول» back in.
+  const { stage, pickStage, visibleClasses } = useStagePick(classes, classId, () =>
+    setClassId(''),
+  )
+
   const channels = [
     { key: 'perf', label: 'أداء الخدام', icon: 'chart' },
     { key: 'top', label: 'أفضل الخدام', icon: 'star' },
@@ -97,13 +103,16 @@ export default function TeachersDashboard() {
             searchable
             searchPlaceholder="ابحث باسم الفصل..."
           >
-            {showAll && <option value={ALL_CLASSES}>كل الفصول</option>}
-            {classes.map((c) => (
+            {showAll && <option value={ALL_CLASSES}>{allClassesLabel}</option>}
+            {visibleClasses.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </Select>
+        )}
+        {isSuperAdmin && classes.length > 1 && (
+          <StageField value={stage} onChange={pickStage} />
         )}
         {view !== 'absent' && <DateModeField value={dateMode} onChange={setDateMode} />}
         <ToolbarSpacer />

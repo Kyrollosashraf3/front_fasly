@@ -15,13 +15,13 @@ import './tasks.css'
  *
  * Competitions are poster-like boxes exactly like the trips: the box carries
  * the task name and its طايو reward, clicking it opens the task's actions
- * page, and the amin gets a hover edit button. A super admin can narrow the
- * list to one class, and the footer button swaps to the stopped (inactive)
- * competitions.
+ * page, and the amin gets a hover edit button. An amin who answers for more than
+ * one class can narrow the list to one of them, and the footer button swaps to
+ * the stopped (inactive) competitions.
  */
 export default function TasksPage() {
   usePageTitle('المسابقات')
-  const { classes, isManager, isSuperAdmin } = useAuth()
+  const { classes, isManager, canPickClass, allClassesLabel } = useAuth()
   const navigate = useNavigate()
 
   const [tasks, setTasks] = useState([])
@@ -30,7 +30,8 @@ export default function TasksPage() {
 
   // The grid shows the active competitions by default; the footer button toggles it.
   const [status, setStatus] = useState('active')
-  // Super-admin-only class filter; '' means every class.
+  // A class filter only appears for an amin whose reach holds several classes;
+  // '' means every class he answers for.
   const [classId, setClassId] = useState('')
 
   const [formOpen, setFormOpen] = useState(false)
@@ -42,7 +43,7 @@ export default function TasksPage() {
     setLoading(true)
     try {
       const params = { status }
-      if (isSuperAdmin && classId) params.class_id = classId
+      if (classId) params.class_id = classId
       setTasks(await TaskAPI.list(params))
       setError(null)
     } catch (err) {
@@ -50,7 +51,7 @@ export default function TasksPage() {
     } finally {
       setLoading(false)
     }
-  }, [status, classId, isSuperAdmin])
+  }, [status, classId])
 
   useEffect(() => {
     refetch()
@@ -94,7 +95,7 @@ export default function TasksPage() {
         <div>
           <div className="page-head__sub">
             {countLabel}
-            {isSuperAdmin && activeClass ? ` — ${activeClass.name}` : ''}
+            {activeClass ? ` — ${activeClass.name}` : ''}
           </div>
         </div>
         {isManager && (
@@ -104,7 +105,7 @@ export default function TasksPage() {
         )}
       </div>
 
-      {isSuperAdmin && (
+      {canPickClass && (
         <div className="tasks__filterbar">
           <label className="tasks__filter">
             <span className="tasks__filter-label">اختر الفصل</span>
@@ -115,7 +116,7 @@ export default function TasksPage() {
               searchable
               searchPlaceholder="ابحث باسم الفصل..."
             >
-              <option value="">كل الفصول</option>
+              <option value="">{allClassesLabel}</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -206,7 +207,7 @@ export default function TasksPage() {
           key={editingTask?.id ?? 'new'}
           task={editingTask}
           classes={classes}
-          canChooseClass={isSuperAdmin}
+          canChooseClass={canPickClass}
           onClose={() => setFormOpen(false)}
           onSaved={handleSaved}
         />

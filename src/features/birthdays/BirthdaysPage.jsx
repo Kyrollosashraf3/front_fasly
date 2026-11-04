@@ -57,7 +57,7 @@ function countdown(days) {
  */
 export default function BirthdaysPage() {
   usePageTitle('أعياد الميلاد')
-  const { user, classes, can, isServant } = useAuth()
+  const { classes, canPickClass, isServant, allClassesLabel } = useAuth()
 
   const [params] = useSearchParams()
   /** A birthday notification names his class: the page opens already filtered. */
@@ -73,7 +73,7 @@ export default function BirthdaysPage() {
   }, [linkClassId])
 
   const kindOptions = isServant ? [KIND_OPTIONS[0]] : KIND_OPTIONS
-  const showAll = can.manageClasses(user) && classes.length > 1
+  const showAll = canPickClass
 
   const { data, loading, error, refetch } = useQuery(
     () =>
@@ -136,7 +136,7 @@ export default function BirthdaysPage() {
             searchable
             searchPlaceholder="ابحث باسم الفصل..."
           >
-            {showAll && <option value="">كل الفصول</option>}
+            {showAll && <option value="">{allClassesLabel}</option>}
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}

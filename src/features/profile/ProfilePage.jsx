@@ -24,7 +24,7 @@ import './profile.css'
  */
 export default function ProfilePage() {
   usePageTitle('الحساب')
-  const { user, can, isSuperAdmin, classes, classLabel, refreshUser } = useAuth()
+  const { user, can, isSuperAdmin, classes, classLabel, allClassesLabel, refreshUser } = useAuth()
   const toast = useToast()
 
   const isMgr = can.manageAccounts(user)
@@ -66,6 +66,16 @@ export default function ProfilePage() {
         <div>
           <div className="page-head__sub">{handleOf(user)}</div>
         </div>
+
+        {isMgr && (
+          <Button
+            variant="primary"
+            icon={<Icon name="plus" size={16} />}
+            onClick={() => setDialog('new')}
+          >
+            إضافة حساب
+          </Button>
+        )}
       </div>
 
       <div className="card-grid profile-grid">
@@ -117,7 +127,7 @@ export default function ProfilePage() {
       <MyProfileDialog
         record={editing ? myRecord : null}
         phone={user?.phone}
-        classLabel={myRecord?.class_id ? classLabel(myRecord.class_id) : 'كل الفصول'}
+        classLabel={myRecord?.class_id ? classLabel(myRecord.class_id) : allClassesLabel}
         onClose={() => setEditing(false)}
         onSaved={() => {
           setEditing(false)
@@ -132,6 +142,7 @@ export default function ProfilePage() {
         teachers={teachers}
         boys={boys}
         canSuper={isSuperAdmin}
+        classes={classes}
         classLabel={classLabel}
         onClose={() => setDialog(null)}
         onSaved={() => {

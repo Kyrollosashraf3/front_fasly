@@ -37,7 +37,7 @@ const byName = (a, b) =>
 
 /** State, query and derived totals for «أداء الخدام». */
 export function useTeachersDashboard() {
-  const { user, classes, can } = useAuth()
+  const { classes, canPickClass } = useAuth()
 
   const [view, setView] = useState('perf')
   const [classId, setClassId] = useState('')
@@ -80,7 +80,7 @@ export function useTeachersDashboard() {
   )
 
   const d = data
-  const showAll = can.manageClasses(user) && classes.length > 1
+  const showAll = canPickClass
 
   const sum = (key) => (d?.servants || []).reduce((n, s) => n + s[key], 0)
   const totalChecks = sum('checks')

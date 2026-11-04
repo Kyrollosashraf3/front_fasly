@@ -1,9 +1,10 @@
 import { Select } from './Field'
 
 /**
- * ClassFilter — the super-admin's "which class?" picker, dropped into a global
- * module's toolbar. Pass `allLabel` to offer an aggregated "كل الفصول" (value
- * `''`); leave it out for sheets that always need one class.
+ * ClassFilter — the multi-class login's "which class?" picker, dropped into a
+ * global module's toolbar. Pass `allLabel` to offer the aggregated choice
+ * (value `''`) — "كل الفصول" for a super admin, "فصولي" for a stage amin;
+ * leave it out for sheets that always need one class.
  *
  * It renders the same plain select the performance dashboards already use, so
  * the control reads identically everywhere.

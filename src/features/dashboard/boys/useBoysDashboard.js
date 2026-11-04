@@ -6,7 +6,7 @@ import { useBoyDrawer } from '../parts'
 
 /** State + query for «أداء الأولاد». */
 export function useBoysDashboard() {
-  const { user, classes, can } = useAuth()
+  const { classes, canPickClass } = useAuth()
 
   const [section, setSection] = useState('att')
   const [classId, setClassId] = useState('')
@@ -48,7 +48,7 @@ export function useBoysDashboard() {
 
   const d = data
   const a = d?.attendance
-  const showAll = can.manageClasses(user) && classes.length > 1
+  const showAll = canPickClass
 
   const byClass = (a?.by_class ? Object.entries(a.by_class) : [])
     .filter(([, v]) => v.total > 0)

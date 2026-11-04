@@ -1,18 +1,25 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import { useQuery } from '../../hooks'
 import { DashboardAPI } from '../../lib/endpoints'
 import { Progress } from '../../components/ui/Avatar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
 import { boysWord, formatPercent, formatShort, todayISO } from '../../lib/format'
 
-/** Whose numbers these are — the backend already picked the scope. */
-const SCOPE_WORD = { group: 'مجموعتك', class: 'فصلك', all: 'كل الفصول' }
-
-const COVERAGE_CAPTION = {
-  group: 'تغطية مجموعة الافتقاد',
-  class: 'تغطية افتقاد الفصل',
-  all: 'تغطية الافتقاد لكل الفصول',
-}
+/**
+ * Whose numbers these are — the backend already picked the scope.
+ *
+ * "all" is every class for the church-wide amin, but only a stage amin's own
+ * group when he is the one looking.
+ */
+const wordsFor = (isSuperAdmin) => ({
+  scope: { group: 'مجموعتك', class: 'فصلك', all: isSuperAdmin ? 'كل الفصول' : 'فصولك' },
+  coverage: {
+    group: 'تغطية مجموعة الافتقاد',
+    class: 'تغطية افتقاد الفصل',
+    all: isSuperAdmin ? 'تغطية الافتقاد لكل الفصول' : 'تغطية الافتقاد لفصولك',
+  },
+})
 
 /** Counts that read as Arabic, not as a number glued to a dual. */
 const fridays = (n) => (n === 1 ? 'جمعة واحدة' : n === 2 ? 'جمعتين' : `${n} جمع`)
@@ -57,17 +64,20 @@ function SectionHead({ title, scopeWord, from }) {
  * HomeDashboard — the week and the season, for whoever is looking.
  *
  * One `GET /dashboard/my-performance` carries both windows: a servant reads
- * his own group and his own reviews, an amin reads his whole class, the
- * general amin reads every class. Nothing is filtered here, so the screen can
- * never disagree with the pages it is measured on.
+ * his own group and his own reviews, an amin reads his whole class, a stage amin
+ * reads his group of classes and the church-wide amin reads every class. Nothing
+ * is filtered here, so the screen can never disagree with the pages it is
+ * measured on.
  */
 export function HomeDashboard({ followUpHref }) {
+  const { isSuperAdmin } = useAuth()
   const { data, loading, error, refetch } = useQuery(() => DashboardAPI.myPerformance(), [])
 
+  const words = wordsFor(isSuperAdmin)
   const scope = data?.scope
   const week = data?.week
   const season = data?.season
-  const scopeWord = SCOPE_WORD[scope?.kind] || ''
+  const scopeWord = words.scope[scope?.kind] || ''
 
   return (
     <section className="home-dash" aria-label="الأداء">
@@ -83,7 +93,7 @@ export function HomeDashboard({ followUpHref }) {
             <div className="week-card">
               <div className="week-card__gauge">
                 <span className="week-card__pct">{formatPercent(week.follow)}</span>
-                <span className="week-card__caption">{COVERAGE_CAPTION[scope.kind]}</span>
+                <span className="week-card__caption">{words.coverage[scope.kind]}</span>
               </div>
               <div className="week-card__meter">
                 <Progress value={week.follow} />

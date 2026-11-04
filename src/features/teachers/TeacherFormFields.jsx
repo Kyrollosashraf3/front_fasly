@@ -2,7 +2,7 @@ import { ChipSelect, Field, Input, Select, Textarea } from '../../components/ui/
 import { FATHERS, SKILLS } from '../../lib/constants'
 
 /** The servant form body. */
-export function TeacherFormFields({ form, errors, set, classes, setForm, onSubmit }) {
+export function TeacherFormFields({ form, errors, set, classes, setForm, canSkipClass, onSubmit }) {
   return (
     <form className="stack" onSubmit={onSubmit} noValidate>
       <Field label="اسم الخادم" required htmlFor="t-name" error={errors.teacher_name}>
@@ -24,7 +24,12 @@ export function TeacherFormFields({ form, errors, set, classes, setForm, onSubmi
           <Input id="t-phone2" dir="ltr" placeholder="01012345678" value={form.phone_2} onChange={set('phone_2')} />
         </Field>
 
-        <Field label="الفصل" required htmlFor="t-class">
+        <Field
+          label="الفصل"
+          required={!canSkipClass}
+          htmlFor="t-class"
+          error={errors.class_id}
+        >
           <Select
             id="t-class"
             value={form.class_id}
@@ -32,7 +37,11 @@ export function TeacherFormFields({ form, errors, set, classes, setForm, onSubmi
             searchable
             searchPlaceholder="ابحث باسم الفصل..."
           >
-            <option value="">— اختر الفصل —</option>
+            {canSkipClass ? (
+              <option value="">بدون فصل (خادم عام / أمين مرحلة)</option>
+            ) : (
+              <option value="">— اختر الفصل —</option>
+            )}
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}

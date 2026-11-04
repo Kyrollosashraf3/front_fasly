@@ -15,12 +15,13 @@ import './myTrip.css'
  *
  * Trips are poster-like boxes, and each box shows its name only. Clicking a
  * box opens that trip's actions page; the amin gets a hover edit button to
- * change the trip itself. A super admin can narrow the catalogue to one class,
- * and a small footer button swaps the grid to the inactive (old) trips.
+ * change the trip itself. An amin who answers for more than one class can narrow
+ * the catalogue to one of them, and a small footer button swaps the grid to the
+ * inactive (old) trips.
  */
 export default function MyTripPage() {
   usePageTitle('رحلتي')
-  const { classes, isManager, isSuperAdmin } = useAuth()
+  const { classes, isManager, canPickClass, allClassesLabel } = useAuth()
   const navigate = useNavigate()
 
   const [trips, setTrips] = useState([])
@@ -29,7 +30,8 @@ export default function MyTripPage() {
 
   // The grid shows the active trips by default; the footer button toggles it.
   const [status, setStatus] = useState('active')
-  // Super-admin-only class filter; '' means every class.
+  // A class filter only appears for an amin whose reach holds several classes;
+  // '' means every class he answers for.
   const [classId, setClassId] = useState('')
 
   const [formOpen, setFormOpen] = useState(false)
@@ -41,7 +43,7 @@ export default function MyTripPage() {
     setLoading(true)
     try {
       const params = { status }
-      if (isSuperAdmin && classId) params.class_id = classId
+      if (classId) params.class_id = classId
       setTrips(await TripAPI.list(params))
       setError(null)
     } catch (err) {
@@ -49,7 +51,7 @@ export default function MyTripPage() {
     } finally {
       setLoading(false)
     }
-  }, [status, classId, isSuperAdmin])
+  }, [status, classId])
 
   useEffect(() => {
     refetch()
@@ -93,7 +95,7 @@ export default function MyTripPage() {
         <div>
           <div className="page-head__sub">
             {countLabel}
-            {isSuperAdmin && activeClass ? ` — ${activeClass.name}` : ''}
+            {activeClass ? ` — ${activeClass.name}` : ''}
           </div>
         </div>
         {isManager && (
@@ -103,7 +105,7 @@ export default function MyTripPage() {
         )}
       </div>
 
-      {isSuperAdmin && (
+      {canPickClass && (
         <div className="mytrip__filterbar">
           <label className="mytrip__filter">
             <span className="mytrip__filter-label">اختر الفصل</span>
@@ -114,7 +116,7 @@ export default function MyTripPage() {
               searchable
               searchPlaceholder="ابحث باسم الفصل..."
             >
-              <option value="">كل الفصول</option>
+              <option value="">{allClassesLabel}</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -200,7 +202,7 @@ export default function MyTripPage() {
           key={editingTrip?.id ?? 'new'}
           trip={editingTrip}
           classes={classes}
-          canChooseClass={isSuperAdmin}
+          canChooseClass={canPickClass}
           onClose={() => setFormOpen(false)}
           onSaved={handleSaved}
         />

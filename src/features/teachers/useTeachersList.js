@@ -8,13 +8,13 @@ import { normalizeSearch } from '../../lib/search'
 
 /** Query, filters and dialogs for the servants list page. */
 export function useTeachersList() {
-  const { classLabel, can, user, isServant } = useAuth()
+  const { classLabel, can, user, isServant, allClassesLabel } = useAuth()
   const { classId, multi, classes, picked, setPicked } = useClassScope()
   const toast = useToast()
   const modal = useModal()
 
   const allClasses = !classId
-  const label = allClasses ? 'كل الفصول' : classLabel(classId)
+  const label = allClasses ? allClassesLabel : classLabel(classId)
 
   const canWrite = can.writeDirectory(user)
 

@@ -6,6 +6,7 @@ export const EMPTY_USER = {
   role: 'user',
   teacher_id: '',
   boy_id: '',
+  class_ids: [],
 }
 
 /** How a login is addressed: the phone he signs in with. */
@@ -28,10 +29,17 @@ export const accountName = (teachers, boys, u) => {
   return u?.display_name || t?.teacher_name || b?.boy_name || ''
 }
 
+/** The classes a stage amin answers for, as a readable line. */
+export const managedLabel = (u, classLabel) => {
+  const ids = u?.managed_class_ids || []
+  return ids.length ? ids.map(classLabel).join('، ') : 'بدون فصول'
+}
+
 /** What an account is attached to, as a readable line. */
 export const linkedLabel = (teachers, boys, u, classLabel) => {
   if (!u) return '—'
   if (u.role === 'super_admin') return 'كل الفصول'
+  if (u.role === 'general_admin') return managedLabel(u, classLabel)
   if (u.teacher_id) {
     const t = teachers.find((x) => x.id === u.teacher_id)
     return t ? `${t.teacher_name} — ${classLabel(t.class_id)}` : `خادم #${u.teacher_id}`

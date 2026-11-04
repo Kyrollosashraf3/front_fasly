@@ -1,4 +1,5 @@
 import { Icon } from '../../components/ui/Icon'
+import { useAuth } from '../../context/AuthContext'
 import { IconButton } from '../../components/ui/Button'
 import { SearchInput, Select } from '../../components/ui/Field'
 import { Toolbar, ToolbarSearch, ToolbarSpacer } from '../../components/ui/Toolbar'
@@ -12,6 +13,7 @@ import { attachedBoy, handleOf } from './accountHelpers'
 
 /** The manager-only account list, with its filters and row actions. */
 export function AccountsSection({ accounts, classes }) {
+  const { allClassesLabel } = useAuth()
   const {
     users,
     usersLoading,
@@ -85,7 +87,7 @@ export function AccountsSection({ accounts, classes }) {
                   searchable
                   searchPlaceholder="ابحث باسم الفصل..."
                 >
-                  <option value="">كل الفصول</option>
+                  <option value="">{allClassesLabel}</option>
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}

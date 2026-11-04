@@ -37,10 +37,11 @@ const LINK_OPTIONS = [
 /**
  * NotificationsPage — «إرسال إشعار».
  *
- * The general amin writes one message for every servant, for one class, or for
- * named servants inside a class; a class amin only ever reaches his own, and
- * the server pins that whatever this screen sends, so a wrong audience here
- * cannot reach another class.
+ * The church-wide amin writes one message for every servant, for one class, or
+ * for named servants inside a class; a stage amin sends class by class inside
+ * his own group; a class amin only ever reaches his own. The server pins that
+ * whatever this screen sends, so a wrong audience here cannot reach another
+ * class.
  *
  * Every recipient also gets a copy in his own bell in the header, so a servant
  * who never switched web push on still reads the message in the app.
@@ -51,7 +52,7 @@ const LINK_OPTIONS = [
  */
 export default function NotificationsPage() {
   usePageTitle('إرسال إشعار')
-  const { classes, isSuperAdmin, classLabel } = useAuth()
+  const { classes, isSuperAdmin, canPickClass, classLabel } = useAuth()
   const toast = useToast()
 
   const [title, setTitle] = useState('')
@@ -62,7 +63,7 @@ export default function NotificationsPage() {
   const [link, setLink] = useState('')
   const [sending, setSending] = useState(false)
 
-  const audience = isSuperAdmin ? (classId ? Number(classId) : null) : null
+  const audience = canPickClass ? (classId ? Number(classId) : null) : null
   const teacherIds = picked.length ? picked : null
   const debouncedSearch = useDebounced(search, 200)
 
@@ -86,6 +87,12 @@ export default function NotificationsPage() {
     setPicked([])
   }, [audience])
 
+  // A stage amin's message is logged against one class, so his picker never sits
+  // on "every class" — it opens on the first class he answers for.
+  useEffect(() => {
+    if (!isSuperAdmin && classes.length > 1 && !classId) setClassId(String(classes[0].id))
+  }, [isSuperAdmin, classes, classId])
+
   const visibleServants = useMemo(() => {
     const list = Array.isArray(servants) ? servants : []
     const needle = debouncedSearch.trim()
@@ -94,6 +101,8 @@ export default function NotificationsPage() {
   }, [servants, debouncedSearch])
 
   const myClassName = classes.length === 1 ? classes[0].name : null
+  /** Whomever the send covers when no names are picked. */
+  const scopeName = audience ? classLabel(audience) : isSuperAdmin ? 'الشغل' : myClassName || 'فصلك'
   const canSend = title.trim().length >= 3 && body.trim().length > 0 && !sending
   const notSubscribed = status ? Math.max(0, status.staff - status.devices) : 0
   const pickedNames = useMemo(
@@ -140,7 +149,11 @@ export default function NotificationsPage() {
           <div className="page-head__sub">
             {isSuperAdmin
               ? 'رسالة توصل تليفونات الخدام وجرس الإشعارات جوه التطبيق.'
-              : `توصل خدام فصلك${myClassName ? ` - ${myClassName}` : ''} على التليفون وفي الإشعارات.`}
+              : `توصل خدام ${
+                  canPickClass
+                    ? `فصولك (${classes.length})`
+                    : `فصلك${myClassName ? ` - ${myClassName}` : ''}`
+                } على التليفون وفي الإشعارات.`}
           </div>
         </div>
       </div>
@@ -183,7 +196,7 @@ export default function NotificationsPage() {
           </Field>
 
           <div className="push-send__row">
-            {isSuperAdmin ? (
+            {canPickClass ? (
               <Field label="مين يستلم">
                 <Select
                   value={classId}
@@ -193,7 +206,7 @@ export default function NotificationsPage() {
                   searchable
                   searchPlaceholder="ابحث باسم الفصل..."
                 >
-                  <option value="">كل الخدام</option>
+                  {isSuperAdmin && <option value="">كل الخدام</option>}
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -230,10 +243,8 @@ export default function NotificationsPage() {
             label="خدام مختارين (اختياري)"
             hint={
               picked.length
-                ? `${picked.length} خادم يستلم لوحده - غير كده كل خدام ${
-                    audience ? classLabel(audience) : 'الشغل'
-                  }`
-                : 'سيبه فاضي عشان يوصل كل الخدام، أو اختار أسماء بعينها.'
+                ? `${picked.length} خادم يستلم لوحده - غير كده كل خدام ${scopeName}`
+                : `سيبه فاضي عشان يوصل كل خدام ${scopeName}، أو اختار أسماء بعينها.`
             }
           >
             <div className="push-pick">

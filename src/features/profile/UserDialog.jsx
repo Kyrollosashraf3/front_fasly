@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../../context/ToastContext'
 import { AuthAPI } from '../../lib/endpoints'
-import { ROLE_OPTIONS } from '../../lib/roles'
+import { ROLES, ROLE_OPTIONS, SUPER_ONLY_ROLES } from '../../lib/roles'
 import { isPhone, normalisePhone } from '../../lib/constants'
 import { Button } from '../../components/ui/Button'
 import { Field, Input, Select } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { EMPTY_USER, OWNER_ROLES, handleOf } from './accountHelpers'
+import { ClassGroupPicker } from './ClassGroupPicker'
 
-/** Create / edit one login: phone, optional password, role and owner. */
-export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClose, onSaved }) {
+/** Create / edit one login: phone, optional password, role, owner and class group. */
+export function UserDialog({ target, teachers, boys, canSuper, classes, classLabel, onClose, onSaved }) {
   const toast = useToast()
   const isEdit = typeof target === 'object' && target !== null
   const [form, setForm] = useState(EMPTY_USER)
@@ -27,13 +28,14 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
             role: target.role,
             teacher_id: target.teacher_id ? String(target.teacher_id) : '',
             boy_id: target.boy_id ? String(target.boy_id) : '',
+            class_ids: target.managed_class_ids || [],
           }
-        : { ...EMPTY_USER },
+        : { ...EMPTY_USER, class_ids: [] },
     )
   }, [target, isEdit])
 
   const roleOptions = useMemo(
-    () => ROLE_OPTIONS.filter((r) => r.value !== 'super_admin' || canSuper),
+    () => ROLE_OPTIONS.filter((r) => !SUPER_ONLY_ROLES.includes(r.value) || canSuper),
     [canSuper],
   )
 
@@ -58,7 +60,7 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
   const lockOwner = isEdit && target.role === role && Boolean(capturedOwner)
 
   const ownerOptions = () => {
-    if (OWNER_ROLES.includes(role)) {
+    if (OWNER_ROLES.includes(role) || role === ROLES.GENERAL_ADMIN) {
       return [
         <option key="none" value="">
           — اختر الخادم —
@@ -89,6 +91,9 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
     ]
   }
 
+  /** A stage amin *is* a servant: his classes are rows of that servant row. */
+  const isStageAmin = role === ROLES.GENERAL_ADMIN
+
   const submit = async (e) => {
     e.preventDefault()
     const next = {}
@@ -100,8 +105,9 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
     else if (phone && !isPhone(phone)) next.phone = 'رقم التليفون غير صحيح (01xxxxxxxxx).'
     if (form.password && form.password.length < 8)
       next.password = 'كلمة المرور 8 حروف على الأقل.'
-    if (OWNER_ROLES.includes(role) && !form.teacher_id) next.owner = 'اختر الخادم.'
+    if ((OWNER_ROLES.includes(role) || isStageAmin) && !form.teacher_id) next.owner = 'اختر الخادم.'
     if (role === 'user' && !form.boy_id) next.owner = 'اختر الولد.'
+    if (isStageAmin && !form.class_ids.length) next.classes = 'اختار فصل واحد على الأقل.'
     setErrors(next)
     if (Object.keys(next).length) return
 
@@ -117,6 +123,12 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
     } else if (role === 'user') {
       payload.boy_id = Number(form.boy_id)
       payload.teacher_id = null
+    } else if (isStageAmin) {
+      // The servant row carries both his name and his group: the classes he
+      // answers for are rows of it, so the link is what makes the role work.
+      payload.teacher_id = Number(form.teacher_id)
+      payload.boy_id = null
+      payload.class_ids = form.class_ids
     } else {
       payload.teacher_id = null
       payload.boy_id = null
@@ -126,6 +138,9 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
     try {
       if (isEdit) {
         await AuthAPI.updateUser(target.id, payload)
+        // The group is its own table, so it travels separately — and only the
+        // church-wide amin may write it.
+        if (isStageAmin && canSuper) await AuthAPI.setUserClasses(target.id, form.class_ids)
         toast.success('تم تعديل الحساب.')
       } else {
         await AuthAPI.createUser(payload)
@@ -206,7 +221,54 @@ export function UserDialog({ target, teachers, boys, canSuper, classLabel, onClo
           </Select>
         </Field>
 
-        {OWNER_ROLES.includes(role) || role === 'user' ? (
+        {isStageAmin ? (
+          <>
+            {lockOwner ? (
+              <Field label="الخادم" hint="متحدد تلقائيًا من الحساب.">
+                <Input value={capturedOwner} readOnly disabled />
+              </Field>
+            ) : (
+              <Field
+                label="الخادم"
+                required
+                htmlFor="u-owner"
+                error={errors.owner}
+                hint="لازم خادم مسجل في الدليل — الفصول اللي هو مسئول عنها بتتحفظ على صفه هو."
+              >
+                <Select
+                  id="u-owner"
+                  value={form.teacher_id}
+                  error={errors.owner}
+                  onChange={set('teacher_id')}
+                  searchable
+                  searchPlaceholder="ابحث باسم الخادم..."
+                >
+                  {ownerOptions()}
+                </Select>
+              </Field>
+            )}
+
+            <Field
+              label="الفصول اللي هو مسئول عنها"
+              required
+              error={errors.classes}
+              hint="اختار الفصل الواحد، أو المرحلة كلها من عنوانها."
+            >
+              {canSuper ? (
+                <ClassGroupPicker
+                  classes={classes}
+                  selected={form.class_ids}
+                  onChange={(class_ids) => setForm((f) => ({ ...f, class_ids }))}
+                />
+              ) : (
+                <p className="small muted">
+                  أمين المرحلة بيخصص فصوله الأدمن العام —{' '}
+                  {form.class_ids.map(classLabel).join('، ') || 'بدون فصول'}.
+                </p>
+              )}
+            </Field>
+          </>
+        ) : OWNER_ROLES.includes(role) || role === 'user' ? (
           lockOwner ? (
             <Field label={role === 'user' ? 'الولد' : 'الخادم'} hint="متحدد تلقائيًا من الحساب.">
               <Input value={capturedOwner} readOnly disabled />

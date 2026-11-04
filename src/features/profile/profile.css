@@ -16,3 +16,33 @@
 .my-record {
   margin-top: var(--sp-4);
 }
+
+/* The stage amin's class group, cut by stage inside the account dialog. */
+.class-group {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.class-group__stage {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.class-group__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+
+.class-group__title:hover {
+  color: var(--navy);
+}

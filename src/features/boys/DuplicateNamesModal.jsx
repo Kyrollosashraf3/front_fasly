@@ -14,8 +14,8 @@ import { FollowUpLogModal } from '../followup/FollowUpLogModal'
 
 const THRESHOLDS = [70, 75, 80, 85, 90, 95]
 
-const SCOPES = [
-  { value: 'all', label: 'كل الفصول' },
+/** The scopes that compare classes; "all" is worded per login (see below). */
+const COMPARISON_SCOPES = [
   { value: 'same_class', label: 'نفس الفصل' },
   { value: 'diff_class', label: 'فصلين مختلفين' },
 ]
@@ -117,6 +117,9 @@ export function DuplicateNamesModal({
   // scope filter only appears when the whole directory is in view.
   const inOneClass = Boolean(classId)
   const effectiveScope = inOneClass ? 'all' : scope
+  // The "all" tab is every class this login sees — the church's for the admeen
+  // aam, his stage's for an amin marhala — which is exactly what `label` says.
+  const scopeOptions = [{ value: 'all', label }, ...COMPARISON_SCOPES]
 
   const { data, loading, error, refetch } = useQuery(
     () =>
@@ -189,7 +192,7 @@ export function DuplicateNamesModal({
         }
       >
         {!inOneClass && (
-          <Tabs value={scope} onChange={setScope} options={SCOPES} />
+          <Tabs value={scope} onChange={setScope} options={scopeOptions} />
         )}
 
         <div className="dup__body">
@@ -204,7 +207,7 @@ export function DuplicateNamesModal({
               message={
                 done.length
                   ? 'كل اللي ظهر اتعالج.'
-                  : `مفيش أسماء متشابهة فوق ${threshold}% ${inOneClass ? `في ${label}` : 'بين كل الفصول'}.`
+                  : `مفيش أسماء متشابهة فوق ${threshold}% ${inOneClass ? `في ${label}` : `بين ${label}`}.`
               }
             />
           ) : (

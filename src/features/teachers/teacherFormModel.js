@@ -41,7 +41,7 @@ export function formStateFor(teacher, defaultClassId, classes) {
     custom: Array.isArray(teacher.skills)
       ? teacher.skills.filter((s) => !SKILLS.includes(s)).join('، ')
       : '',
-    class_id: String(teacher.class_id),
+    class_id: teacher.class_id == null ? '' : String(teacher.class_id),
     last_visit_date: teacher.last_visit_date || '',
     note: teacher.note || '',
   }
@@ -49,7 +49,7 @@ export function formStateFor(teacher, defaultClassId, classes) {
 
 /** Request body for create/update: blanks dropped, custom skills merged in. */
 export function buildPayload(form) {
-  const { custom, ...rest } = form
+  const { custom, class_id, ...rest } = form
   // The typed «أخرى» skill lives inside the same `skills` array.
   const customText = custom.trim()
   const skillsOut = [...form.skills]
@@ -61,7 +61,6 @@ export function buildPayload(form) {
   const payload = compact({
     ...rest,
     teacher_name: form.teacher_name.trim(),
-    class_id: Number(form.class_id),
     last_visit_date: form.last_visit_date || null,
     note: form.note.trim(),
     phone: form.phone.trim(),
@@ -74,5 +73,8 @@ export function buildPayload(form) {
   // "" means "clear it" - PATCH only obeys an explicit null, and compact
   // would drop the key entirely.
   payload.father_name = form.father_name || null
+  // A servant may sit outside every class: empty (or «بدون فصل») is sent as
+  // null - the backend decides who is allowed that (super admin only).
+  payload.class_id = class_id === '' ? null : Number(class_id)
   return payload
 }

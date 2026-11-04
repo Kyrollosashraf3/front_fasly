@@ -10,13 +10,18 @@ export const ROLES = {
   USER: 'user',
   TEACHER: 'teacher',
   ADMIN: 'admin',
+  GENERAL_ADMIN: 'general_admin',
   SUPER_ADMIN: 'super_admin',
 }
 
-export const MANAGER_ROLES = [ROLES.ADMIN, ROLES.SUPER_ADMIN]
+export const MANAGER_ROLES = [ROLES.ADMIN, ROLES.GENERAL_ADMIN, ROLES.SUPER_ADMIN]
+
+/** The roles that invent a class — a stage amin is handed his, he does not add any. */
+export const CLASS_KEEPERS = [ROLES.ADMIN, ROLES.SUPER_ADMIN]
 
 export const ROLE_LABELS = {
   super_admin: 'أدمن عام',
+  general_admin: 'أمين مرحلة',
   admin: 'أمين فصل',
   teacher: 'خادم',
   user: 'ولد',
@@ -24,18 +29,23 @@ export const ROLE_LABELS = {
 
 export const ROLE_BADGE_KIND = {
   super_admin: 'gold',
+  general_admin: 'navy',
   admin: 'navy',
   teacher: 'blue',
   user: 'green',
 }
 
-/** Options for the account form — super_admin only offered to a super_admin. */
+/** Options for the account form — the top two are only offered to a super_admin. */
 export const ROLE_OPTIONS = [
   { value: ROLES.USER, label: 'ولد (حسابه وحده)' },
   { value: ROLES.TEACHER, label: 'خادم (مجموعته)' },
   { value: ROLES.ADMIN, label: 'أمين فصل (فصله)' },
+  { value: ROLES.GENERAL_ADMIN, label: 'أمين مرحلة (خادم + مجموعة فصول)' },
   { value: ROLES.SUPER_ADMIN, label: 'أدمن عام (كل الفصول)' },
 ]
+
+/** The roles only the church-wide amin may hand out — and the classes that go with them. */
+export const SUPER_ONLY_ROLES = [ROLES.SUPER_ADMIN, ROLES.GENERAL_ADMIN]
 
 const roleOf = (user) => user?.role
 export const isManager = (user) => MANAGER_ROLES.includes(roleOf(user))
@@ -57,8 +67,8 @@ export const can = {
    */
   editBoys: (user) => roleOf(user) !== ROLES.USER,
 
-  /** Create/rename/delete a class. */
-  manageClasses: (user) => isManager(user),
+  /** Create/rename/delete a class — only a class amin or the church-wide amin. */
+  manageClasses: (user) => CLASS_KEEPERS.includes(roleOf(user)),
 
   /** Fill the Friday attendance sheet. */
   writeAttendance: (user) => roleOf(user) !== ROLES.USER,
@@ -116,13 +126,14 @@ export const can = {
   writeRecitations: (user) => roleOf(user) !== ROLES.USER,
 
   /** Send a notification to the servants' phones — his own class for an amin,
-   *  any class or every class for the general amin. */
+   *  his own group for a stage amin, every class for the church-wide amin. */
   sendNotifications: (user) => isManager(user),
 
-  /** Grant the super_admin role. */
+  /** Grant the super_admin or general_admin role, or hand out a class group. */
   grantSuperAdmin: (user) => roleOf(user) === ROLES.SUPER_ADMIN,
 }
 
 export const isSuperAdmin = (user) => roleOf(user) === ROLES.SUPER_ADMIN
+export const isGeneralAdmin = (user) => roleOf(user) === ROLES.GENERAL_ADMIN
 export const isServant = (user) => roleOf(user) === ROLES.TEACHER
 export const isBoy = (user) => roleOf(user) === ROLES.USER

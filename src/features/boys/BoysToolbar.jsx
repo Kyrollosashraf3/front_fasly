@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext'
 import { BoyAPI } from '../../lib/endpoints'
 import { Icon } from '../../components/ui/Icon'
 import { Button } from '../../components/ui/Button'
@@ -26,6 +27,7 @@ export function BoysToolbar({
   toast,
   onOpenDuplicates,
 }) {
+  const { allClassesLabel } = useAuth()
   return (
     <>
       <Toolbar className="toolbar--scroll">
@@ -34,7 +36,7 @@ export function BoysToolbar({
             value={picked}
             onChange={setPicked}
             classes={classes}
-            allLabel="كل الفصول"
+            allLabel={allClassesLabel}
           />
         )}
         <SearchInput value={search} onChange={setSearch} placeholder="ابحث بالاسم أو التليفون..." />

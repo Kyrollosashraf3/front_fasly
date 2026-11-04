@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { clearToken, getToken, setToken, setUnauthorizedHandler } from '../lib/api'
 import { AuthAPI, ClassAPI, BoyAPI, TeacherAPI } from '../lib/endpoints'
 import { listenForResubscribe, syncPush } from '../lib/push'
-import { can, isBoy, isManager, isServant, isSuperAdmin } from '../lib/roles'
+import { can, isBoy, isGeneralAdmin, isManager, isServant, isSuperAdmin } from '../lib/roles'
 
 const AuthContext = createContext(null)
 
@@ -10,8 +10,8 @@ const AuthContext = createContext(null)
  * AuthContext — session + identity + the class catalogue.
  *
  * Flow: login() posts the token, then loads `me` and resolves which classes
- * this login may open (super_admin: all; everyone else - admin, servant and
- * boy alike - only the class he belongs to).
+ * this login may open (super_admin: all; a stage amin: the group handed to his
+ * account; admin, servant and boy - only the class he belongs to).
  * `classes` is cached here so every screen shares one request.
  */
 export function AuthProvider({ children }) {
@@ -22,24 +22,28 @@ export function AuthProvider({ children }) {
   const bootstrapRef = useRef(false)
 
   /**
-   * Which class does this login belong to? (null = he sees every class)
-   * Only a super_admin is class-less: an admin is attached to a servant and
-   * a servant/boy to his own class, so the answer comes from the owner link.
-   */  const resolveMyClass = useCallback(async (me) => {
+   * Which classes does this login belong to? (null = he sees every class)
+   * Only a super_admin is class-less. A stage amin is handed a group on his
+   * account (`managed_class_ids`, already inside `/auth/me`); an admin is
+   * attached to a servant and a servant/boy to his own class, so their answer
+   * comes from the owner link.
+   */
+  const resolveMyClasses = useCallback(async (me) => {
     if (!me || isSuperAdmin(me)) return null
+    if (isGeneralAdmin(me)) return me.managed_class_ids || []
     try {
       if (me.teacher_id) {
         const t = await TeacherAPI.get(me.teacher_id)
-        return t?.class_id ?? null
+        return t?.class_id ? [t.class_id] : []
       }
       if (me.boy_id) {
         const b = await BoyAPI.get(me.boy_id)
-        return b?.class_id ?? null
+        return b?.class_id ? [b.class_id] : []
       }
     } catch {
-      return null
+      return []
     }
-    return null
+    return []
   }, [])
 
   /** Loads /classes and narrows it to what this login may open. */
@@ -52,10 +56,10 @@ export function AuthProvider({ children }) {
           setClasses(all)
           return all
         }
-        const classId = await resolveMyClass(me)
-        const mine = classId ? all.filter((c) => c.id === classId) : []
-        setClasses(mine)
-        return mine
+        const mine = await resolveMyClasses(me)
+        const scoped = all.filter((c) => mine.includes(c.id))
+        setClasses(scoped)
+        return scoped
       } catch {
         setClasses([])
         return []
@@ -63,7 +67,7 @@ export function AuthProvider({ children }) {
         setClassReady(true)
       }
     },
-    [resolveMyClass],
+    [resolveMyClasses],
   )
 
   const bootstrap = useCallback(
@@ -158,11 +162,21 @@ export function AuthProvider({ children }) {
       refreshClasses,
       refreshUser,
       classOf: (id) => classMap.get(Number(id)),
-      classLabel: (id) => classMap.get(Number(id))?.name || `صف ${id}`,
+      // A servant may live outside every class (future stage amin /
+      // church-wide role) - his row then carries ``class_id: null``.
+      classLabel: (id) =>
+        id == null || id === ''
+          ? 'بدون فصل'
+          : classMap.get(Number(id))?.name || `صف ${id}`,
       canAccess: (id) => classMap.has(Number(id)),
       // role helpers, so screens never touch role strings
       isManager: isManager(user),
       isSuperAdmin: isSuperAdmin(user),
+      isGeneralAdmin: isGeneralAdmin(user),
+      /** Worth showing a class picker: an amin whose reach holds several classes. */
+      canPickClass: isManager(user) && classes.length > 1,
+      /** What "no class chosen" is called for this login — the church's classes or his own. */
+      allClassesLabel: isSuperAdmin(user) ? 'كل الفصول' : 'فصولي',
       isServant: isServant(user),
       isBoy: isBoy(user),
       can,

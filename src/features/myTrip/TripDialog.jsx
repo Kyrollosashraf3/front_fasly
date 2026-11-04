@@ -12,7 +12,8 @@ import { todayISO } from '../../lib/format'
  *
  * The parent mounts it only while open and keys it by the edited trip, so the
  * form always starts from the right values (a new trip vs. the one clicked).
- * Servants and class amins are pinned to their own class; a super admin picks.
+ * Servants and amins of a single class are pinned to that class; an amin who
+ * answers for several picks which one the trip is for.
  */
 export function TripDialog({ trip, classes, canChooseClass, onClose, onSaved }) {
   const toast = useToast()

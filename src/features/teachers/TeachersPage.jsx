@@ -64,7 +64,7 @@ export default function TeachersPage() {
             )}
           </nav>
           <div className="page-head__sub">
-            {teachers?.length ?? 0} خادم {allClasses ? 'في كل الفصول' : `مسند لـ ${label}`}
+            {teachers?.length ?? 0} خادم {allClasses ? `في ${label}` : `مسند لـ ${label}`}
           </div>
         </div>
 
