@@ -58,11 +58,15 @@ export const DATE_MODE_OPTIONS = [
   { value: 'season', label: 'من بداية السنة الكنسية' },
 ]
 
-export function DateModeField({ value, onChange }) {
+export function DateModeField({ value, onChange, className = '' }) {
   return (
-    <label className="n-field">
-      الفترة
-      <Select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: 190 }}>
+    <label className={`n-field date-mode-field ${className}`.trim()}>
+      <span className="date-mode-label">الفترة</span>
+      <Select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="date-mode-select select--plain"
+      >
         {DATE_MODE_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

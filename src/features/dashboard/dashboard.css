@@ -30,3 +30,13 @@
   min-width: 0;
   width: 150px;
 }
+
+.toolbar .date-mode-field {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.toolbar .date-mode-select {
+  width: 190px;
+}

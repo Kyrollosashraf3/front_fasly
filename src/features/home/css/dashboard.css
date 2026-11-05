@@ -6,6 +6,28 @@
   gap: var(--sp-6);
 }
 
+.home-dash__amin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.home-dash__week-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-3);
+}
+
+@media (min-width: 900px) {
+  .home-dash__week-row {
+    grid-template-columns: 1.2fr 1.8fr;
+    align-items: stretch;
+  }
+  .home-dash__week-row .week-stats {
+    margin-top: 0;
+  }
+}
+
 .home-dash__grid {
   display: grid;
   gap: var(--sp-6);

@@ -5,6 +5,8 @@ import { DashboardAPI } from '../../lib/endpoints'
 import { Progress } from '../../components/ui/Avatar'
 import { ErrorState, SkeletonRows } from '../../components/ui/States'
 import { boysWord, formatPercent, formatShort, todayISO } from '../../lib/format'
+import { Kpi, KpiRow } from '../dashboard/parts'
+import '../dashboard/dashboard.css'
 
 /**
  * Whose numbers these are — the backend already picked the scope.
@@ -91,7 +93,117 @@ export function HomeDashboard({ followUpHref }) {
         <SkeletonRows rows={3} cols={2} />
       ) : error ? (
         <ErrorState error={error} onRetry={refetch} title="تعذّر تحميل الأداء" />
-      ) : !scope ? null : (
+      ) : !scope ? null : !ownSheet ? (
+        /* Amin General / Class Amin view — same design & calculation as Boys Performance */
+        <div className="home-dash__amin">
+          <div className="dash-head">
+            <h2 className="dash-head__title">أداء الأولاد (من بداية السنة)</h2>
+            <span className="dash-head__scope">{scopeWord}</span>
+            <span className="dash-head__range">
+              {formatShort(scope.season_from)} — {formatShort(todayISO())}
+            </span>
+          </div>
+
+          <KpiRow>
+            <Kpi
+              hero
+              value={`${season.attendance}%`}
+              label="نسبة حضور الأولاد"
+              progress={season.attendance}
+              sub={`متوسط ${season.avg_present} من ${season.boys} ولد • غائب ${Math.max(0, season.boys - season.avg_present)}`}
+            />
+            <Kpi
+              value={`${season.liturgy}%`}
+              label="حضور القداس"
+              sub={`متوسط ${season.avg_liturgy} من ${season.boys} ولد`}
+            />
+            <Kpi value={season.boys} label={`أولاد ${scopeWord}`} />
+            <Kpi value={season.sessions} label="جمع مسجلة" />
+          </KpiRow>
+
+          <div className="dash-head" style={{ marginTop: 'var(--sp-4)' }}>
+            <h2 className="dash-head__title">أداء الافتقاد</h2>
+            <span className="dash-head__scope">{scopeWord}</span>
+          </div>
+
+          <KpiRow>
+            <Kpi
+              hero
+              value={`${season.follow}%`}
+              label="نسبة تغطية الافتقاد"
+              progress={season.follow}
+              sub={`${season.followed_boys} من ${season.boys} ولد تم افتقادهم`}
+            />
+            <Kpi
+              value={season.follow_ups}
+              label="عدد افتقادات مسجلة"
+              sub="من بداية السنة الكنسية"
+            />
+            <Kpi
+              value={season.followed_boys}
+              label="أولاد تم افتقادهم"
+              sub="على الأقل مرة واحدة"
+            />
+            <Kpi
+              value={season.pending_boys}
+              label="أولاد لم يتم افتقادهم"
+              sub={season.pending_boys ? 'بحاجة إلى افتقاد' : 'تم افتقاد الكل'}
+              numClassName={season.pending_boys ? 'kpi-num--warn' : ''}
+            />
+          </KpiRow>
+
+          <div className="dash-head" style={{ marginTop: 'var(--sp-4)' }}>
+            <h2 className="dash-head__title">الافتقاد آخر أسبوع</h2>
+            <span className="dash-head__scope">{scopeWord}</span>
+            <span className="dash-head__range">
+              {formatShort(scope.week_from)} — {formatShort(todayISO())}
+            </span>
+          </div>
+
+          <div className="home-dash__week-row">
+            <div className="week-card">
+              <div className="week-card__gauge">
+                <span className="week-card__pct">{formatPercent(week.follow)}</span>
+                <span className="week-card__caption">{words.coverage[scope.kind]}</span>
+              </div>
+              <div className="week-card__meter">
+                <Progress value={week.follow} />
+                <div className="week-card__foot">
+                  <div className="week-card__hint">
+                    {scope.boys ? (
+                      `${week.followed_boys} من ${scope.boys} ${boysWord(
+                        scope.boys,
+                      )} اتافتقدوا الأسبوع ده`
+                    ) : (
+                      'لا يوجد أولاد'
+                    )}
+                  </div>
+                  {scope.boys > 0 && (
+                    <Link to={followUpHref} className="btn btn-accent btn-sm">
+                      سجّل الافتقاد
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="week-stats">
+              <Stat value={week.follow_ups} label="عدد افتقادات مسجلة" />
+              <Stat
+                value={week.followed_boys}
+                label="أولاد تم افتقادهم (على الأقل مرة واحدة)"
+                tone={week.followed_boys ? 'ok' : ''}
+              />
+              <Stat
+                value={week.pending_boys}
+                label="أولاد لم يتم افتقادهم"
+                tone={week.pending_boys ? 'warn' : 'ok'}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Servant view */
         <div className="home-dash__grid">
           <div className="home-dash__col">
             <SectionHead title="آخر أسبوع" scopeWord={scopeWord} from={scope.week_from} />
@@ -128,13 +240,17 @@ export function HomeDashboard({ followUpHref }) {
             </div>
 
             <div className="week-stats">
+              <Stat value={week.follow_ups} label="عدد افتقادات مسجلة" />
+              <Stat
+                value={week.followed_boys}
+                label="أولاد تم افتقادهم (على الأقل مرة واحدة)"
+                tone={week.followed_boys ? 'ok' : ''}
+              />
               <Stat
                 value={week.pending_boys}
-                label="لسه ما اتافتقدوش"
+                label="أولاد لم يتم افتقادهم"
                 tone={week.pending_boys ? 'warn' : 'ok'}
               />
-              <Stat value={week.follow_ups} label="افتقادات مسجلة" />
-              <Stat value={scope.boys} label={`أولاد ${scopeWord}`} />
             </div>
           </div>
 
@@ -149,43 +265,27 @@ export function HomeDashboard({ followUpHref }) {
               <RateRow
                 label="نسبة الحضور"
                 value={season.attendance}
-                sub={
-                  ownSheet
-                    ? tickSub(season.present)
-                    : `${season.present} من ${season.total} سجل · ${fridays(season.sessions)}`
-                }
+                sub={tickSub(season.present)}
               />
               <RateRow
                 label="نسبة حضور القداس"
                 value={season.liturgy}
-                sub={
-                  ownSheet
-                    ? tickSub(season.liturgy_present)
-                    : `${season.liturgy_present} من ${season.total} سجل`
-                }
+                sub={tickSub(season.liturgy_present)}
               />
               <RateRow
                 label="نسبة التحضير"
                 value={season.prepare}
-                sub={
-                  ownSheet
-                    ? tickSub(season.prepare_present)
-                    : `من ${reviews(season.checks)} مسجلة`
-                }
+                sub={tickSub(season.prepare_present)}
               />
               <RateRow
                 label="نسبة اجتماع الخدام"
                 value={season.teachers_meeting}
-                sub={ownSheet ? tickSub(season.meeting_present) : null}
+                sub={tickSub(season.meeting_present)}
               />
               <RateRow
                 label="نسبة الافتقاد"
                 value={season.follow}
-                sub={
-                  ownSheet
-                    ? tickSub(season.follow_present)
-                    : `${season.followed_boys} من ${scope.boys} ${boysWord(scope.boys)}`
-                }
+                sub={tickSub(season.follow_present)}
               />
 
               <div className="season-card__count">

@@ -57,7 +57,7 @@ export function BoysSections({
                   <div className="class-bars__row">
                     <strong>{classLabel(Number(cid))}</strong>
                     <span>
-                      {v.percent}% حضور · {v.liturgy_percent}% قداس ({v.present}/{v.total})
+                      {v.percent}% حضور · {v.liturgy_percent}% قداس (متوسط {v.avg_present}/{v.boys} ولد)
                     </span>
                   </div>
                   <div className="progress">

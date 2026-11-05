@@ -154,8 +154,7 @@ export default function BoysDashboard() {
         </button>
       </div>
 
-      {/* The summary numbers are the attendance section's own analysis, so they
-          appear only under «نسبة الحضور». */}
+      {/* The summary numbers are shown for attendance and follow-up coverage */}
       {section === 'att' && a && (
         <KpiRow>
           <Kpi
@@ -163,15 +162,42 @@ export default function BoysDashboard() {
             value={`${a.percent}%`}
             label="نسبة حضور الأولاد"
             progress={a.percent}
-            sub={`حاضر ${a.present} • غائب ${a.absent} • الكل ${a.total}`}
+            sub={`متوسط ${a.avg_present} من ${a.boys || d.counts.boys} ولد • غائب ${Math.max(0, (a.boys || d.counts.boys) - a.avg_present)}`}
           />
           <Kpi
             value={`${a.liturgy_percent}%`}
             label="حضور القداس"
-            sub={`قداس ${a.liturgy_present} من ${a.total}`}
+            sub={`متوسط ${a.avg_liturgy} من ${a.boys || d.counts.boys} ولد`}
           />
           <Kpi value={d.counts.boys} label="الأولاد" />
           <Kpi value={d.counts.fridays} label="جمع مسجلة" />
+        </KpiRow>
+      )}
+
+      {section === 'cover' && cover && (
+        <KpiRow>
+          <Kpi
+            hero
+            value={`${Math.round((cover.done_count / (d.counts.boys || 1)) * 100)}%`}
+            label="نسبة تغطية الافتقاد"
+            progress={Math.round((cover.done_count / (d.counts.boys || 1)) * 100)}
+            sub={`${cover.done_count} من ${d.counts.boys} ولد تم افتقادهم`}
+          />
+          <Kpi
+            value={d.counts.follow_ups ?? cover.done_count}
+            label="عدد افتقادات مسجلة"
+          />
+          <Kpi
+            value={cover.done_count}
+            label="أولاد تم افتقادهم"
+            sub="على الأقل مرة واحدة"
+          />
+          <Kpi
+            value={cover.todo_count}
+            label="أولاد لم يتم افتقادهم"
+            sub={cover.todo_count ? 'بحاجة إلى افتقاد' : 'تم افتقاد الكل'}
+            numClassName={cover.todo_count ? 'kpi-num--warn' : ''}
+          />
         </KpiRow>
       )}
 

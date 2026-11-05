@@ -84,31 +84,64 @@
   }
 
   /* The dashboard toolbar is the first thing on the screen, so it keeps to a
-     few short rows instead of one stretched control per row. */
+     clean stacked layout without overflowing the mobile viewport. */
   .toolbar.toolbar--dash {
+    display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
-    align-items: flex-end;
+    align-items: center;
+    gap: var(--sp-2);
   }
 
   .toolbar.toolbar--dash .toolbar__spacer {
     display: none;
   }
 
-  /* Class + period share one row; the «آخر جمعة مسجلة» note drops below them. */
-  .toolbar.toolbar--dash > .search-select.select--plain,
+  .toolbar.toolbar--dash .dash-filters {
+    display: flex;
+    flex: 1 1 100%;
+    width: 100%;
+    gap: var(--sp-2);
+    margin-bottom: 0;
+  }
+
+  .toolbar.toolbar--dash .dash-filters .search-select,
+  .toolbar.toolbar--dash .dash-filters .select {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .toolbar.toolbar--dash > .search-select.select--plain {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .toolbar.toolbar--dash .date-mode-field,
   .toolbar.toolbar--dash > .n-field {
-    flex: 1 1 0;
-    width: auto;
-    min-width: 0;
+    flex: 1 1 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
   }
 
+  .toolbar.toolbar--dash .date-mode-select,
   .toolbar.toolbar--dash > .n-field select {
-    flex: 1 1 0;
-    width: auto;
+    flex: 1 1 auto;
+    width: 100% !important;
+    max-width: 100%;
     min-width: 0;
   }
 
+  .toolbar.toolbar--dash .small.muted,
   .toolbar.toolbar--dash > .small.muted {
     flex: 1 1 100%;
+    width: 100%;
+    text-align: start;
+    font-size: 10.5px;
+    margin-top: 2px;
   }
 }
