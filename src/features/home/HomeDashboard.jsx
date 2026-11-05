@@ -78,6 +78,12 @@ export function HomeDashboard({ followUpHref }) {
   const week = data?.week
   const season = data?.season
   const scopeWord = words.scope[scope?.kind] || ''
+  // A servant's season rows are ticks from his own review sheet; an amin's are
+  // the attendance records of the class he watches.
+  const ownSheet = Boolean(scope?.teacher_id)
+  /** "٧ من ٧ جمع" out of his Friday sheet, before the first one an honest line. */
+  const tickSub = (n) =>
+    season?.checks ? `${n} من ${fridays(season.checks)}` : 'مفيش متابعات مسجلة'
 
   return (
     <section className="home-dash" aria-label="الأداء">
@@ -143,23 +149,43 @@ export function HomeDashboard({ followUpHref }) {
               <RateRow
                 label="نسبة الحضور"
                 value={season.attendance}
-                sub={`${season.present} من ${season.total} سجل · ${fridays(season.sessions)}`}
+                sub={
+                  ownSheet
+                    ? tickSub(season.present)
+                    : `${season.present} من ${season.total} سجل · ${fridays(season.sessions)}`
+                }
               />
               <RateRow
                 label="نسبة حضور القداس"
                 value={season.liturgy}
-                sub={`${season.liturgy_present} من ${season.total} سجل`}
+                sub={
+                  ownSheet
+                    ? tickSub(season.liturgy_present)
+                    : `${season.liturgy_present} من ${season.total} سجل`
+                }
               />
               <RateRow
                 label="نسبة التحضير"
                 value={season.prepare}
-                sub={`من ${reviews(season.checks)} مسجلة`}
+                sub={
+                  ownSheet
+                    ? tickSub(season.prepare_present)
+                    : `من ${reviews(season.checks)} مسجلة`
+                }
               />
-              <RateRow label="نسبة اجتماع الخدام" value={season.teachers_meeting} />
+              <RateRow
+                label="نسبة اجتماع الخدام"
+                value={season.teachers_meeting}
+                sub={ownSheet ? tickSub(season.meeting_present) : null}
+              />
               <RateRow
                 label="نسبة الافتقاد"
                 value={season.follow}
-                sub={`${season.followed_boys} من ${scope.boys} ${boysWord(scope.boys)}`}
+                sub={
+                  ownSheet
+                    ? tickSub(season.follow_present)
+                    : `${season.followed_boys} من ${scope.boys} ${boysWord(scope.boys)}`
+                }
               />
 
               <div className="season-card__count">
