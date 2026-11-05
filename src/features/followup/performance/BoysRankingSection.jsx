@@ -23,7 +23,7 @@ function HistoryPanel({ row, onOpenBoy }) {
         ))}
       </ul>
       <Button variant="secondary" size="sm" onClick={() => onOpenBoy(row)}>
-        عرض الملف
+        OO
       </Button>
     </div>
   )
@@ -55,7 +55,7 @@ export function BoysRankingSection({
           ]}
         />
       }
-    
+
     >
       {ranking.length === 0 ? (
         <EmptyState

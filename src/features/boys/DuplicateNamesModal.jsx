@@ -158,7 +158,7 @@ export function DuplicateNamesModal({
           loading
             ? 'بيقارن كل الأسماء...'
             : data &&
-              `${data.checked} اسم فى ${label} · ${groups.length} مجموعة محتاجة مراجعة`
+            `${data.checked} اسم فى ${label} · ${groups.length} مجموعة محتاجة مراجعة`
         }
         headExtra={
           <div className="row" style={{ gap: 8 }}>
@@ -281,7 +281,7 @@ export function DuplicateNamesModal({
                           )}
                           <IconButton
                             icon={<Icon name="eye" size={16} />}
-                            label="عرض الملف"
+                            label="OO"
                             disabled={busyId === m.id}
                             onClick={() => withFullBoy(m, setViewing)}
                           />

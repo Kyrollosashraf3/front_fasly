@@ -6,7 +6,7 @@ import { formatShort } from '../../../lib/format'
 
 /**
  * The "class → boys" group lists used by streaks / absentees.
- * Rows carry an extra badge and a "عرض الملف" button.
+ * Rows carry an extra badge and a "OO" button.
  */
 export function ClassGroups({
   groups = {},
@@ -15,7 +15,7 @@ export function ClassGroups({
   emptyMsg,
   badge,
   onBoy,
-  actionLabel = 'عرض الملف',
+  actionLabel = 'OO',
 }) {
   const { classLabel } = useAuth()
   const classes = Object.keys(groups).filter((c) => groups[c]?.length)

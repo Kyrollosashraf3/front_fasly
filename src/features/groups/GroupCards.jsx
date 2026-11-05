@@ -78,7 +78,7 @@ function BoyTable({ boys, classId, canWrite, editing, onView, onUnassign, onMove
       sortable: false,
       render: (b) => (
         <div className="table__actions">
-          <IconButton icon={<Icon name="eye" size={16} />} label="عرض الملف" onClick={() => onView(b)} />
+          <IconButton icon={<Icon name="eye" size={16} />} label="OO" onClick={() => onView(b)} />
           {canWrite && editing && (
             <>
               <IconButton
